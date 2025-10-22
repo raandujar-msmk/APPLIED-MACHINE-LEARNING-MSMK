@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MVS: Clasificación Lineal y Kernels</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Configuración de fuente e inicialización del lienzo */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Fondo claro */
+        }
+        canvas {
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            /* Asegura que el canvas sea responsivo */
+            width: 100%; 
+            height: auto;
+        }
+
+        /* Estilos para los botones interactivos */
+        .interactive-button {
+            @apply px-4 py-2 font-bold rounded-lg transition duration-300 shadow-md;
+        }
+        /* Estilos para el slider deshabilitado (aunque ya no se usa, lo mantengo por si acaso) */
+        input[type=range]:disabled {
+            @apply opacity-50 cursor-not-allowed;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <!-- Contenedor Principal -->
+    <div class="max-w-4xl w-full mx-auto p-6 md:p-8 bg-white rounded-xl shadow-2xl space-y-8">
+        
+        <header class="text-center border-b-4 border-blue-500 pb-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-800 tracking-tight">
+                Máquinas de Vectores de Soporte (MVS)
+            </h1>
+            <p class="mt-2 text-xl text-gray-600">
+                Clasificación Lineal, No Lineal y el Poder de los Kernels
+            </p>
+        </header>
+        
+        <!-- Explicación de Vectores de Soporte -->
+        <section class="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-300">
+            <h3 class="text-xl font-semibold text-blue-700 mb-2">Concepto Clave: Vectores de Soporte</h3>
+            <p class="text-gray-700">
+                Los <b>Vectores de Soporte (VS)</b> son los puntos de datos que están más cercanos al hiperplano de decisión. 
+                Estos son los únicos puntos relevantes para definir la frontera de separación y el margen. 
+                Si eliminas cualquier otro punto, el hiperplano no cambiará. Los VS son, por lo tanto, los puntos críticos sobre los que se apoya todo el modelo.
+            </p>
+        </section>
+
+        <!-- Sección 1: Clasificación Lineal y Margen (Controlable) -->
+        <section>
+            <h2 class="text-3xl font-bold text-blue-600 mb-4">1. Clasificación Lineal y Margen Óptimo (Iteración)</h2>
+            <p class="text-gray-700 mb-4">
+                <b>Paso 1: Optimización.</b> Presiona "Avanzar" para ver cómo el hiperplano se ajusta iterativamente al óptimo y cómo se establece el margen más amplio.
+            </p>
+            
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-4">
+                <div class="w-full md:w-1/2">
+                    <button id="next-step-linear" class="interactive-button bg-green-500 text-white hover:bg-green-600 w-full" onclick="stepLinear()">
+                        Avanzar Optimización (Paso 0/5)
+                    </button>
+                </div>
+                <div class="w-full md:w-1/2">
+                    <button id="reset-linear" class="interactive-button bg-red-500 text-white hover:bg-red-600 w-full" onclick="clearAllGraphs()">
+                        Reiniciar
+                    </button>
+                </div>
+            </div>
+            
+            <canvas id="svm-canvas" width="600" height="300" class="mt-4"></canvas>
+            <p id="linear-status" class="text-sm mt-2 text-gray-500 italic text-center">Gráfico 1: Presiona "Avanzar Optimización" para encontrar el hiperplano óptimo.</p>
+        </section>
+        
+        <!-- Sección 2: Clasificación No Lineal y el truco del Kernel -->
+        <section>
+            <h2 class="text-3xl font-bold text-purple-600 mb-4">2. Clasificación No Lineal: El Truco del Kernel</h2>
+            <p class="text-gray-700 mb-4">
+                Cuando los datos no se pueden separar con una línea recta (son <b>no lineales</b>), la MVS utiliza el <b>Truco del Kernel</b>. Esto simula proyectar los datos a un espacio de dimensión superior donde la separación lineal *sí* es posible.
+            </p>
+
+            <div class="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+                <div class="w-full md:w-1/2">
+                    <button id="draw-non-linear" class="interactive-button bg-yellow-500 text-white hover:bg-yellow-600 w-full" onclick="initNonLinear(true)">
+                        Simular Datos No Lineales
+                    </button>
+                </div>
+                 <div class="w-full md:w-1/2">
+                    <button id="kernel-projection" class="interactive-button bg-purple-500 text-white hover:bg-purple-600 w-full" onclick="stepKernelProjection()">
+                        Simular Proyección (Paso 0/24)
+                    </button>
+                </div>
+            </div>
+
+            <canvas id="kernel-canvas" width="600" height="300" class="mt-4"></canvas>
+            <p id="kernel-status" class="text-sm mt-2 text-gray-500 italic text-center">Gráfico 2: Datos no separables linealmente (anillos). Presiona "Simular Datos No Lineales" para cargar la vista 2D.</p>
+        </section>
+
+        <!-- Sección 3: Tipos de Kernels -->
+        <section class="bg-gray-100 p-6 rounded-lg border-l-4 border-purple-500">
+            <h2 class="text-3xl font-bold text-gray-700 mb-4">3. Kernels Comunes</h2>
+            <p class="text-gray-700 mb-3">
+                El Kernel es la función que calcula la similitud entre dos puntos en el espacio de mayor dimensión, <b>sin necesidad de calcular las coordenadas reales de la proyección</b>.
+            </p>
+            <ul class="list-none space-y-3">
+                <li class="p-3 bg-white rounded-lg shadow-sm">
+                    <strong class="text-lg text-blue-800">Kernel Lineal:</strong> K(x<sub>i</sub>, x<sub>j</sub>) = x<sub>i</sub> &sdot; x<sub>j</sub>. Usado para datos linealmente separables.
+                </li>
+                <li class="p-3 bg-white rounded-lg shadow-sm">
+                    <strong class="text-lg text-blue-800">Kernel Polinomial:</strong> K(x<sub>i</sub>, x<sub>j</sub>) = (&gamma; x<sub>i</sub> &sdot; x<sub>j</sub> + r)<sup>d</sup>. Útil cuando se necesita una frontera de decisión curva.
+                </li>
+                <li class="p-3 bg-white rounded-lg shadow-sm">
+                    <strong class="text-lg text-blue-800">Kernel RBF (Gaussiano):</strong> K(x<sub>i</sub>, x<sub>j</sub>) = exp(-&gamma; ||x<sub>i</sub> - x<sub>j</sub>||<sup>2</sup>). Crea fronteras de decisión complejas e irregulares. Es el más común.
+                </li>
+            </ul>
+        </section>
+
+    </div>
+
+    <script>
+        const linearCanvas = document.getElementById('svm-canvas');
+        const linearCtx = linearCanvas.getContext('2d');
+        const kernelCanvas = document.getElementById('kernel-canvas');
+        const kernelCtx = kernelCanvas.getContext('2d');
+
+        // Variables de estado del kernel (Modificado para control por pasos)
+        let kernelData = [];
+        let kernelStep = 0; // Contador de pasos para la rotación (0 a MAX_STEPS_KERNEL)
+        const MAX_STEPS_KERNEL = 24; // Máximo de pasos
+        // Rotar 180 grados (PI) para una rotación más amplia.
+        const ANGLE_STEP = Math.PI / MAX_STEPS_KERNEL; // Ángulo incrementado por paso (PI / 24)
+        let currentKernelAngle = 0; // Ángulo actual de la proyección
+        
+        // Variables de estado lineal
+        let linearStep = 0;
+        const MAX_STEPS = 5;
+        let isOptimizationComplete = false;
+
+        // --- CONSTANTES PARA EL GRÁFICO LINEAL (Ajustado para Hiperplano Perpendicular/Vertical) ---
+        
+        // Coordenadas de optimización (usando W para la fracción de ANCHURA del canvas)
+        const OPTIMAL = { centerW: 0.5, marginWidthW: 0.08 }; // Posición X final: centro (0.5), Margen final: 8%
+        const INITIAL = { centerW: 0.2, marginWidthW: 0.02 }; // Posición X inicial: izquierda (0.2), Margen inicial: 2%
+
+        // Puntos de datos fijos (Ajustados para separación vertical)
+        const data = [
+            // Clase Azul (Blue) - Grupo 1 (Izquierda)
+            { x: 100, y: 100, class: 'blue' }, { x: 120, y: 130, class: 'blue' }, { x: 80, y: 150, class: 'blue' },
+            { x: 150, y: 70, class: 'blue' }, { x: 90, y: 200, class: 'blue' },
+            // Clase Roja (Red) - Grupo 2 (Derecha)
+            { x: 450, y: 100, class: 'red' }, { x: 480, y: 130, class: 'red' }, { x: 520, y: 150, class: 'red' },
+            { x: 490, y: 70, class: 'red' }, { x: 460, y: 200, class: 'red' }
+        ];
+        
+        // Vectores de Soporte (VS) fijos que definen el margen en el caso óptimo
+        const supportVectors = [
+            { x: 250, y: 160, class: 'blue', isVS: true }, 
+            { x: 350, y: 140, class: 'red', isVS: true }
+        ];
+
+        // Puntos "mal clasificados"
+        const softMarginPoints = [
+            { x: 230, y: 80, class: 'blue', isVS: false }, 
+            { x: 380, y: 220, class: 'red', isVS: false }
+        ];
+        
+        const allLinearData = [...data, ...supportVectors, ...softMarginPoints];
+
+
+        // Función auxiliar para dibujar puntos
+        function drawPoint(ctx, x, y, color, isSupportVector = false, size = 5) {
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fillStyle = color;
+            ctx.fill();
+
+            if (isSupportVector) {
+                // Dibujar un círculo blanco grueso para resaltar el vector de soporte
+                ctx.beginPath();
+                ctx.arc(x, y, size + 2, 0, Math.PI * 2);
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+            }
+        }
+        
+        // Helper para interpolación lineal
+        function linearInterpolation(start, end, fraction) {
+            return start + (end - start) * fraction;
+        }
+
+        // --- FUNCIONES DE DIBUJO Y CONTROL LINEAL ---
+        
+        /**
+         * Función central para dibujar el Hiperplano y los Márgenes (Verticales).
+         * @param {number} centerW - Fracción horizontal (0 a 1) de la posición del hiperplano.
+         * @param {number} currentMarginWidthW - Fracción de ancho del margen total.
+         */
+        function drawLines(centerW, currentMarginWidthW) {
+            const w = linearCanvas.width;
+            const h = linearCanvas.height;
+            
+            // Posición X del hiperplano central
+            const center_X = w * centerW; 
+            
+            // Offset horizontal para cada línea de margen
+            const marginOffset_X = currentMarginWidthW * w; 
+            
+            // Posiciones X de los márgenes
+            const marginLeft_X = center_X - marginOffset_X; // Margen izquierdo (-1)
+            const marginRight_X = center_X + marginOffset_X; // Margen derecho (+1)
+
+            // 1. DIBUJAR MARGEN IZQUIERDO (-1)
+            linearCtx.strokeStyle = '#1a73e866'; 
+            linearCtx.lineWidth = 1;
+            linearCtx.setLineDash([5, 5]); 
+            linearCtx.beginPath();
+            linearCtx.moveTo(marginLeft_X, 0); // Línea vertical de arriba (y=0)
+            linearCtx.lineTo(marginLeft_X, h);   // a abajo (y=h)
+            linearCtx.stroke();
+
+            // 2. DIBUJAR MARGEN DERECHO (+1)
+            linearCtx.beginPath();
+            linearCtx.moveTo(marginRight_X, 0);
+            linearCtx.lineTo(marginRight_X, h);
+            linearCtx.stroke();
+
+            // 3. DIBUJAR HIPERPLANO (0)
+            linearCtx.strokeStyle = '#1a73e8'; 
+            linearCtx.lineWidth = 3;
+            linearCtx.setLineDash([]); 
+            linearCtx.beginPath();
+            linearCtx.moveTo(center_X, 0);
+            linearCtx.lineTo(center_X, h);
+            linearCtx.stroke();
+            
+            // 4. Dibujar todos los puntos de datos
+            allLinearData.forEach(point => {
+                const color = point.class === 'blue' ? '#3b82f6' : '#ef4444';
+                drawPoint(linearCtx, point.x, point.y, color, false);
+            });
+            
+             // 5. Añadir textos explicativos
+            linearCtx.fillStyle = '#1a73e8';
+            linearCtx.font = '14px Inter';
+            // Texto ajustado a la línea vertical
+            linearCtx.fillText('Hiperplano de Decisión', center_X + 10, h * 0.1); 
+        }
+
+
+        /**
+         * Dibuja el gráfico lineal en modo iterativo (Paso 0 a MAX_STEPS).
+         * @param {number} step - Paso actual de la optimización (0 a 5).
+         */
+        function drawIterativeGraph(step) {
+            const w = linearCanvas.width;
+            const h = linearCanvas.height;
+            linearCtx.clearRect(0, 0, w, h);
+            
+            const fraction = step / MAX_STEPS;
+            
+            // Interpolate Position (Hyperplane X position)
+            const currentCenterW = linearInterpolation(INITIAL.centerW, OPTIMAL.centerW, fraction);
+            
+            // Interpolate Margin Width
+            const currentMarginWidthW = linearInterpolation(INITIAL.marginWidthW, OPTIMAL.marginWidthW, fraction);
+
+            // Draw vertical lines and points
+            drawLines(currentCenterW, currentMarginWidthW);
+            
+            // Resaltar VS solo al final del proceso
+            if (step === MAX_STEPS) {
+                // Resaltar los Vectores de Soporte con el anillo blanco
+                supportVectors.forEach(point => {
+                    const color = point.class === 'blue' ? '#3b82f6' : '#ef4444';
+                    drawPoint(linearCtx, point.x, point.y, color, true);
+                });
+            }
+        }
+
+        /**
+         * Lógica del botón "Avanzar Optimización".
+         */
+        function stepLinear() {
+            const status = document.getElementById('linear-status');
+            const button = document.getElementById('next-step-linear');
+
+            if (linearStep >= MAX_STEPS) {
+                return; 
+            }
+
+            linearStep++;
+            drawIterativeGraph(linearStep);
+
+            // Update status and button
+            if (linearStep === MAX_STEPS) {
+                isOptimizationComplete = true;
+                
+                status.textContent = '¡Hiperplano Óptimo Alcanzado! El margen máximo ha sido encontrado y los Vectores de Soporte están resaltados.';
+                button.textContent = 'Optimización Completa';
+                button.disabled = true;
+                
+            } else {
+                status.textContent = `Ajustando el hiperplano para maximizar el margen... (Paso ${linearStep}/${MAX_STEPS})`;
+                button.textContent = `Avanzar Optimización (Paso ${linearStep + 1}/${MAX_STEPS})`;
+            }
+        }
+
+        // --- FUNCIONES DE LIMPIEZA / RESET ---
+
+        /**
+         * Limpia la gráfica lineal y resetea el estado a la posición inicial (Paso 0).
+         */
+        function resetLinearVisualization() {
+            linearStep = 0;
+            isOptimizationComplete = false;
+            
+            document.getElementById('next-step-linear').textContent = 'Avanzar Optimización (Paso 0/5)';
+            document.getElementById('next-step-linear').disabled = false;
+            
+            // Dibuja el estado inicial (Paso 0)
+            drawIterativeGraph(0);
+
+            document.getElementById('linear-status').textContent = 'Gráfico 1: Presiona "Avanzar Optimización" para encontrar el hiperplano óptimo.';
+        }
+
+        /**
+         * Limpieza global de ambas gráficas.
+         */
+        function clearAllGraphs() {
+            resetLinearVisualization(); 
+            clearKernelGraph();
+        }
+
+
+        // --- Lógica del Gráfico No Lineal (Kernel) ---
+
+        /**
+         * Inicializa y dibuja los datos no lineales en 2D.
+         * @param {boolean} resetStatus - Si es true, también resetea el texto de estado y el botón.
+         */
+        function initNonLinear(resetStatus = true) {
+            const w = kernelCanvas.width;
+            const h = kernelCanvas.height; 
+            const status = document.getElementById('kernel-status');
+            
+            // Resetear estado de la proyección
+            kernelStep = 0;
+            currentKernelAngle = 0; 
+            
+            kernelCtx.clearRect(0, 0, w, h);
+            kernelData = []; // Generar nuevos datos
+
+            // 1. Datos No Lineales (Anillos concéntricos)
+            const centerX = w / 2;
+            const centerY = h / 2;
+            const outerRadius = 100;
+            const innerRadius = 50;
+
+            // Datos del anillo interior (Clase Blue)
+            for (let i = 0; i < 20; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = innerRadius * (0.8 + Math.random() * 0.4);
+                kernelData.push({
+                    x: centerX + r * Math.cos(angle),
+                    y: centerY + r * Math.sin(angle),
+                    class: 'blue',
+                    // Z será la elevación (proporcional al radio, Z=r es la simulación del Kernel RBF/Polynomial)
+                    z: r 
+                });
+            }
+
+            // Datos del anillo exterior (Clase Red)
+            for (let i = 0; i < 30; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const r = outerRadius * (0.8 + Math.random() * 0.4);
+                if (r > innerRadius * 1.5) {
+                    kernelData.push({
+                        x: centerX + r * Math.cos(angle),
+                        y: centerY + r * Math.sin(angle),
+                        class: 'red',
+                        z: r 
+                    });
+                }
+            }
+            
+            // Dibujar datos iniciales (vista 2D, ángulo 0)
+            drawKernelProjection(0);
+
+            if (resetStatus) {
+                status.textContent = 'Datos de Anillos (no separables linealmente en 2D) listos para el Kernel RBF. Presiona el botón "Simular Proyección" para empezar a inclinar la vista.';
+                document.getElementById('kernel-projection').textContent = 'Simular Proyección (Paso 0/24)'; 
+            }
+        }
+
+        /**
+         * Simula la proyección a 3D (Z = radio) y dibuja el hiperplano separador.
+         * @param {number} angle - Ángulo de rotación actual.
+         */
+        function drawKernelProjection(angle) {
+            const w = kernelCanvas.width;
+            const h = kernelCanvas.height;
+            kernelCtx.clearRect(0, 0, w, h);
+            
+            const centerX = w / 2;
+            const centerY = h / 2;
+            
+            // La línea base del plano X-Y en la vista lateral
+            const projectedCenterY = h * 0.8; 
+            
+            // 1. DIBUJAR EL PLANO BASE (Original 2D: Eje X-Y). Se atenúa con el ángulo de inclinación.
+            if (angle < Math.PI) {
+                // La opacidad del plano base (XY) disminuye a medida que la vista se inclina (angle -> PI)
+                const opacity = 1 - (angle / Math.PI);
+                kernelCtx.fillStyle = `rgba(200, 200, 255, ${0.2 * opacity})`; 
+                kernelCtx.strokeStyle = `rgba(153, 153, 153, ${opacity})`;
+                kernelCtx.lineWidth = 1;
+                
+                const planeWidth = w * 0.9;
+                
+                kernelCtx.beginPath();
+                // El radio vertical de la elipse se reduce a medida que se inclina
+                const verticalRadius = 150 * Math.cos(angle); 
+                // Asegurar que el radio vertical no sea menor a 1 para que no desaparezca totalmente
+                kernelCtx.ellipse(centerX, projectedCenterY, planeWidth / 2, Math.abs(verticalRadius) < 1 ? 1 : Math.abs(verticalRadius), 0, 0, Math.PI * 2);
+                kernelCtx.fill();
+                kernelCtx.stroke();
+                
+                // Añadir etiquetas para los ejes X e Y en el plano base (si son visibles)
+                if (angle < Math.PI / 4) {
+                    kernelCtx.fillStyle = '#666';
+                    kernelCtx.font = '12px Inter';
+                    kernelCtx.fillText('Plano Base X-Y', centerX + 10, projectedCenterY - 10);
+                }
+            }
+            
+            
+            // 2. DIBUJA LOS PUNTOS PROYECTADOS
+            
+            const projectedPoints = [];
+
+            kernelData.forEach(point => {
+                // 1. Coordenadas 3D relativas al centro:
+                const z = point.z * 0.8; // Escala Z (Elevación)
+                const deltaX = point.x - centerX; // X es horizontal
+                const deltaY = point.y - centerY; // Y es profundidad (simulada en la vista lateral)
+
+                // 2. Rotación alrededor del eje X (Tilting):
+                // X_canvas (Horizontal) se mantiene constante.
+                const projectedX = centerX + deltaX; 
+                
+                // Y_canvas (Vertical) = línea base - (Componente vertical de la rotación de Z e Y)
+                // z * sin(angle): La elevación Z se convierte en componente vertical.
+                // deltaY * cos(angle) * 0.1: La profundidad 2D afecta ligeramente la altura (para perspectiva).
+                const verticalComponent = (z * Math.sin(angle)) + (deltaY * Math.cos(angle) * 0.1); 
+
+                const projectedY = projectedCenterY - verticalComponent; 
+                
+                // Componente de Profundidad/Perspectiva (para Z-sorting y tamaño):
+                const depthCue = (z * Math.cos(angle)) - (deltaY * Math.sin(angle)); 
+
+                // Tamaño basado en la elevación (simplificado)
+                const size = 5 + point.z * 0.05; 
+                
+                projectedPoints.push({
+                    x: projectedX,
+                    y: projectedY,
+                    color: point.class === 'blue' ? '#3b82f6' : '#ef4444',
+                    size: size,
+                    depth: depthCue // Usar depthCue para ordenar por profundidad
+                });
+            });
+
+            // Ordenar por profundidad (lo más cerca del usuario se dibuja al final)
+            projectedPoints.sort((a, b) => b.depth - a.depth); 
+
+            // Dibujar puntos ordenados
+            projectedPoints.forEach(point => {
+                drawPoint(kernelCtx, point.x, point.y, point.color, false, point.size);
+            });
+
+
+            // 3. DIBUJAR EL HIPERPLANO SEPARADOR (Plano 3D que los separa)
+            if (kernelStep > 0) {
+                // Altura de separación en el espacio Z simulado (constante)
+                const optimalSeparationZ = 54; 
+                
+                // La posición vertical del plano proyectado sigue la misma lógica de rotación
+                const planeY = projectedCenterY - (optimalSeparationZ * Math.sin(angle));
+                
+                const radiusX = 200; 
+                
+                // El radio vertical de la elipse se reduce con el ángulo de inclinación
+                const perspectiveRadiusY = 30 * Math.cos(angle); 
+
+                // Relleno del plano
+                kernelCtx.fillStyle = 'rgba(147, 51, 234, 0.4)'; 
+                kernelCtx.beginPath();
+                
+                // Usar Math.abs para el radio vertical, que debería ser simétrico al inclinarse
+                const finalPerspectiveRadiusY = Math.abs(perspectiveRadiusY) < 1 ? 1 : Math.abs(perspectiveRadiusY);
+
+                // Dibujar elipse para el hiperplano 
+                kernelCtx.ellipse(centerX, planeY, radiusX, finalPerspectiveRadiusY, 0, 0, Math.PI * 2); 
+                kernelCtx.fill();
+                
+                // Borde del plano (más oscuro)
+                kernelCtx.strokeStyle = '#6d28d9'; 
+                kernelCtx.lineWidth = 4;
+                kernelCtx.beginPath();
+                kernelCtx.ellipse(centerX, planeY, radiusX, finalPerspectiveRadiusY, 0, 0, Math.PI * 2); 
+                kernelCtx.stroke();
+                
+                // Etiquetas y líneas de contexto
+                if (angle < Math.PI * 0.9) { // Mostrar etiquetas hasta que la rotación esté casi completa
+                    kernelCtx.fillStyle = '#9333ea';
+                    kernelCtx.font = '14px Inter';
+                    kernelCtx.fillText('Hiperplano Separador (Z = constante)', centerX - 100, planeY - 30);
+                }
+
+                // Línea de referencia del eje Z (Elevación)
+                kernelCtx.strokeStyle = '#333';
+                kernelCtx.lineWidth = 1;
+                kernelCtx.setLineDash([2, 2]);
+                kernelCtx.beginPath();
+                
+                // Dibujar el eje Z (vertical) si la vista está inclinada
+                if (angle > Math.PI / 12 && angle < Math.PI * 0.9) { 
+                    // Empieza en la línea base (projectedCenterY)
+                    kernelCtx.moveTo(centerX, projectedCenterY); 
+                    // Termina en la parte superior del área de datos
+                    kernelCtx.lineTo(centerX, projectedCenterY - (h * 0.7) * Math.sin(angle)); 
+                    kernelCtx.stroke();
+                    kernelCtx.setLineDash([]);
+                    
+                    // Etiqueta del eje Z
+                    kernelCtx.fillText('Dimensión Z (Elevación Kernel)', centerX + 10, projectedCenterY - 40 * Math.sin(angle));
+                }
+            }
+        }
+
+        /**
+         * Avanza la proyección del kernel un paso.
+         */
+        function stepKernelProjection() {
+            const button = document.getElementById('kernel-projection');
+            const status = document.getElementById('kernel-status');
+            
+            if (kernelData.length === 0) {
+                // Inicializar datos si no existen
+                initNonLinear(true); 
+                // Después de initNonLinear, kernelStep es 0. Retornamos y esperamos el siguiente click.
+                return;
+            }
+
+            kernelStep++;
+
+            if (kernelStep > MAX_STEPS_KERNEL) {
+                // Reiniciar al paso 1 después de completar la rotación de 180 grados
+                kernelStep = 1; 
+            }
+            
+            // Calcular el nuevo ángulo
+            currentKernelAngle = kernelStep * ANGLE_STEP; 
+
+            // Dibujar el nuevo estado de la proyección
+            drawKernelProjection(currentKernelAngle);
+            
+            // Actualizar UI
+            status.textContent = `Proyección 3D: Visualizando la separación lineal en el espacio elevado. (Ángulo: ${Math.round(currentKernelAngle * 180 / Math.PI)}°)`;
+            button.textContent = `Ver Proyección (Paso ${kernelStep}/${MAX_STEPS_KERNEL})`;
+        }
+
+        /**
+         * Limpieza de la gráfica de Kernel, asegurando que el botón y el estado vuelvan al inicio.
+         */
+        function clearKernelGraph() {
+            kernelData = [];
+            kernelStep = 0;
+            currentKernelAngle = 0;
+            kernelCtx.clearRect(0, 0, kernelCanvas.width, kernelCanvas.height);
+            document.getElementById('kernel-projection').textContent = 'Simular Proyección (Paso 0/24)'; 
+            document.getElementById('kernel-status').textContent = 'Gráfico 2: Datos no separables linealmente (anillos). Presiona "Simular Datos No Lineales" para cargar la vista 2D.';
+        }
+
+
+        // --- Inicialización ---
+        window.onload = () => {
+            // Empieza en el estado inicial, esperando el primer paso de optimización
+            resetLinearVisualization(); 
+            // Inicializa la gráfica del kernel en el estado 2D (sin animación)
+            initNonLinear(false);
+        };
+
+    </script>
+</body>
+</html>
+
