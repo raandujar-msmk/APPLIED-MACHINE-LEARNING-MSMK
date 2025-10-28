@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aprendizaje por Refuerzo Interactivo</title>
+    <!-- Incluye Tailwind CSS para estilos modernos y responsivos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Se re-incluye Chart.js para el gráfico de progreso -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+    <style>
+        /* Estilos personalizados para el Grid y la tipografía Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .grid-cell {
+            width: 100%;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #e0e7ff; /* Indigo-100 */
+            transition: all 0.3s ease;
+            position: relative;
+            cursor: pointer;
+            font-size: 0.8rem;
+            color: #4b5563;
+        }
+        .agent {
+            width: 70%;
+            height: 70%;
+            background-color: #10b981; /* Esmeralda-500 */
+            border-radius: 50%;
+            position: absolute;
+            z-index: 10;
+            box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+            transition: transform 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .q-value-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-areas:
+                ". up ."
+                "left center right"
+                ". down .";
+            grid-template-columns: 1fr 1fr 1fr;
+            grid-template-rows: 1fr 1fr 1fr;
+            font-size: 0.6rem;
+            font-weight: 500;
+            color: #374151;
+            padding: 2px;
+        }
+        .q-up { grid-area: up; text-align: center; }
+        .q-down { grid-area: down; text-align: center; }
+        .q-left { grid-area: left; text-align: center; }
+        .q-right { grid-area: right; text-align: center; }
+        .q-center { grid-area: center; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; color: #1e40af; }
+
+        .max-q {
+            color: #f59e0b; /* Amarillo para el valor máximo */
+            font-weight: bold;
+            text-shadow: 0 0 2px rgba(255, 255, 0, 0.5);
+        }
+        .bellman-eq {
+            font-family: monospace;
+            display: block;
+            background-color: #f1f5f9; /* Slate-100 */
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            font-size: 0.9rem;
+            color: #1e293b;
+            text-align: center;
+            overflow-x: auto;
+        }
+    </style>
+    <script>
+        // --- CONSTANTES DEL MODELO DE APRENDIZAJE POR REFUERZO (Q-Learning) ---
+        const GRID_SIZE = 4;
+        const ACTIONS = ['UP', 'DOWN', 'LEFT', 'RIGHT'];
+        const LEARNING_RATE = 0.1; // Alpha (Tasa de Aprendizaje)
+        const DISCOUNT_FACTOR = 0.9; // Gamma (Factor de Descuento)
+        const EXPLORATION_RATE = 0.1; // Epsilon (Estrategia Epsilon-Greedy)
+
+        // Definición del entorno: Recompensa inmediata por celda
+        const REWARDS = [
+            [-0.1, -0.1, -0.1, -0.1],
+            [-0.1, -0.1, -0.1, -0.1],
+            [-0.1, -0.1, -10.0, -0.1], // Pozo en (2, 2)
+            [-0.1, -0.1, -0.1, 10.0]  // Objetivo en (3, 3)
+        ];
+
+        // Coordenadas especiales
+        const START_STATE = { row: 0, col: 0 };
+        const GOAL_STATE = { row: 3, col: 3 };
+        const PIT_STATE = { row: 2, col: 2 };
+
+        let Q_TABLE = []; // La tabla Q, inicializada a cero
+        let currentState = { ...START_STATE };
+        let stepsTaken = 0;
+        let episodeCount = 0; // Contador de episodios
+        
+        // Variables para el gráfico
+        let episodeHistory = []; // Almacena { episode: N, steps: M }
+        let episodeChart = null; // Instancia de Chart.js
+
+        /** Inicializa la tabla Q con valores de 0 para cada estado (celda) y cada acción. */
+        function initializeQTable() {
+            Q_TABLE = [];
+            for (let r = 0; r < GRID_SIZE; r++) {
+                Q_TABLE[r] = [];
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    Q_TABLE[r][c] = {
+                        'UP': 0, 'DOWN': 0, 'LEFT': 0, 'RIGHT': 0
+                    };
+                }
+            }
+            currentState = { ...START_STATE };
+            stepsTaken = 0;
+            episodeCount = 0;
+            
+            // Reinicia el historial y el gráfico
+            episodeHistory = [];
+            initializeChart(); 
+            
+            updateUI();
+            updateLog('<strong>*** Simulación Reiniciada ***</strong> La Tabla Q se ha reinicializado a cero.');
+        }
+
+        /** Reinicia el agente al estado inicial para un nuevo episodio (sin resetear la tabla Q). */
+        function startNewEpisode() {
+            currentState = { ...START_STATE };
+            stepsTaken = 0;
+            updateUI();
+            updateLog(`<strong>--- EPISODIO ${episodeCount} INICIADO ---</strong> Agente movido a (${START_STATE.row}, ${START_STATE.col}).`);
+        }
+        
+        /** Inicializa (o reinicializa) el gráfico de Chart.js */
+        function initializeChart() {
+            const ctx = document.getElementById('episodeChart').getContext('2d');
+
+            // CRUCIAL: Destruye la instancia anterior del gráfico para evitar fugas de memoria
+            if (episodeChart) {
+                episodeChart.destroy();
+            }
+            
+            // Prepara los datos para el gráfico
+            const labels = episodeHistory.map(e => e.episode);
+            const data = episodeHistory.map(e => e.steps);
+            
+            // Si no hay datos, añadimos el punto (0, 0) para que el eje X se vea en 0
+            if (labels.length === 0) {
+                labels.push(0); 
+                data.push(0);
+            }
+
+            episodeChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Pasos para el Éxito/Fallo',
+                        data: data,
+                        borderColor: '#4f46e5', // Indigo-600
+                        backgroundColor: 'rgba(79, 70, 229, 0.1)',
+                        tension: 0.4,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        borderWidth: 2,
+                        fill: true,
+                        // Si el historial estaba vacío, el primer punto es dummy, lo hacemos transparente
+                        pointBackgroundColor: episodeHistory.length === 0 ? 'rgba(0,0,0,0)' : '#4f46e5',
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Episodio',
+                                font: { weight: 'bold' }
+                            },
+                            type: 'linear', // Usar escala lineal para control total
+                            // *** RANGO FIJO ENTRE 0 Y 100 ***
+                            min: 0, 
+                            max: 100 
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Número de Pasos',
+                                font: { weight: 'bold' }
+                            },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
+                }
+            });
+        }
+        
+        /** Actualiza los datos del gráfico con el último episodio completado. */
+        function updateChart(steps) {
+            if (!episodeChart) return;
+            
+            episodeHistory.push({ episode: episodeCount, steps: steps });
+
+            // Quitar el punto (0, 0) de inicialización si existe
+            if (episodeChart.data.labels[0] === 0 && episodeHistory.length > 0) {
+                episodeChart.data.labels.shift();
+                episodeChart.data.datasets[0].data.shift();
+            }
+
+
+            // Actualizar datos del gráfico
+            // Usamos el historial completo, ya que el eje X tiene un límite fijo (0-100)
+            episodeChart.data.labels = episodeHistory.map(e => e.episode);
+            episodeChart.data.datasets[0].data = episodeHistory.map(e => e.steps);
+
+            // Aplicamos estilos para el último punto si ya hay datos
+            if (episodeHistory.length > 0) {
+                episodeChart.data.datasets[0].pointBackgroundColor = episodeHistory.map((_, index) => {
+                    return index === episodeHistory.length - 1 ? '#f59e0b' : '#4f46e5';
+                });
+            }
+            
+            episodeChart.update();
+        }
+
+        /** Selecciona una acción usando la estrategia Epsilon-Greedy. */
+        function selectAction(row, col) {
+            // Decisión de Exploración (aleatoria) vs. Explotación (mejor Q-Value)
+            if (Math.random() < EXPLORATION_RATE) {
+                // Exploración: elige una acción al azar
+                const action = ACTIONS[Math.floor(Math.random() * ACTIONS.length)];
+                // Sustituido $\epsilon$ por &epsilon;
+                updateLog(`Agente en (${row}, ${col}). Acción elegida: <strong>${action}</strong> (Exploración - &epsilon;)`);
+                return action;
+            } else {
+                // Explotación: elige la acción con el Q-Value más alto
+                const qValues = Q_TABLE[row][col];
+                let maxQ = -Infinity;
+                let bestAction = ACTIONS[0];
+                
+                // Encontrar el valor Q máximo
+                for (const action of ACTIONS) {
+                    if (qValues[action] > maxQ) {
+                        maxQ = qValues[action];
+                        bestAction = action;
+                    }
+                }
+                // Sustituido $\max Q$ por max Q
+                updateLog(`Agente en (${row}, ${col}). Acción elegida: <strong>${bestAction}</strong> (Explotación - max Q)`);
+                return bestAction;
+            }
+        }
+
+        /** Calcula el siguiente estado (s') dadas las coordenadas (s) y la acción (a). */
+        function getNextState(row, col, action) {
+            let newRow = row;
+            let newCol = col;
+
+            switch (action) {
+                case 'UP': newRow = Math.max(0, row - 1); break;
+                case 'DOWN': newRow = Math.min(GRID_SIZE - 1, row + 1); break;
+                case 'LEFT': newCol = Math.max(0, col - 1); break;
+                case 'RIGHT': newCol = Math.min(GRID_SIZE - 1, col + 1); break;
+            }
+
+            // Si la acción lleva a un límite, el estado no cambia
+            if (newRow === row && newCol === col) {
+                // Penalizar si intenta ir fuera del tablero
+                return { nextRow: row, nextCol: col, reward: -5, isTerminal: false };
+            }
+
+            // Recompensa del entorno
+            const reward = REWARDS[newRow][newCol];
+            
+            // Comprobar si es un estado terminal
+            const isTerminal = (newRow === GOAL_STATE.row && newCol === GOAL_STATE.col) || 
+                               (newRow === PIT_STATE.row && newCol === PIT_STATE.col);
+
+            return { nextRow: newRow, nextCol: newCol, reward: reward, isTerminal: isTerminal };
+        }
+
+        /** Ejecuta un paso del algoritmo Q-Learning. */
+        function takeStep() {
+            // Si es el inicio del episodio, incrementamos el contador
+            if (stepsTaken === 0 && currentState.row === START_STATE.row && currentState.col === START_STATE.col) {
+                episodeCount++;
+                document.getElementById('episode-counter').textContent = episodeCount;
+            }
+
+            stepsTaken++;
+
+            const s_row = currentState.row;
+            const s_col = currentState.col;
+
+            // 1. AGENTE: Elige una acción (A)
+            const action = selectAction(s_row, s_col);
+
+            // 2. ENTORNO: Obtiene el siguiente estado (S'), la recompensa (R) y si es terminal
+            const { nextRow, nextCol, reward, isTerminal } = getNextState(s_row, s_col, action);
+            
+            const nextState = { row: nextRow, col: nextCol };
+
+            // 3. APRENDIZAJE: Calcula el error TD y actualiza la Tabla Q
+            
+            // Valor Q actual: Q(s, a)
+            const currentQ = Q_TABLE[s_row][s_col][action];
+            
+            // Máximo Q-Value en el nuevo estado: max_a' Q(s', a')
+            // Si el estado es terminal, el valor futuro maxNextQ es 0 (no hay futuro)
+            const maxNextQ = isTerminal ? 0 : Math.max(...Object.values(Q_TABLE[nextRow][nextCol]));
+
+            // Ecuación de Bellman (Error de Diferencia Temporal - TD Error):
+            // TD Target = R + gamma * max_a' Q(s', a')
+            const tdTarget = reward + DISCOUNT_FACTOR * maxNextQ;
+            // TD Error = TD Target - Q(s, a)
+            const tdError = tdTarget - currentQ;
+            
+            // Actualización de Q-Value:
+            // Q(s, a) <- Q(s, a) + alpha * TD Error
+            const newQ = currentQ + LEARNING_RATE * tdError;
+            
+            Q_TABLE[s_row][s_col][action] = newQ;
+
+            // 4. TRANSICIÓN: Actualiza el estado del Agente
+            currentState = nextState;
+
+            // Registro del paso para la audiencia - Sustituido LaTeX por entidades HTML y texto simple
+            updateLog(`<strong>ACTUALIZACIÓN Q(s, a)</strong>: &alpha; (${LEARNING_RATE}) &times; [ R (${reward.toFixed(2)}) + &gamma; &times; max Q' (${(DISCOUNT_FACTOR * maxNextQ).toFixed(2)}) - Q(s, a) (${currentQ.toFixed(2)}) ]`);
+            
+            // 5. Verificación de terminalidad y reinicio automático
+            if (isTerminal) {
+                if (nextRow === GOAL_STATE.row && nextCol === GOAL_STATE.col) {
+                    updateLog(`<strong>¡META ALCANZADA!</strong> Episodio ${episodeCount} finalizado en ${stepsTaken} pasos.`);
+                } else if (nextRow === PIT_STATE.row && nextCol === PIT_STATE.col) {
+                    updateLog(`<strong>¡CAÍDA AL POZO!</strong> Episodio ${episodeCount} finalizado en ${stepsTaken} pasos.`);
+                }
+                
+                // Actualiza el gráfico con el resultado del episodio
+                updateChart(stepsTaken);
+
+                // Iniciar un nuevo episodio automáticamente
+                setTimeout(startNewEpisode, 500); // Pequeña pausa visual antes de reiniciar
+            } else {
+                updateUI(action);
+            }
+            
+            updateUI(action); // Asegurarse de que el UI se actualiza inmediatamente
+        }
+
+        /** Actualiza la interfaz gráfica: Grid, Agente y Q-Values. */
+        function updateUI(lastAction = null) {
+            const gridContainer = document.getElementById('rl-grid');
+            gridContainer.innerHTML = ''; // Limpiar el contenedor
+
+            // Actualizar contadores
+            document.getElementById('step-counter').textContent = stepsTaken;
+            document.getElementById('current-state').textContent = `(${currentState.row}, ${currentState.col})`;
+            document.getElementById('episode-counter').textContent = episodeCount;
+            
+            // Dibujar la cuadrícula
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell rounded-lg shadow-sm bg-white hover:shadow-md transition-all duration-200';
+                    cell.dataset.row = r;
+                    cell.dataset.col = c;
+
+                    // Estilos especiales
+                    if (r === GOAL_STATE.row && c === GOAL_STATE.col) {
+                        cell.classList.add('bg-green-100', 'border-green-400');
+                        cell.innerHTML += '<span class="text-green-700 font-bold">META (R: +10)</span>';
+                    } else if (r === PIT_STATE.row && c === PIT_STATE.col) {
+                        cell.classList.add('bg-red-100', 'border-red-400');
+                        cell.innerHTML += '<span class="text-red-700 font-bold">POZO (R: -10)</span>';
+                    } else if (r === START_STATE.row && c === START_STATE.col) {
+                        cell.classList.add('bg-blue-100', 'border-blue-400');
+                        cell.innerHTML += '<span class="text-blue-700 font-bold">INICIO</span>';
+                    }
+
+                    // Mostrar Q-Values
+                    const qValues = Q_TABLE[r][c];
+                    const maxQ = Math.max(...Object.values(qValues));
+                    const qContainer = document.createElement('div');
+                    qContainer.className = 'q-value-container';
+
+                    // Etiquetar cada Q-Value con su dirección
+                    ACTIONS.forEach(action => {
+                        const qSpan = document.createElement('span');
+                        qSpan.className = `q-${action.toLowerCase()}`;
+                        qSpan.textContent = qValues[action].toFixed(2);
+                        if (qValues[action] === maxQ && maxQ > 0) {
+                            qSpan.classList.add('max-q');
+                        }
+                        qContainer.appendChild(qSpan);
+                    });
+
+                    // Añadir un indicador del Q-value promedio
+                    const qAvgSpan = document.createElement('span');
+                    qAvgSpan.className = 'q-center text-xs';
+                    qAvgSpan.textContent = `Avg: ${(Object.values(qValues).reduce((a, b) => a + b, 0) / 4).toFixed(2)}`;
+                    qContainer.appendChild(qAvgSpan);
+
+
+                    cell.appendChild(qContainer);
+
+                    // Dibujar el Agente
+                    if (r === currentState.row && c === currentState.col) {
+                        const agent = document.createElement('div');
+                        agent.className = 'agent';
+                        agent.innerHTML = 'RL';
+                        cell.appendChild(agent);
+
+                        // Resaltar la última acción tomada
+                        if (lastAction) {
+                            cell.classList.add('border-4', 'border-yellow-500', 'ring-2', 'ring-yellow-300');
+                        }
+                    }
+
+                    gridContainer.appendChild(cell);
+                }
+            }
+            
+            // 2. Renderizar la tabla Q completa por separado
+            renderQTableVisualization();
+        }
+
+        /** Renderiza la Tabla Q completa en un formato tabular. */
+        function renderQTableVisualization() {
+            const container = document.getElementById('q-table-visualization');
+            let html = `
+                <table class="min-w-full divide-y divide-gray-200 border border-gray-300 rounded-lg">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider border-r">Estado (Fila, Columna)</th>
+                            ${ACTIONS.map(action => `<th class="px-4 py-2 text-center text-xs font-medium text-gray-700 uppercase tracking-wider">${action}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+            for (let r = 0; r < GRID_SIZE; r++) {
+                for (let c = 0; c < GRID_SIZE; c++) {
+                    const qValues = Q_TABLE[r][c];
+                    // El valor máximo es la acción "greedy"
+                    const maxQ = Math.max(...Object.values(qValues));
+                    const isTerminal = (r === GOAL_STATE.row && c === GOAL_STATE.col) || (r === PIT_STATE.row && c === PIT_STATE.col);
+                    
+                    let rowClass = '';
+                    if (r === GOAL_STATE.row && c === GOAL_STATE.col) rowClass = 'bg-green-50/50';
+                    else if (r === PIT_STATE.row && c === PIT_STATE.col) rowClass = 'bg-red-50/50';
+                    else if (r === currentState.row && c === currentState.col) rowClass = 'bg-yellow-100 font-medium';
+                    
+                    html += `<tr class="${rowClass}">`;
+                    
+                    // Columna de Estado
+                    html += `<td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 border-r font-semibold">(${r}, ${c}) ${isTerminal ? ' (T)' : ''}</td>`;
+                    
+                    // Columnas de Acciones
+                    ACTIONS.forEach(action => {
+                        const qValue = qValues[action];
+                        let cellClass = 'px-4 py-2 whitespace-nowrap text-sm text-center';
+                        // Resaltar la mejor acción
+                        if (qValue === maxQ) {
+                            cellClass += ' text-indigo-700 font-extrabold bg-indigo-50/50';
+                        } else {
+                            cellClass += ' text-gray-700';
+                        }
+                        
+                        // Formatear a 4 decimales para ver la propagación fina
+                        html += `<td class="${cellClass}">${qValue.toFixed(4)}</td>`; 
+                    });
+
+                    html += `</tr>`;
+                }
+            }
+
+            html += `
+                    </tbody>
+                </table>
+            `;
+            container.innerHTML = html;
+        }
+
+        /** Actualiza el registro de eventos para mostrar la secuencia RL. */
+        function updateLog(message) {
+            const logElement = document.getElementById('rl-log');
+            const item = document.createElement('li');
+            item.className = 'py-1 text-sm border-b border-gray-100 last:border-b-0';
+            // Usamos un contador de pasos relativo si estamos en medio de un episodio
+            const stepPrefix = stepsTaken > 0 ? `${episodeCount}.${stepsTaken}` : '0.0';
+            item.innerHTML = `<span class="text-gray-500 mr-2">${stepPrefix}</span> ${message}`;
+            logElement.prepend(item); // Mostrar el más reciente arriba
+
+            // Limitar el log a 10 elementos
+            if (logElement.children.length > 10) {
+                logElement.lastChild.remove();
+            }
+        }
+
+        // --- Inicialización y Eventos ---
+        window.onload = function() {
+            document.getElementById('step-button').addEventListener('click', takeStep);
+            document.getElementById('reset-button').addEventListener('click', initializeQTable);
+            
+            initializeQTable(); // Inicializa la tabla Q y el gráfico
+        };
+
+    </script>
+</head>
+<body class="p-4 md:p-8 bg-gray-50">
+
+    <div class="max-w-6xl mx-auto">
+        <header class="text-center mb-8 p-4 bg-white rounded-xl shadow-lg">
+            <h1 class="text-3xl font-extrabold text-indigo-700">Q-Learning - Laberinto interactivo</h1>
+            <p class="mt-2 text-gray-600">Demostración del algoritmo Q-Learning para la toma de decisiones.</p>
+        </header>
+
+        <!-- Sección de Conceptos Clave y Contexto (Dirigido a audiencias con DL/NN) -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="p-5 bg-white rounded-lg shadow-md border-t-4 border-blue-500">
+                <h2 class="text-xl font-bold text-blue-700 mb-2">1. Agente vs. Red Neuronal</h2>
+                <p class="text-gray-600 text-sm">
+                    En este demo, la <strong>Tabla Q</strong> almacena el conocimiento. En <strong>Deep Q-Learning (DQL)</strong>, la Tabla Q es reemplazada por una <strong>Red Neuronal Profunda</strong> que actúa como un <strong>aproximador de función</strong> <code>Q(s, a)</code>.
+                </p>
+                <p class="text-gray-600 text-sm mt-2">
+                    La red recibe el <strong>Estado</strong> (<code>s</code>) como entrada y produce los <strong>Q-Values</strong> de todas las <strong>Acciones</strong> (<code>a</code>) como salida.
+                </p>
+            </div>
+            <div class="p-5 bg-white rounded-lg shadow-md border-t-4 border-indigo-500">
+                <h2 class="text-xl font-bold text-indigo-700 mb-2">2. El Ciclo RL (Trial-and-Error)</h2>
+                <p class="text-gray-600 text-sm">
+                    RL opera en un ciclo continuo: El <strong>Agente</strong> observa el <strong>Estado</strong> (<code>s</code>), elige una <strong>Acción</strong> (<code>a</code>), el <strong>Entorno</strong> le da una <strong>Recompensa</strong> (<code>r</code>) y un nuevo <strong>Estado</strong> (<code>s'</code>).
+                </p>
+                <p class="text-gray-600 text-sm mt-2">
+                    A diferencia del aprendizaje supervisado, aquí no hay "etiquetas correctas", solo una señal de <strong>Recompensa</strong> para optimizar la política a largo plazo.
+                </p>
+            </div>
+            <div class="p-5 bg-white rounded-lg shadow-md border-t-4 border-purple-500">
+                <h2 class="text-xl font-bold text-purple-700 mb-2">3. La Ecuación de Bellman</h2>
+                <p class="text-gray-600 text-sm">
+                    El aprendizaje se basa en la <strong>Ecuación de Bellman</strong> (o Diferencia Temporal - TD):
+                </p>
+                <!-- Ecuación sin LaTeX, usando código y entidades HTML -->
+                <code class="bellman-eq">
+                    Q(s, a) &larr; Q(s, a) + &alpha; &sdot; TD Error
+                </code>
+                <p class="text-gray-600 text-sm mt-2">
+                    El agente aprende al comparar el valor que <strong>esperaba</strong> recibir (<code>Q(s, a)</code>) con el valor <strong>actualizado</strong> que percibe después del paso (que incluye la recompensa inmediata <code>r</code> y el valor futuro descontado <code>&gamma; max Q'</code>).
+                </p>
+            </div>
+        </div>
+
+        <!-- Área Principal: Simulación y Controles -->
+        <div class="bg-white p-6 rounded-xl shadow-2xl">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <!-- Columna 1: Visualización del Grid & Chart (Ahora con el gráfico) -->
+                <div class="lg:col-span-2">
+                    <!-- Sustituido $s$ por s -->
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">El Entorno (Estado s) y el Agente</h2>
+                    <div id="rl-grid" class="grid gap-1 bg-gray-200 p-2 rounded-lg" style="grid-template-columns: repeat(4, 1fr);">
+                        <!-- Celdas del Grid se inyectan aquí por JS -->
+                    </div>
+                    
+                    <!-- Gráfico de Pasos por Episodio -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg shadow-inner">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-3">Pasos por Episodio (Rango Fijo 0-100)</h3>
+                        <div style="height: 250px;">
+                            <canvas id="episodeChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna 2: Controles y Log de Pasos -->
+                <div class="lg:col-span-1">
+                    <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Controles e Información</h2>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg shadow-inner">
+                            <span class="text-indigo-700 font-medium">Episodio N°:</span>
+                            <span id="episode-counter" class="text-xl font-extrabold text-indigo-900">0</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg shadow-inner">
+                            <span class="text-indigo-700 font-medium">Estado Actual (s):</span>
+                            <span id="current-state" class="text-xl font-extrabold text-indigo-900">(0, 0)</span>
+                        </div>
+                        <div class="flex justify-between items-center p-3 bg-indigo-50 rounded-lg shadow-inner">
+                            <span class="text-indigo-700 font-medium">Pasos Totales (en episodio):</span>
+                            <span id="step-counter" class="text-xl font-extrabold text-indigo-900">0</span>
+                        </div>
+
+                        <button id="step-button" class="w-full py-3 bg-green-600 text-white font-bold rounded-xl shadow-lg hover:bg-green-700 transition duration-200 transform hover:scale-105">
+                            Ejecutar 1 Paso de RL
+                        </button>
+                        <button id="reset-button" class="w-full py-2 bg-red-500 text-white font-medium rounded-xl shadow hover:bg-red-600 transition duration-200">
+                            Reiniciar Simulación (Borrar Tabla Q y Gráfico)
+                        </button>
+                    </div>
+
+                    <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3 border-b pb-2">Registro de Eventos y Aprendizaje</h3>
+                    <ul id="rl-log" class="bg-gray-50 p-3 rounded-lg h-64 overflow-y-auto border border-gray-200 text-left">
+                        <!-- El Log de pasos se inyecta aquí -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Área de Visualización de la Tabla Q -->
+        <div class="mt-8 p-6 bg-white rounded-xl shadow-2xl">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Tabla Q Completa (Conocimiento del Agente)</h2>
+            <div id="q-table-visualization" class="overflow-x-auto">
+                <!-- La tabla Q se inyectará aquí -->
+            </div>
+        </div>
+        
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>La <strong>Tabla Q</strong> en cada celda muestra el valor estimado a largo plazo de tomar cada acción (arriba, abajo, izquierda, derecha) desde ese estado. Los valores se actualizan con cada paso.</p>
+        </footer>
+
+    </div>
+</body>
+</html>
+
