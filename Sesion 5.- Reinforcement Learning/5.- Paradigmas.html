@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diferencias entre Paradigmas de Aprendizaje Automático</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background */
+            color: #c9d1d9;
+            min-height: 100vh;
+        }
+        .card {
+            background-color: #161b22;
+            transition: all 0.3s ease-in-out;
+            border: 1px solid #30363d;
+        }
+        .card:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 4px 15px rgba(88, 166, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .icon {
+            /* Inline SVG styling */
+            width: 3rem;
+            height: 3rem;
+            color: #58a6ff;
+        }
+        .sl-color { color: #f97316; } /* Orange */
+        .ul-color { color: #3b82f6; } /* Blue */
+        .rl-color { color: #10b981; } /* Emerald */
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="max-w-7xl mx-auto">
+        <header class="text-center mb-12">
+            <h1 class="text-3xl md:text-5xl font-extrabold text-white mb-2">
+                Paradigmas Fundamentales del Aprendizaje Automático
+            </h1>
+            <p class="text-lg text-gray-400">
+                Visualización de los enfoques para resolver el problema de <span class="font-bold">Clasificación de Frutas</span> 🍎🍌🍊
+            </p>
+        </header>
+
+        <div class="space-y-8 md:space-y-0 md:grid md:grid-cols-3 md:gap-8">
+
+            <!-- CARD: APRENDIZAJE SUPERVISADO (SL) -->
+            <div id="sl-card" class="card p-6 rounded-xl flex flex-col sl-border">
+                <div class="flex items-center mb-4">
+                    <span class="text-4xl mr-3 sl-color">🏷️</span>
+                    <h2 class="text-2xl font-bold text-white sl-color">Aprendizaje Supervisado (SL)</h2>
+                </div>
+                <div class="text-gray-400 mb-4">
+                    <p class="font-semibold text-lg mb-2">Enfoque: Clasificación (Predicción)</p>
+                    <p>Aprende de datos etiquetados (entrada → salida correcta). Como un estudiante con un profesor que corrige cada tarea.</p>
+                </div>
+                
+                <!-- PROCESO VISIBLE POR DEFECTO -->
+                <div id="sl-process" class="mt-4 p-4 bg-[#232a35] rounded-lg">
+                    <h3 class="text-xl font-semibold mb-2 text-white">El Robot Clasificador</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li>
+                            <p class="font-bold sl-color">1. Datos de Entrenamiento:</p>
+                            <p>El modelo recibe imágenes de frutas con sus etiquetas correctas: <span class="font-mono bg-[#30363d] p-1 rounded">{(Rojo, Redonda) → Manzana}</span>, <span class="font-mono bg-[#30363d] p-1 rounded">{(Amarillo, Curva) → Banana}</span>.</p>
+                        </li>
+                        <li>
+                            <p class="font-bold sl-color">2. Proceso de Aprendizaje:</p>
+                            <p>La Red Neuronal (o clasificador) ajusta sus pesos para minimizar el error entre su predicción y la etiqueta real.</p>
+                        </li>
+                        <li>
+                            <p class="font-bold sl-color">3. Objetivo Final:</p>
+                            <p>Clasificar correctamente una fruta <span class="font-bold text-white">nueva y nunca vista</span> con la etiqueta <span class="font-bold">Manzana, Banana u Naranja</span>.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CARD: APRENDIZAJE NO SUPERVISADO (UL) -->
+            <div id="ul-card" class="card p-6 rounded-xl flex flex-col ul-border">
+                <div class="flex items-center mb-4">
+                    <span class="text-4xl mr-3 ul-color">🔍</span>
+                    <h2 class="text-2xl font-bold text-white ul-color">Aprendizaje No Supervisado (UL)</h2>
+                </div>
+                <div class="text-gray-400 mb-4">
+                    <p class="font-semibold text-lg mb-2">Enfoque: Agrupamiento (Estructura)</p>
+                    <p>Encuentra patrones y estructura oculta en datos sin etiquetas. Como un niño que agrupa objetos por similitud sin conocer sus nombres.</p>
+                </div>
+
+                <!-- PROCESO VISIBLE POR DEFECTO -->
+                <div id="ul-process" class="mt-4 p-4 bg-[#232a35] rounded-lg">
+                    <h3 class="text-xl font-semibold mb-2 text-white">El Robot Clasificador</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li>
+                            <p class="font-bold ul-color">1. Datos de Entrenamiento:</p>
+                            <p>El modelo recibe solo las características de la fruta: <span class="font-mono bg-[#30363d] p-1 rounded">{(Rojo, Redonda)}</span>, <span class="font-mono bg-[#30363d] p-1 rounded">{(Amarillo, Curva)}</span>. **No hay etiquetas.**</p>
+                        </li>
+                        <li>
+                            <p class="font-bold ul-color">2. Proceso de Aprendizaje:</p>
+                            <p>El algoritmo (e.g., K-Means) mide la similitud y agrupa las frutas en <span class="font-bold text-white">Clústeres (Grupos)</span>. Grupo 1 = Manzanas, Grupo 2 = Bananas, etc.</p>
+                        </li>
+                        <li>
+                            <p class="font-bold ul-color">3. Objetivo Final:</p>
+                            <p>Dividir el conjunto de datos en <span class="font-bold">K</span> grupos naturales, revelando la estructura interna sin saber qué es realmente una "Manzana".</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- CARD: APRENDIZAJE POR REFUERZO (RL) -->
+            <div id="rl-card" class="card p-6 rounded-xl flex flex-col rl-border">
+                <div class="flex items-center mb-4">
+                    <span class="text-4xl mr-3 rl-color">🚀</span>
+                    <h2 class="text-2xl font-bold text-white rl-color">Aprendizaje por Refuerzo (RL)</h2>
+                </div>
+                <div class="text-gray-400 mb-4">
+                    <p class="font-semibold text-lg mb-2">Enfoque: Decisión Secuencial (Ensayo y Error)</p>
+                    <p>Un agente interactúa con un entorno y aprende una política a través de recompensas y castigos, sin un conjunto de datos estático.</p>
+                </div>
+                
+                <!-- PROCESO VISIBLE POR DEFECTO -->
+                <div id="rl-process" class="mt-4 p-4 bg-[#232a35] rounded-lg">
+                    <h3 class="text-xl font-semibold mb-2 text-white">El Robot Clasificador</h3>
+                    <ul class="space-y-3 text-sm">
+                        <li>
+                            <p class="font-bold rl-color">1. Datos de Entrenamiento:</p>
+                            <p>No hay datos. El agente está en un <span class="font-bold text-white">Entorno</span> (la línea de clasificación) que le da recompensas.</p>
+                        </li>
+                        <li>
+                            <p class="font-bold rl-color">2. Proceso de Aprendizaje:</p>
+                            <p>El robot <span class="font-bold">toma una acción</span> (lanza una fruta a la Bandeja A), recibe una <span class="font-bold">Recompensa (+1)</span> si acierta o un <span class="font-bold">Castigo (-1)</span> si se equivoca.</p>
+                        </li>
+                        <li>
+                            <p class="font-bold rl-color">3. Objetivo Final:</p>
+                            <p>Aprender una <span class="font-bold">Política</span> (una función de decisión) que le diga qué acción tomar en cada estado para <span class="font-bold text-white">maximizar la recompensa total acumulada</span>.</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- RESUMEN CLAVE -->
+        <div class="mt-12 p-8 rounded-xl bg-[#161b22] border border-[#30363d]">
+            <h3 class="text-xl md:text-2xl font-bold text-white mb-4">Resumen Clave: La diferencia en el "Entrenamiento"</h3>
+            <div class="space-y-4 text-gray-400">
+                <p>
+                    <span class="font-bold sl-color">Supervisado:</span> Aprende a <span class="font-bold">imitar</span> el comportamiento correcto a partir de ejemplos etiquetados por humanos.
+                </p>
+                <p>
+                    <span class="font-bold ul-color">No Supervisado:</span> Aprende a <span class="font-bold">descubrir</span> la organización subyacente de los datos por sí mismo.
+                </p>
+                <p>
+                    <span class="font-bold rl-color">Refuerzo:</span> Aprende a <span class="font-bold">actuar</span> para lograr un objetivo mediante la interacción continua con el entorno (prueba y error).
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Se eliminó la función toggleProcess ya que la información es visible por defecto. -->
+</body>
+</html>
+
