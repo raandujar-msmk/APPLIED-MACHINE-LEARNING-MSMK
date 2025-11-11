@@ -1,0 +1,28 @@
+● Introducción a la Visión Artificial
+	○ ¿Qué es la Visión Artificial?
+	○ Definición, aplicaciones y relación con otros campos
+	○ Representación Digital de Imágenes
+	○ Píxeles, espacios de color (RGB, escala de grises)
+	○ Formatos de imagen y video (JPEG, PNG, MPEG)
+	○ Introducción a OpenCV
+● Técnicas Básicas de Procesamiento de Imágenes
+	○ Carga y Visualización de Imágenes
+	○ Filtrado y Suavizado
+		■ Aplicación de técnicas de desenfoque (media, gaussiana), detección de
+	bordes (Sobel, Laplaciana).
+	○ Operaciones Morfológicas
+		■ Erosión, dilatación, apertura, cierre y sus aplicaciones.
+● Extracción de Características
+	○ Detección de Líneas: Transformada de Hough para detección de líneas.
+	○ Detección de Esquinas: Detector de Esquinas de Harris.
+	○ Descriptores de Características: Introducción a SIFT, SURF y BRIEF
+	○ Detección Básica de Objetos
+● Redes Neuronales Convolucionales (CNN) y Aplicaciones
+	○ Arquitecturas Básicas de CNN para CV
+		■ LeNet
+		■ AlexNet
+	○ Detección de Objetos mediante CNN
+		■ YOLO
+		■ Faster R-CNN
+	○ Segmentación de Imágenes
+		■ Introducción a la segmentación semántica y ejemplos como U-Net.

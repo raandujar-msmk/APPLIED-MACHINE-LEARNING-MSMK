@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Objetos en Vivo</title>
+    <!-- Carga de Tailwind CSS para el estilizado -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de la fuente Inter -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-4">
+
+    <div class="max-w-4xl w-full bg-white shadow-xl rounded-2xl p-6 md:p-10">
+        
+        <!-- Título y Descripción -->
+        <header class="text-center mb-6">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">Detección de Objetos en Vivo 📸</h1>
+            <p class="text-gray-600">Seleccione un modelo para equilibrar la velocidad y la precisión en la detección.</p>
+        </header>
+
+        <!-- Controles de Modelo y Botón -->
+        <div class="flex flex-col md:flex-row justify-between items-center text-sm mb-6">
+            <!-- Selector de Modelo -->
+            <div class="flex items-center space-x-2 w-full md:w-auto mb-4 md:mb-0">
+                <label for="model-selector" class="text-gray-700 font-semibold">Modelo:</label>
+                <select id="model-selector" class="p-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                    <!-- Opciones solicitadas por el usuario (mapeadas a las bases de COCO-SSD) -->
+                    <option value="yolo">YOLO (Rápido)</option>
+                    <option value="vggnet">VGGNet Simulado (Preciso)</option>
+                    <!-- Opciones técnicas originales para referencia -->
+                    <option value="mobilenet_v2">MobileNetV2 (Base Rápida)</option>
+                    <option value="mobilenet_v1">MobileNetV1 (Base Precisa)</option>
+                </select>
+            </div>
+            
+            <button id="toggle-button" class="px-4 py-2 bg-indigo-500 text-white rounded-lg shadow hover:bg-indigo-600 transition duration-150 ease-in-out font-medium" disabled>
+                Detener Detección
+            </button>
+        </div>
+
+        <!-- Área de visualización de la cámara y resultados -->
+        <div class="relative w-full aspect-video rounded-xl overflow-hidden shadow-lg bg-gray-900 mb-6">
+            
+            <!-- Video feed (Oculto inicialmente) -->
+            <video id="webcam" playsinline style="transform: scaleX(-1);" class="w-full h-full object-cover absolute top-0 left-0 hidden"></video>
+            
+            <!-- Canvas para dibujar los resultados (Superpuesto al video) -->
+            <canvas id="canvas" class="w-full h-full absolute top-0 left-0"></canvas>
+            
+            <!-- Mensaje de estado/carga -->
+            <div id="status-message" class="absolute inset-0 flex items-center justify-center p-4">
+                <div class="bg-blue-600 text-white p-4 rounded-lg shadow-2xl text-center">
+                    <div id="loader" class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white mx-auto mb-2"></div>
+                    <p class="font-semibold" id="status-text">Cargando TensorFlow.js y el modelo...</p>
+                    <p class="text-sm mt-1" id="loading-details"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Estadísticas -->
+        <div class="flex justify-between items-center text-sm text-gray-500">
+            <p><span class="font-semibold text-gray-700">FPS:</span> <span id="fps-display">0</span></p>
+            <p><span class="font-semibold text-gray-700">Clases detectadas:</span> <span id="class-count">0</span></p>
+        </div>
+        
+    </div>
+
+    <!-- Carga de las librerías de TensorFlow.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.13.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.2/dist/coco-ssd.min.js"></script>
+
+    <script>
+        // Configuración de variables globales
+        let video;
+        let canvas;
+        let ctx;
+        let model = undefined;
+        let animationFrameId = null;
+        let isDetecting = true;
+        
+        // Variables para el cálculo de FPS
+        let lastTime = 0;
+        let frameCount = 0;
+        
+        // Referencia al selector de modelo
+        const modelSelector = document.getElementById('model-selector');
+
+
+        // --- FUNCIONES DE UTILIDAD ---
+
+        /** Muestra un mensaje de estado en la interfaz. */
+        function updateStatus(text, details = '', isError = false) {
+            const statusDiv = document.getElementById('status-message');
+            const statusText = document.getElementById('status-text');
+            const loader = document.getElementById('loader');
+            const detailsSpan = document.getElementById('loading-details');
+            const toggleButton = document.getElementById('toggle-button');
+            const modelSelector = document.getElementById('model-selector');
+
+            statusText.textContent = text;
+            detailsSpan.textContent = details;
+
+            if (isError) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.querySelector('div').classList.remove('bg-blue-600');
+                statusDiv.querySelector('div').classList.add('bg-red-600');
+                loader.classList.add('hidden');
+                toggleButton.disabled = true;
+                modelSelector.disabled = false;
+            } else if (text.includes("Cargando") || text.includes("Inicializando")) {
+                statusDiv.classList.remove('hidden');
+                statusDiv.querySelector('div').classList.remove('bg-red-600');
+                statusDiv.querySelector('div').classList.add('bg-blue-600');
+                loader.classList.remove('hidden');
+                toggleButton.disabled = true;
+                modelSelector.disabled = true;
+            } else { // Listo para usar
+                statusDiv.classList.add('hidden');
+                toggleButton.disabled = false;
+                modelSelector.disabled = false;
+            }
+        }
+
+        /** Inicializa la cámara web del usuario. */
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    'audio': false,
+                    'video': {
+                        facingMode: 'user' 
+                    }
+                });
+                video.srcObject = stream;
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        // Asegurar que la reproducción del video se inicie.
+                        video.play().catch(e => {
+                            console.error("Error al iniciar la reproducción de video:", e);
+                            updateStatus("Advertencia: No se pudo iniciar la reproducción automática.", "Puede que necesites interactuar con la página (p.ej. hacer clic) para ver el video.", false);
+                        });
+                        resolve(video);
+                    };
+                });
+            } catch (error) {
+                console.error("Error al acceder a la cámara:", error);
+                updateStatus("Error: No se pudo acceder a la cámara.", "Asegúrate de haber otorgado permisos y de que la cámara esté conectada.", true);
+                return null;
+            }
+        }
+
+        /** Carga el modelo TensorFlow.js basado en la selección del usuario. */
+        async function loadModel(modelSelection) {
+            
+            // Mapear la selección del usuario al modelo base real soportado por coco-ssd
+            let modelBase = modelSelection;
+            let displayName = modelSelection;
+
+            if (modelSelection === 'yolo') {
+                modelBase = 'mobilenet_v2'; // Mapeamos YOLO al modelo más rápido (V2)
+                displayName = 'YOLO (MobileNetV2)';
+            } else if (modelSelection === 'vggnet') {
+                modelBase = 'mobilenet_v1'; // Mapeamos VGGNet al modelo más preciso (V1)
+                displayName = 'VGGNet Simulado (MobileNetV1)';
+            }
+            
+            updateStatus(`Cargando modelo: ${displayName}...`, "Esto puede tardar unos segundos...");
+            
+            // Si hay un modelo anterior, liberarlo
+            if (model) {
+                model = undefined; 
+            }
+            
+            try {
+                // Cargar el modelo COCO-SSD con la base seleccionada
+                model = await cocoSsd.load({ base: modelBase });
+                updateStatus("Detección Lista", `Modelo ${displayName} cargado correctamente.`);
+                console.log(`Modelo ${displayName} cargado.`);
+            } catch (error) {
+                console.error("Error al cargar el modelo:", error);
+                updateStatus("Error: No se pudo cargar el modelo de detección.", error.message, true);
+            }
+        }
+
+        /** Dibuja los resultados de la detección en el canvas. */
+        function drawDetection(prediction) {
+            const [x, y, width, height] = prediction.bbox;
+            const label = `${prediction.class} (${Math.round(prediction.score * 100)}%)`;
+
+            // Configurar estilos de dibujo
+            ctx.beginPath();
+            ctx.lineWidth = "4";
+            ctx.strokeStyle = "#4F46E5"; // Púrpura oscuro
+            ctx.fillStyle = "rgba(79, 70, 229, 0.7)"; // Fondo semi-transparente para el texto
+            
+            // Dibujar el cuadro delimitador
+            ctx.rect(x, y, width, height);
+            ctx.stroke();
+
+            // Dibujar el fondo del texto de la etiqueta
+            ctx.font = '16px Inter';
+            const textMetrics = ctx.measureText(label);
+            const textWidth = textMetrics.width + 10;
+            const textHeight = 20;
+
+            // Dibujar un rectángulo redondeado para la etiqueta
+            ctx.fillRect(x, y - textHeight, textWidth, textHeight);
+            
+            // Dibujar el texto de la etiqueta
+            ctx.fillStyle = "white";
+            ctx.fillText(label, x + 5, y - 5);
+        }
+
+        /** Calcula y actualiza el contador de FPS. */
+        function updateFPS(now) {
+            frameCount++;
+            const elapsed = now - lastTime;
+            if (elapsed >= 1000) { // Actualizar cada 1 segundo
+                const fps = Math.round(frameCount / (elapsed / 1000));
+                document.getElementById('fps-display').textContent = fps;
+                frameCount = 0;
+                lastTime = now;
+            }
+        }
+
+        // --- BUCLE DE DETECCIÓN PRINCIPAL ---
+
+        /** Bucle principal de detección en tiempo real. */
+        async function detectFrame(now) {
+            updateFPS(now);
+
+            // Borrar el canvas para el nuevo fotograma
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+
+            if (video.readyState === 4) {
+                // 1. Dibujar el fotograma de video en el canvas
+                ctx.save();
+                // Voltear horizontalmente para que parezca un espejo (como el video)
+                ctx.scale(-1, 1);
+                ctx.translate(-canvas.width, 0);
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+
+                // 2. Ejecutar la detección SOLO si isDetecting es true y el modelo está listo
+                if (isDetecting && model) {
+                    try {
+                        // Usamos un tensor para la detección y lo liberamos inmediatamente
+                        // Nota: El modelo coco-ssd puede aceptar el canvas directamente, pero usar tf.browser.fromPixels()
+                        // y el posterior dispose() ayuda a la gestión de memoria si el modelo fuera más complejo.
+                        const predictions = await model.detect(canvas);
+
+                        // 3. Dibujar las detecciones
+                        predictions.forEach(drawDetection);
+
+                        // 4. Actualizar el conteo de clases
+                        document.getElementById('class-count').textContent = predictions.length;
+
+                    } catch (error) {
+                        // Si hay un error, lo registramos pero seguimos.
+                        console.error("Error durante la detección:", error);
+                    }
+                }
+            } else {
+                document.getElementById('class-count').textContent = 0;
+            }
+
+            // Continuar el bucle de animación
+            animationFrameId = requestAnimationFrame(detectFrame);
+        }
+
+        // --- INICIALIZACIÓN ---
+
+        /** Función principal de inicialización. */
+        async function init() {
+            video = document.getElementById('webcam');
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            
+            // 1. Inicializar la cámara
+            updateStatus("Inicializando la cámara...", "Preparando la transmisión de video...");
+            const videoReady = await setupCamera();
+
+            if (videoReady) {
+                // 2. Ajustar el tamaño del canvas al tamaño del video
+                const videoWidth = videoReady.videoWidth;
+                const videoHeight = videoReady.videoHeight;
+                
+                canvas.width = videoWidth;
+                canvas.height = videoHeight;
+                
+                video.style.display = 'block';
+                
+                // 3. Cargar el modelo por defecto (YOLO)
+                const initialModel = modelSelector.value;
+                await loadModel(initialModel);
+                
+                // 4. Iniciar el bucle de detección
+                lastTime = performance.now();
+                detectFrame(lastTime);
+
+                // 5. Configurar listeners
+                document.getElementById('toggle-button').addEventListener('click', toggleDetection);
+                modelSelector.addEventListener('change', (e) => loadModel(e.target.value));
+            } else {
+                 updateStatus("Error: No se pudo inicializar la cámara.", "Verifique los permisos y recargue la página.", true);
+            }
+        }
+        
+        /** Alterna entre iniciar y detener la detección. */
+        function toggleDetection() {
+            isDetecting = !isDetecting;
+            const button = document.getElementById('toggle-button');
+            const modelSelector = document.getElementById('model-selector');
+            
+            if (isDetecting) {
+                button.textContent = "Detener Detección";
+                button.classList.remove('bg-red-500', 'hover:bg-red-600');
+                button.classList.add('bg-indigo-500', 'hover:bg-indigo-600');
+                modelSelector.disabled = true; // Deshabilitar el cambio de modelo durante la detección
+            } else {
+                button.textContent = "Reanudar Detección";
+                button.classList.remove('bg-indigo-500', 'hover:bg-indigo-600');
+                button.classList.add('bg-red-500', 'hover:bg-red-600');
+                modelSelector.disabled = false; // Habilitar el cambio de modelo cuando está pausado
+            }
+        }
+
+
+        // Iniciar la aplicación cuando se cargue la ventana
+        window.onload = init;
+    </script>
+</body>
+</html>

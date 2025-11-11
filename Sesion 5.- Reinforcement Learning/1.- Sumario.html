@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Introducción Interactiva al Aprendizaje por Refuerzo</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de Tailwind para usar el color 'Inter' -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        'rl-dark': '#1e293b',
+                        'rl-blue': '#3b82f6',
+                        'rl-light': '#f1f5f9',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Carga de KaTeX para renderizar ecuaciones matemáticas -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css" xintegrity="sha384-GvrDXeU9Y28t28m/i8oR0r/H0j15Y0v05b9F9r5p8S+Q0e9u8eN0p3j38g8d9z" crossorigin="anonymous">
+    <!-- Se añade 'defer' y se asegura que las librerías carguen correctamente -->
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js" xintegrity="sha384-n0zI646gPz913P/j2V/2c3/aA0e3l4J6l9z9eN0p3j38g8d9z" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js" xintegrity="sha384-jK8Fk6tqE1D1pS0qJ28VwJ25M+d/11Q77F0f0d9G8d9z" crossorigin="anonymous"></script>
+
+    <style>
+        /* Estilos generales para asegurar que KaTeX se vea bien */
+        .katex-display {
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 10px 0;
+        }
+        /* Se eliminaron estilos de interacción/hover para las tarjetas de concepto */
+    </style>
+</head>
+<body class="bg-rl-light min-h-screen p-4 md:p-8 font-sans">
+
+    <div class="max-w-7xl mx-auto bg-white rounded-xl shadow-2xl overflow-hidden">
+        
+        <!-- Encabezado Principal -->
+        <header class="bg-rl-dark p-6 md:p-8 text-white">
+            <h1 class="text-3xl md:text-4xl font-extrabold border-b-2 border-rl-blue pb-2 mb-2">
+                Aprendizaje por Refuerzo (RL)
+            </h1>
+            <p class="text-rl-light/80 text-lg">
+                Una guía interactiva a conceptos, formalización y algoritmos.
+            </p>
+        </header>
+
+        <!-- Contenedor Principal: Navegación y Contenido -->
+        <div class="md:grid md:grid-cols-4 lg:grid-cols-5">
+            
+            <!-- Panel de Navegación (Izquierda) -->
+            <nav id="sidebar" class="md:col-span-1 lg:col-span-1 bg-gray-50 p-4 border-r border-gray-200">
+                <h2 class="text-xl font-bold mb-4 text-rl-dark">Módulos</h2>
+                <div id="nav-intro" class="mb-6">
+                    <button onclick="changeSection('intro_rl')" class="w-full text-left p-3 rounded-lg text-lg font-semibold transition bg-rl-blue text-white shadow-md hover:bg-rl-blue/90 mb-2">
+                        1. Introducción al RL
+                    </button>
+                    <div id="subnav-intro" class="pl-4 border-l-2 border-rl-blue/50 space-y-1">
+                        <button onclick="changeConcept('rl_loop')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200 bg-gray-200 font-medium">Ciclo de Interacción RL</button>
+                        <button onclick="changeConcept('key_concepts')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">Conceptos Clave</button>
+                        <button onclick="changeConcept('rl_vs_ml')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">RL vs. Otros ML</button>
+                    </div>
+                </div>
+
+                <div id="nav-mdp" class="mb-6">
+                    <button onclick="changeSection('mdp')" class="w-full text-left p-3 rounded-lg text-lg font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-md mb-2">
+                        2. Procesos de Decisión de Markov (MDP)
+                    </button>
+                    <div id="subnav-mdp" class="pl-4 border-l-2 border-gray-400 space-y-1 hidden">
+                        <button onclick="changeConcept('mdp_formalism')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">Formalización (S, A, P, R)</button>
+                        <button onclick="changeConcept('bellman')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">Ecuaciones de Bellman</button>
+                    </div>
+                </div>
+
+                <div id="nav-algorithms" class="mb-6">
+                    <button onclick="changeSection('algorithms')" class="w-full text-left p-3 rounded-lg text-lg font-semibold transition bg-gray-200 text-gray-700 hover:bg-gray-300 shadow-md mb-2">
+                        3. Algoritmos Básicos
+                    </button>
+                    <div id="subnav-algorithms" class="pl-4 border-l-2 border-gray-400 space-y-1 hidden">
+                        <button onclick="changeConcept('q_learning')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">Q-Learning</button>
+                        <button onclick="changeConcept('sarsa')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">SARSA</button>
+                        <button onclick="changeConcept('exploration')" class="subnav-btn w-full text-left p-2 rounded-md text-sm text-gray-700 hover:bg-gray-200">Exploración</button>
+                    </div>
+                </div>
+
+            </nav>
+
+            <!-- Panel de Contenido Principal (Derecha) -->
+            <main class="md:col-span-3 lg:col-span-4 p-6 md:p-8">
+                <div id="content-display" class="space-y-6">
+                    <!-- El contenido se inyectará aquí -->
+                </div>
+            </main>
+        </div>
+
+    </div>
+
+    <script>
+        const contentData = {
+            // Sección 1: Introducción al RL
+            intro_rl: {
+                rl_loop: {
+                    title: "¿Qué es el Aprendizaje por Refuerzo?",
+                    body: `
+                        <p class="text-lg mb-4">El Aprendizaje por Refuerzo (RL) es un área del Machine Learning donde un <strong>Agente</strong> aprende a tomar decisiones (<strong>Acciones</strong>) en un <strong>Entorno</strong> para maximizar una noción de <strong>Recompensa</strong> acumulada.</p>
+                        <h3 class="text-2xl font-semibold text-rl-blue mb-4">El Ciclo de Interacción (The RL Loop)</h3>
+                        <div class="flex flex-col items-center p-4 bg-rl-light rounded-lg shadow-inner">
+                            <div class="flex space-x-8 items-center text-center">
+                                <div class="bg-blue-200 p-4 rounded-full font-bold">AGENTE</div>
+                                <div class="text-xl font-bold text-rl-blue">&lt;--</div>
+                                <div class="bg-gray-200 p-4 rounded-lg font-bold">ESTADO ($S_t$) y RECOMPENSA ($R_{t+1}$)</div>
+                                <div class="text-xl font-bold text-rl-blue">&lt;--</div>
+                                <div class="bg-green-200 p-4 rounded-full font-bold">ENTORNO</div>
+                            </div>
+                            <div class="text-xl font-bold text-rl-blue my-2">|</div>
+                            <div class="bg-blue-200 p-4 rounded-lg font-bold">ACCIÓN ($A_t$)</div>
+                            <div class="text-xl font-bold text-rl-blue my-2">|</div>
+                            <div class="flex space-x-8 items-center text-center">
+                                <div class="bg-blue-200 p-4 rounded-full font-bold">AGENTE</div>
+                                <div class="text-xl font-bold text-rl-blue">--&gt;</div>
+                                <div class="bg-green-200 p-4 rounded-full font-bold">ENTORNO</div>
+                            </div>
+                        </div>
+                        <p class="mt-4">El objetivo del Agente es encontrar una <strong>Política</strong> ($\pi$) que le diga qué acción tomar en cada estado para maximizar la suma de recompensas futuras.</p>
+                    `
+                },
+                key_concepts: {
+                    title: "Conceptos Clave del RL",
+                    body: `
+                        <p class="text-lg mb-6">Estos son los componentes fundamentales que definen la interacción en el Aprendizaje por Refuerzo:</p>
+                        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Agente</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">Toma decisiones.</p>
+                                <p class="text-gray-700 text-sm">El tomador de decisiones; la entidad que interactúa con el Entorno, seleccionando acciones para maximizar la recompensa acumulada.</p>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Entorno</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">El mundo exterior.</p>
+                                <p class="text-gray-700 text-sm">Todo lo que rodea al Agente. Reacciona a las Acciones y emite Recompensas y el próximo Estado ($S_{t+1}$).</p>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Estado (S)</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">Situación actual.</p>
+                                <p class="text-gray-700 text-sm">Una representación de la situación actual del Agente y el Entorno en el tiempo $t$.</p>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Acción (A)</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">Decisión tomada.</p>
+                                <p class="text-gray-700 text-sm">Un movimiento o decisión que el Agente puede realizar en un Estado dado ($S_t$), llevando a una transición al siguiente estado.</p>
+                            </div>
+
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Recompensa (R)</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">Señal de feedback.</p>
+                                <p class="text-gray-700 text-sm">Un valor numérico (scalar) que indica qué tan buena o mala fue la última Acción. El objetivo del Agente es maximizar la suma total de recompensas futuras.</p>
+                            </div>
+                            
+                            <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-lg">
+                                <h4 class="text-xl font-bold text-rl-blue mb-1">Política ($\pi$)</h4>
+                                <p class="text-sm font-semibold text-gray-500 mb-2">Estrategia de acción.</p>
+                                <p class="text-gray-700 text-sm">Define el comportamiento del Agente: $\pi(a|s)$ es la probabilidad de tomar la acción $a$ en el estado $s$.</p>
+                            </div>
+                        </div>
+                    `
+                },
+                rl_vs_ml: {
+                    title: "RL vs. Otras Formas de Aprendizaje Automático",
+                    body: `
+                        <div class="space-y-6">
+                            <div class="p-4 rounded-lg bg-red-50 border-l-4 border-red-500">
+                                <h4 class="text-xl font-bold text-red-700 mb-2">Aprendizaje Supervisado (Supervised Learning)</h4>
+                                <p><strong>Diferencia clave:</strong> Requiere un "maestro" o datos etiquetados (pares de entrada-salida correctos). El objetivo es predecir una salida basándose en la entrada. En RL, el Agente aprende por prueba y error con una señal de *recompensa* retrasada, no con una *etiqueta* inmediata.</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-yellow-50 border-l-4 border-yellow-500">
+                                <h4 class="text-xl font-bold text-yellow-700 mb-2">Aprendizaje No Supervisado (Unsupervised Learning)</h4>
+                                <p><strong>Diferencia clave:</strong> No tiene etiquetas. El objetivo es encontrar patrones o estructuras ocultas en los datos (ej: clustering). En RL, el objetivo es la *maximización de recompensas* a través de la interacción, lo cual es un objetivo de toma de decisiones, no solo de modelado de datos.</p>
+                            </div>
+                            <div class="p-4 rounded-lg bg-green-50 border-l-4 border-green-500">
+                                <h4 class="text-xl font-bold text-green-700 mb-2">Aprendizaje por Refuerzo (Reinforcement Learning)</h4>
+                                <p><strong>Enfoque:</strong> Aprender de la interacción. No hay un conjunto de datos fijo ni un "maestro". El Agente evalúa sus acciones en función de la recompensa y se enfoca en objetivos a largo plazo (la suma total de recompensas).</p>
+                            </div>
+                        </div>
+                    `
+                }
+            },
+            
+            // Sección 2: Procesos de Decisión de Markov (MDP)
+            mdp: {
+                mdp_formalism: {
+                    title: "Formalización: Procesos de Decisión de Markov (MDP)",
+                    body: `
+                        <p class="text-lg mb-4">Un MDP formaliza el problema de RL como una tupla ($\\mathcal{S}, \\mathcal{A}, \\mathcal{P}, \\mathcal{R}, \\gamma$).</p>
+                        <ul class="list-disc pl-6 space-y-3">
+                            <li><strong>Espacio de Estados ($\\mathcal{S}$):</strong> El conjunto de todos los estados posibles en el entorno.</li>
+                            <li><strong>Espacio de Acción ($\\mathcal{A}$):</strong> El conjunto de todas las acciones disponibles para el Agente.</li>
+                            <li><strong>Probabilidades de Transición ($\\mathcal{P}$):</strong> La probabilidad de que una acción $a$ en el estado $s$ conduzca al estado $s'$.
+                                $$ \\mathcal{P}_{ss'}^a = \\mathbb{P}[S_{t+1}=s' | S_t=s, A_t=a] $$
+                            </li>
+                            <li><strong>Función de Recompensa ($\\mathcal{R}$):</strong> La recompensa esperada por tomar la acción $a$ en el estado $s$ y transicionar a $s'$.
+                                $$ \\mathcal{R}_{ss'}^a = \\mathbb{E}[R_{t+1} | S_t=s, A_t=a, S_{t+1}=s'] $$
+                            </li>
+                            <li><strong>Propiedad de Markov:</strong> La probabilidad de que ocurra el próximo estado solo depende del estado y la acción actuales, no de la historia pasada (la "memoria" es de un solo paso).</li>
+                        </ul>
+                        <h3 class="text-2xl font-semibold text-rl-blue mt-6">Funciones de Valor</h3>
+                        <p>Estas funciones estiman qué tan bueno es un estado o una acción en el largo plazo, considerando las recompensas futuras:</p>
+                        <div class="bg-gray-100 p-4 rounded-lg mt-4">
+                            <p class="font-semibold">Función de Valor de Estado ($V_{\\pi}(s)$):</p>
+                            <p>El retorno esperado (recompensa descontada) al comenzar en el estado $s$ y seguir la política $\\pi$.</p>
+                            <p class="font-semibold mt-2">Función de Valor Acción-Estado ($Q_{\\pi}(s, a)$):</p>
+                            <p>El retorno esperado al comenzar en el estado $s$, tomar la acción $a$, y seguir la política $\\pi$ a partir de entonces.</p>
+                        </div>
+                    `
+                },
+                bellman: {
+                    title: "Las Ecuaciones de Bellman",
+                    body: `
+                        <p class="text-lg mb-4">Las Ecuaciones de Bellman definen una relación de recursividad entre el valor de un estado y el valor de sus estados sucesores. Son fundamentales para la mayoría de los algoritmos de RL.</p>
+
+                        <h3 class="text-2xl font-semibold text-rl-blue mb-4">Ecuación de Bellman para $V_{\\pi}(s)$</h3>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow-md">
+                            <p class="text-center font-mono text-xl mb-4">Valor de un estado = Recompensa Inmediata + Valor Descontado del Próximo Estado</p>
+                            $$ V_{\\pi}(s) = \\sum_{a} \\pi(a|s) \\sum_{s'} \\mathcal{P}_{ss'}^a \\left[ \\mathcal{R}_{ss'}^a + \\gamma V_{\\pi}(s') \\right] $$
+                            <p class="mt-4 text-sm text-gray-600">Donde $\\gamma \\in [0, 1]$ es el Factor de Descuento. Un $\\gamma$ cercano a 0 hace que el agente sea "cortoplacista"; un $\\gamma$ cercano a 1 lo hace "previsor".</p>
+                        </div>
+
+                        <h3 class="text-2xl font-semibold text-rl-blue mt-6 mb-4">Ecuación de Bellman de Optimalidad para $V^*(s)$ y $Q^*(s, a)$</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div class="bg-blue-50 p-4 rounded-lg shadow-md">
+                                <p class="font-semibold text-center mb-2">Optimalidad de Estado ($V^*(s)$)</p>
+                                $$ V^*(s) = \\max_{a} Q^*(s, a) $$
+                            </div>
+                            <div class="bg-blue-50 p-4 rounded-lg shadow-md">
+                                <p class="font-semibold text-center mb-2">Optimalidad Acción-Estado ($Q^*(s, a)$)</p>
+                                $$ Q^*(s, a) = \\sum_{s'} \\mathcal{P}_{ss'}^a \\left[ \\mathcal{R}_{ss'}^a + \\gamma \\max_{a'} Q^*(s', a') \\right] $$
+                            </div>
+                        </div>
+                    `
+                }
+            },
+
+            // Sección 3: Algoritmos Básicos
+            algorithms: {
+                q_learning: {
+                    title: "Q-Learning (Algoritmo Off-Policy Temporal-Difference)",
+                    body: `
+                        <p class="text-lg mb-4">Q-Learning es un algoritmo popular, *off-policy*, que aprende directamente los valores $Q^*(s, a)$ óptimos, independientemente de la política que el agente esté siguiendo (la política de comportamiento).</p>
+                        <h3 class="text-2xl font-semibold text-rl-blue mb-4">Regla de Actualización Q-Learning</h3>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow-md overflow-x-auto">
+                            $$ Q(s, a) \\leftarrow Q(s, a) + \\alpha \\left[ R_{t+1} + \\gamma \\max_{a'} Q(s', a') - Q(s, a) \\right] $$
+                        </div>
+                        <ul class="list-disc pl-6 mt-4 space-y-2">
+                            <li><strong>$\\alpha$ (Tasa de Aprendizaje):</strong> Controla cuánto se actualiza el valor $Q(s, a)$ con el nuevo conocimiento.</li>
+                            <li><strong>$\\gamma \\max_{a'} Q(s', a')$:</strong> El valor $Q$ más alto del próximo estado $s'$. Esto hace que Q-Learning sea *off-policy* porque mira el mejor futuro posible, no el futuro que la política actual elegiría.</li>
+                        </ul>
+                    `
+                },
+                sarsa: {
+                    title: "SARSA (Algoritmo On-Policy Temporal-Difference)",
+                    body: `
+                        <p class="text-lg mb-4">SARSA (State-Action-Reward-State-Action) es un algoritmo *on-policy*, lo que significa que aprende el valor $Q_{\\pi}(s, a)$ de la política que *está* siguiendo (incluyendo su exploración).</p>
+                        <h3 class="text-2xl font-semibold text-rl-blue mb-4">Regla de Actualización SARSA</h3>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow-md overflow-x-auto">
+                            $$ Q(s, a) \\leftarrow Q(s, a) + \\alpha \\left[ R_{t+1} + \\gamma Q(s', a') - Q(s, a) \\right] $$
+                        </div>
+                        <ul class="list-disc pl-6 mt-4 space-y-2">
+                            <li><strong>$\\gamma Q(s', a')$:</strong> A diferencia de Q-Learning, SARSA usa el valor $Q$ de la *próxima acción real $a'$* que la política $\\pi$ eligió en el estado $s'$. Esto resulta en un agente más cauteloso que evita caminos peligrosos.</li>
+                        </ul>
+                    `
+                },
+                exploration: {
+                    title: "Estrategias de Exploración",
+                    body: `
+                        <p class="text-lg mb-4">En RL, el agente debe equilibrar la <strong>Exploración</strong> (probar nuevas acciones para encontrar mejores recompensas) con la <strong>Explotación</strong> (elegir la acción que actualmente se cree que da la mejor recompensa).</p>
+                        <h3 class="text-2xl font-semibold text-rl-blue mb-4">Estrategia $\\epsilon$-Greedy</h3>
+                        <p>Es la estrategia de exploración más común:</p>
+                        <div class="bg-gray-100 p-4 rounded-lg shadow-md">
+                            <ul class="list-disc pl-6 space-y-2">
+                                <li>Con una pequeña probabilidad $\\epsilon$ (epsilon): Elige una acción aleatoria (<strong>Exploración</strong>).</li>
+                                <li>Con una probabilidad $1 - \\epsilon$: Elige la mejor acción conocida (<strong>Explotación</strong>), es decir, $\\text{arg}\\max_a Q(s, a)$.</li>
+                            </ul>
+                        </div>
+                        <p class="mt-4">A medida que el agente aprende, $\\epsilon$ se suele reducir con el tiempo, haciendo que el agente explore menos y explote más.</p>
+                    `
+                }
+            }
+        };
+
+        let currentSection = 'intro_rl';
+        let currentConcept = 'rl_loop';
+
+        /**
+         * Updates the main content display based on the currentConcept.
+         */
+        function updateContent() {
+            const display = document.getElementById('content-display');
+            const data = contentData[currentSection][currentConcept];
+
+            if (data) {
+                // Clear and update the content
+                display.innerHTML = `
+                    <h2 class="text-3xl font-bold text-rl-dark mb-6 border-b pb-2">${data.title}</h2>
+                    <div class="text-gray-700 leading-relaxed">${data.body}</div>
+                `;
+                
+                // Re-render math after content update
+                // renderMathInElement comes from KaTeX auto-render.min.js
+                if (typeof renderMathInElement === 'function') {
+                    renderMathInElement(display, {
+                        delimiters: [
+                            {left: '$$', right: '$$', display: true},
+                            {left: '$', right: '$', display: false},
+                        ],
+                        throwOnError: false
+                    });
+                } else {
+                    console.error("KaTeX auto-render function not loaded.");
+                }
+
+                // Update active state for subnavigation buttons
+                document.querySelectorAll('.subnav-btn').forEach(btn => {
+                    btn.classList.remove('bg-gray-200', 'font-medium');
+                    if (btn.getAttribute('onclick').includes(`'${currentConcept}'`)) {
+                        btn.classList.add('bg-gray-200', 'font-medium');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Changes the active main section and updates the UI accordingly.
+         * @param {string} sectionKey - Key of the new main section ('intro_rl', 'mdp', 'algorithms').
+         */
+        function changeSection(sectionKey) {
+            if (currentSection === sectionKey) return; // Avoid re-rendering if the same button is clicked
+
+            currentSection = sectionKey;
+
+            // 1. Update main navigation button styles and collapse/expand sub-menus
+            document.querySelectorAll('#sidebar > div').forEach(div => {
+                const button = div.querySelector('button:first-child');
+                const subnav = div.querySelector('div[id^="subnav-"]');
+
+                if (div.id === `nav-${sectionKey.split('_')[0]}`) {
+                    // Activate this section
+                    button.classList.replace('bg-gray-200', 'bg-rl-blue');
+                    button.classList.replace('text-gray-700', 'text-white');
+                    button.classList.replace('hover:bg-gray-300', 'hover:bg-rl-blue/90');
+                    if (subnav) {
+                        subnav.classList.replace('border-gray-400', 'border-rl-blue/50');
+                        subnav.classList.remove('hidden');
+                    }
+
+                    // Set the default concept for the new section
+                    if (sectionKey === 'intro_rl') currentConcept = 'rl_loop';
+                    else if (sectionKey === 'mdp') currentConcept = 'mdp_formalism';
+                    else if (sectionKey === 'algorithms') currentConcept = 'q_learning';
+
+                } else {
+                    // Deactivate other sections
+                    button.classList.replace('bg-rl-blue', 'bg-gray-200');
+                    button.classList.replace('text-white', 'text-gray-700');
+                    button.classList.replace('hover:bg-rl-blue/90', 'hover:bg-gray-300');
+                    if (subnav) {
+                        subnav.classList.replace('border-rl-blue/50', 'border-gray-400');
+                        subnav.classList.add('hidden');
+                    }
+                }
+            });
+
+            // 2. Update the content panel
+            updateContent();
+        }
+
+        /**
+         * Changes the active sub-concept within the current section.
+         * @param {string} conceptKey - Key of the new concept.
+         */
+        function changeConcept(conceptKey) {
+            currentConcept = conceptKey;
+            updateContent();
+        }
+
+        // Inicializar la aplicación al cargar la página
+        window.onload = () => {
+            // Asegura que el estado inicial sea correcto (Introducción, Ciclo RL)
+            changeSection('intro_rl'); 
+        };
+    </script>
+</body>
+</html>
+

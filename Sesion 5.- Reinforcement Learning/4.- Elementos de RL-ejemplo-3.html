@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptos RL: Mantenimiento de Máquina</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Chart.js para la gráfica de evolución -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+    <style>
+        /* Estilos CSS personalizados */
+        .concept-card {
+            border-left: 4px solid;
+            padding: 1rem;
+            border-radius: 0.5rem;
+        }
+        .concept-card.state { border-color: #2563eb; background-color: #eff6ff; }
+        .concept-card.reward { border-color: #fbbf24; background-color: #fffbeb; }
+        .concept-card.action { border-color: #dc2626; background-color: #fef2f2; } /* Rojo para acción de riesgo/costo */
+        .concept-card.maintenance { border-color: #16a34a; background-color: #f0fdf4; } /* Verde para acción de inversión */
+
+        .health-bar-container {
+            height: 30px;
+            background-color: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .health-bar {
+            height: 100%;
+            transition: width 0.5s ease-out, background-color 0.5s;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 min-h-screen p-4 sm:p-8 font-sans">
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-10 rounded-xl shadow-2xl">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-teal-700 mb-6 border-b pb-2">
+            ⚙️ Simulador de Mantenimiento de Máquina (RL)
+        </h1>
+        <p class="text-gray-600 mb-8">
+            El <strong>Agente</strong> (usted) debe tomar la <strong>Acción</strong> (Usar o Mantener) para maximizar la <strong>Ganancia Total (Recompensa Acumulada)</strong>. Este entorno ilustra cómo el riesgo del <strong>Estado</strong> afecta la mejor <strong>Política</strong>.
+        </p>
+
+        <!-- Contenedor principal del grid: define una cuadrícula de 3 columnas en pantallas grandes -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- 1. Columna de Decisión (2/3 del ancho) -->
+            <div class="lg:col-span-2 space-y-6">
+                <h2 class="text-2xl font-semibold text-teal-800 mb-4">
+                    1. Ciclo de Decisión (Día Actual)
+                </h2>
+                
+                <div class="bg-gray-100 p-4 rounded-lg shadow">
+                    <p class="text-lg font-bold text-gray-700">Día #<span id="day-count">1</span></p>
+                    <p class="text-gray-500 text-sm">Decida la Acción para el día de hoy.</p>
+                </div>
+
+                <!-- Barra de Salud (Estado) -->
+                <div class="concept-card state">
+                    <h3 class="text-lg font-bold text-blue-700">ESTADO (S): Nivel de Salud de la Máquina</h3>
+                    <div class="health-bar-container mt-2">
+                        <div id="health-bar" class="health-bar bg-green-500" style="width: 100%;"></div>
+                    </div>
+                    <p class="text-xl font-extrabold mt-1 text-blue-900">
+                        Salud: <span id="health-level">100%</span>
+                    </p>
+                </div>
+
+                <!-- Input de Acción -->
+                <div class="space-y-4">
+                    <h3 class="text-xl font-bold text-teal-700">ACCIÓN (A): ¿Qué hacer hoy?</h3>
+                    
+                    <button id="action-use" class="concept-card action w-full text-left py-3 transition duration-150 hover:shadow-lg">
+                        <h4 class="font-bold text-red-700">ACCION 1: USAR MÁQUINA</h4>
+                        <p class="text-sm text-red-600">Genera +$100. Causa Desgaste. Riesgo de Falla.</p>
+                    </button>
+                    
+                    <button id="action-maintain" class="concept-card maintenance w-full text-left py-3 transition duration-150 hover:shadow-lg">
+                        <h4 class="font-bold text-green-700">ACCION 2: HACER MANTENIMIENTO</h4>
+                        <p class="text-sm text-green-600">Costo -$50. Recupera Salud. (Sin ingresos por uso).</p>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. Columna de Resultados y Feedback (1/3 del ancho) -->
+            <div class="lg:col-span-1 space-y-4">
+                <h2 class="text-2xl font-semibold text-teal-800 mb-4">
+                    2. Resultados del Día
+                </h2>
+                
+                <div class="concept-card reward">
+                    <h3 class="text-lg font-bold text-yellow-700">RECOMPENSA (R)</h3>
+                    <p class="text-sm text-yellow-600">
+                        Ganancia/Pérdida inmediata neta.
+                    </p>
+                    <p class="text-2xl font-extrabold mt-1 text-yellow-900">
+                        Ganancia Diaria: <span id="daily-reward">0.00</span> $
+                    </p>
+                </div>
+
+                <div class="bg-purple-100 p-4 rounded-lg shadow border-l-4 border-purple-600">
+                    <h3 class="font-bold text-lg text-purple-800 mb-2">Recompensa Acumulada (Valor)</h3>
+                    <p class="text-sm text-gray-700 mb-2">
+                        El objetivo del Agente es maximizar esta <strong>Ganancia Total</strong>.
+                    </p>
+                    <p class="text-3xl font-extrabold text-purple-900">
+                        <span id="total-reward">0.00</span> $
+                    </p>
+                </div>
+
+                <div class="bg-gray-100 p-4 rounded-lg shadow">
+                    <h3 class="font-bold text-lg text-gray-700 mb-2">Detalles del Entorno</h3>
+                    <ul class="text-sm text-gray-600 space-y-1">
+                        <li>Ingreso por Uso: <span class="font-semibold">+$100</span></li>
+                        <li>Costo de Mantenimiento: <span class="font-semibold">-$50</span></li>
+                        <li>Costo por Falla (Pérdida): <span class="font-semibold">-$200</span></li>
+                        <li>Desgaste por Uso: <span class="font-semibold">5-15%</span> (aleatorio)</li>
+                        <li>Recuperación por Mantenimiento: <span class="font-semibold">20-40%</span> (aleatorio)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 3. Visualización de la Evolución (Gráfica - toma el ancho completo fuera del grid) -->
+        <div class="pt-6 mt-6 border-t border-gray-200">
+            <h2 class="text-2xl font-semibold text-teal-800 mb-4">
+                3. Evolución de la Ganancia Total
+            </h2>
+            <div class="bg-white p-4 rounded-lg shadow-lg">
+                <canvas id="rewardChart"></canvas>
+            </div>
+
+            <div class="flex justify-center mt-6">
+                <button id="reset-button" class="py-2 px-6 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-md transition duration-150">
+                    Reiniciar Simulación
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuraciones del Entorno y Parámetros de RL ---
+        const MAX_HEALTH = 100;
+        
+        // Costos y Recompensas
+        const INCOME_FROM_USE = 100;
+        const COST_OF_MAINTENANCE = 50;
+        const COST_OF_FAILURE = 200;
+
+        // Variables de Estado
+        let machineHealth = MAX_HEALTH; // S: Nivel de salud actual (0-100)
+        let totalReward = 0;           // Recompensa acumulada (Ganancia Total)
+        let dayCount = 0;
+        let isFailed = false; // Bandera para indicar si la máquina está fuera de servicio
+        
+        // Variables para la gráfica
+        let rewardHistory = []; 
+        let dayLabels = [];   
+        let myChart = null;     
+
+        // Elementos del DOM
+        const healthBar = document.getElementById('health-bar');
+        const healthLevelEl = document.getElementById('health-level');
+        const actionUseBtn = document.getElementById('action-use');
+        const actionMaintainBtn = document.getElementById('action-maintain');
+        const resetButton = document.getElementById('reset-button');
+        const dailyRewardEl = document.getElementById('daily-reward');
+        const totalRewardEl = document.getElementById('total-reward');
+        const dayCountEl = document.getElementById('day-count');
+
+        // --- Funciones de Lógica del Entorno ---
+
+        /** Calcula la probabilidad de falla basada en la salud */
+        function getFailureProbability(health) {
+            // Probabilidad de falla es inversamente proporcional a la salud
+            // 0% salud -> 50% chance de falla. 100% salud -> 0% chance de falla.
+            return Math.max(0, (100 - health) / 200);
+        }
+
+        /** Inicializa la gráfica de evolución */
+        function initChart() {
+            const ctx = document.getElementById('rewardChart').getContext('2d');
+            if (myChart) {
+                myChart.destroy();
+            }
+            
+            myChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dayLabels,
+                    datasets: [{
+                        label: 'Ganancia Total Acumulada ($)',
+                        data: rewardHistory,
+                        borderColor: 'rgb(109, 40, 217)', // purple-700
+                        backgroundColor: 'rgba(109, 40, 217, 0.1)',
+                        tension: 0.2,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Ganancia Total Acumulada ($)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Día'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    // Mantener el $ en el tooltip
+                                    return `Ganancia: ${context.parsed.y.toFixed(2)} $`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /** Actualiza la visualización de la barra de salud */
+        function updateHealthDisplay() {
+            const percentage = machineHealth;
+            healthBar.style.width = `${percentage}%`;
+            // Se asegura de que el porcentaje se muestra solo una vez
+            healthLevelEl.textContent = `${Math.round(machineHealth)}%`; 
+
+            // Cambiar color basado en la salud
+            if (percentage > 70) {
+                healthBar.className = 'health-bar bg-green-500'; 
+            } else if (percentage > 30) {
+                healthBar.className = 'health-bar bg-yellow-500';
+            } else {
+                healthBar.className = 'health-bar bg-red-500'; 
+            }
+
+            // Desactivar botones si la máquina falló
+            if (isFailed) {
+                actionUseBtn.disabled = true;
+                actionMaintainBtn.disabled = true;
+                actionUseBtn.textContent = 'MÁQUINA FUERA DE SERVICIO (REINICIE)';
+                actionMaintainBtn.textContent = 'MÁQUINA FUERA DE SERVICIO (REINICIE)';
+                alertBox('¡Falla Crítica! La máquina se detuvo. Presione Reiniciar.', 'bg-red-500');
+            } else {
+                actionUseBtn.disabled = false;
+                actionMaintainBtn.disabled = false;
+                actionUseBtn.innerHTML = '<h4 class="font-bold text-red-700">ACCION 1: USAR MÁQUINA</h4><p class="text-sm text-red-600">Genera +$100. Causa Desgaste. Riesgo de Falla.</p>';
+                actionMaintainBtn.innerHTML = '<h4 class="font-bold text-green-700">ACCION 2: HACER MANTENIMIENTO</h4><p class="text-sm text-green-600">Costo -$50. Recupera Salud. (Sin ingresos por uso).</p>';
+            }
+        }
+
+        /** Muestra un mensaje temporal en un cuadro flotante */
+        function alertBox(message, bgColor) {
+            const container = document.querySelector('.max-w-4xl');
+            let box = document.getElementById('status-box');
+            if (!box) {
+                box = document.createElement('div');
+                box.id = 'status-box';
+                box.className = 'fixed top-4 right-4 p-4 rounded-lg text-white font-bold shadow-xl transition-opacity duration-300 z-50';
+                container.appendChild(box);
+            }
+            
+            box.className = `fixed top-4 right-4 p-4 rounded-lg text-white font-bold shadow-xl transition-opacity duration-300 z-50 ${bgColor}`;
+            box.textContent = message;
+            box.style.opacity = '1';
+
+            // Desaparecer después de 3 segundos
+            setTimeout(() => {
+                box.style.opacity = '0';
+            }, 3000);
+        }
+
+
+        /** Función STEP: El Agente realiza una Acción y el Entorno responde */
+        function takeStep(action) {
+            if (isFailed) return;
+
+            dayCount++;
+            dayCountEl.textContent = dayCount;
+            let dailyReward = 0;
+            let message = "";
+
+            if (action === 'use') {
+                // ACCIÓN: USAR (Explotación)
+                dailyReward += INCOME_FROM_USE;
+                
+                // 1. Calcular Desgaste (Aleatorio: 5% a 15%)
+                const wear = Math.random() * (15 - 5) + 5; 
+                machineHealth = Math.max(0, machineHealth - wear);
+
+                // 2. Evaluar Falla
+                const failProb = getFailureProbability(machineHealth);
+                if (Math.random() < failProb) {
+                    // FALLA
+                    dailyReward -= COST_OF_FAILURE;
+                    isFailed = true;
+                    message = `🔴 ¡Falla Crítica! Probabilidad de falla: ${(failProb * 100).toFixed(1)}%. Costo: -$${COST_OF_FAILURE}.`;
+                    alertBox(message, 'bg-red-700');
+                } else {
+                    // Éxito en la operación
+                    message = `🟢 Máquina usada con éxito. Desgaste: ${wear.toFixed(1)}%. Ingreso: +$${INCOME_FROM_USE}.`;
+                    alertBox(message, 'bg-green-700');
+                }
+
+            } else if (action === 'maintain') {
+                // ACCIÓN: MANTENER (Exploración/Inversión)
+                dailyReward -= COST_OF_MAINTENANCE;
+
+                // 1. Recuperar Salud (Aleatorio: 20% a 40%)
+                const repair = Math.random() * (40 - 20) + 20; 
+                machineHealth = Math.min(MAX_HEALTH, machineHealth + repair);
+
+                // 2. Reporte
+                message = `🟡 Mantenimiento realizado. Salud recuperada: ${repair.toFixed(1)}%. Costo: -$${COST_OF_MAINTENANCE}.`;
+                alertBox(message, 'bg-yellow-600');
+            }
+
+            // 3. ACTUALIZAR RECOMPENSA
+            totalReward += dailyReward;
+            
+            // 4. ACTUALIZAR HISTORIAL Y GRÁFICA
+            dayLabels.push(dayCount);
+            rewardHistory.push(totalReward);
+            
+            if (myChart) {
+                myChart.update();
+            }
+
+            // 5. ACTUALIZAR FEEDBACK
+            // Se elimina el $ de aquí ya que está en el HTML
+            dailyRewardEl.textContent = dailyReward.toFixed(2);
+            totalRewardEl.textContent = totalReward.toFixed(2);
+            
+            dailyRewardEl.classList.toggle('text-red-600', dailyReward < 0);
+            dailyRewardEl.classList.toggle('text-green-600', dailyReward >= 0);
+
+            // 6. ACTUALIZAR DISPLAY GRÁFICO
+            updateHealthDisplay();
+        }
+
+        /** Reinicia el juego (nuevo ciclo de aprendizaje) */
+        function resetState() {
+            machineHealth = MAX_HEALTH;
+            totalReward = 0;
+            dayCount = 0;
+            isFailed = false;
+            rewardHistory = [];
+            dayLabels = [];
+            
+            // Se elimina el $ de aquí ya que está en el HTML
+            dailyRewardEl.textContent = '0.00';
+            totalRewardEl.textContent = '0.00';
+            dayCountEl.textContent = '0';
+            
+            dailyRewardEl.classList.remove('text-red-600', 'text-green-600');
+            dailyRewardEl.classList.add('text-yellow-900');
+
+            updateHealthDisplay();
+            initChart(); // Reinicializar la gráfica
+            
+            const statusBox = document.getElementById('status-box');
+            if (statusBox) statusBox.remove();
+        }
+
+        // --- Eventos ---
+        actionUseBtn.addEventListener('click', () => takeStep('use'));
+        actionMaintainBtn.addEventListener('click', () => takeStep('maintain'));
+        resetButton.addEventListener('click', resetState);
+
+        // Inicialización al cargar la ventana
+        window.onload = resetState;
+    </script>
+</body>
+</html>
+

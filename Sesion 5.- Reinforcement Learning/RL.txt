@@ -1,0 +1,21 @@
+Introducción al Aprendizaje por Refuerzo
+○ ¿Qué es el Aprendizaje por Refuerzo?
+○ Breve descripción general del Aprendizaje por Refuerzo (RL)
+○ Conceptos clave
+○ Introducción a conceptos fundamentales como agentes, entornos, acciones,
+estados, recompensas y políticas.
+○ RL vs. Otras formas de Aprendizaje Automático. Diferencias entre el RL, el aprendizaje supervisado y el aprendizaje no
+supervisado.
+
+● Procesos de Decisión de Markov (MDP)
+○ Formalización del problema
+○ Espacio de estados, espacio de acción, probabilidades de transición y función
+de recompensa.
+○ Propiedad de Markov
+○ Funciones de Valor
+○ Ecuaciones de Bellman
+● Algoritmos Básicos de Aprendizaje Relacionado (RL)
+○ Programación Dinámica
+○ Q-Learning
+○ SARSA
+○ Estrategias de Exploración

@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Procesos de Decisión de Markov (PDM)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    
+
+<script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
+    </script>
+    <script id="MathJax-script" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f7f9fc; }
+        
+        /* Celdas más grandes */
+        .grid-cell {
+            width: 150px; 
+            height: 150px; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #ccc;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.1s, background-color 0.5s ease-in-out; 
+            user-select: none;
+            position: relative;
+        }
+        .grid-cell:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        /* Grid container con menos espacio */
+        #grid-container {
+            gap: 4px; 
+        }
+        .agent {
+            width: 40px;
+            height: 40px;
+            background-color: #3b82f6; 
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            transition: all 0.5s ease-in-out;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+            border: 3px solid #1e40af; 
+            z-index: 10;
+        }
+        .reward-tag {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 9999px;
+            line-height: 1;
+            z-index: 5;
+            background-color: rgba(255, 255, 255, 0.7); 
+        }
+        /* ESTILO PARA EL VALOR CENTRAL DEL ESTADO (V(s)) */
+        .state-value-center {
+            font-size: 1.1rem; 
+            font-weight: 800; 
+            color: #1e40af; 
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 4px 8px;
+            border-radius: 8px;
+            z-index: 6; 
+            position: absolute; 
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* ESTILOS PARA LOS VALORES Q DE LAS ACCIONES */
+        .action-q-value {
+            position: absolute;
+            font-size: 0.7rem; 
+            font-weight: 600; 
+            color: #374151; 
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 2px 5px;
+            border-radius: 4px;
+            border: 1px solid #d1d5db; 
+            z-index: 7; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            line-height: 1;
+            min-width: 38px; 
+            text-align: center;
+        }
+        /* Ajuste de posición para las celdas más grandes (150px) */
+        .q-up { top: 8px; left: 50%; transform: translateX(-50%); } 
+        .q-down { bottom: 8px; left: 50%; transform: translateX(-50%); } 
+        .q-left { left: 8px; top: 50%; transform: translateY(-50%); } 
+        .q-right { right: 8px; top: 50%; transform: translateY(-50%); } 
+
+        /* Estilos específicos para el móvil */
+        @media (max-width: 640px) {
+            .grid-cell { width: 110px; height: 110px; } /* Nuevo ajuste para móviles */
+            #grid-container { gap: 2px; } 
+            .agent { width: 30px; height: 30px; }
+            .reward-tag { font-size: 0.6rem; top: 3px; right: 3px; }
+            .state-value-center { font-size: 0.9rem; padding: 3px 6px; border-radius: 6px;}
+            .action-q-value { font-size: 0.6rem; padding: 1px 3px; min-width: 30px;}
+            /* Ajuste de posición para las celdas móviles (110px) */
+            .q-up { top: 4px; }
+            .q-down { bottom: 4px; }
+            .q-left { left: 4px; }
+            .q-right { right: 4px; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    
+
+<header class="mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">Procesos de Decisión de Markov (PDM)</h1>
+        <p class="text-gray-600 mb-4">Un PDM es un marco matemático para modelar la toma de decisiones en situaciones donde los resultados son parcialmente aleatorios y están bajo el control de un agente.</p>
+        
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-blue-100">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-3">La Formalización de un PDM</h2>
+            <p class="mb-4">Un Proceso de Decisión de Markov se define formalmente como una tupla de cinco elementos $\mathbf{(S, A, P, R, \gamma)}$:</p>
+            <ul class="space-y-3 text-gray-700">
+                <li class="p-2 bg-blue-50 rounded-lg"><strong class="text-blue-600">S (Estados):</strong> El conjunto de todos los posibles estados en los que puede encontrarse el agente (ej. las casillas de la cuadrícula).</li>
+                <li class="p-2 bg-blue-50 rounded-lg"><strong class="text-blue-600">A (Acciones):</strong> El conjunto de acciones disponibles para el agente en cada estado (ej. Moverse Arriba, Abajo, Izquierda, Derecha).</li>
+                <li class="p-2 bg-blue-50 rounded-lg">
+                    <strong class="text-blue-600">P (Probabilidades de Transición):</strong> Define la probabilidad de pasar del estado $s$ al estado $s'$ al tomar la acción $a$: $P(s' | s, a)$.
+                    <p class="mt-2 text-sm text-gray-600">
+                        Este es el componente estocástico (aleatorio) del PDM.
+                    </p>
+                </li>
+                <li class="p-2 bg-blue-50 rounded-lg"><strong class="text-blue-600">R (Recompensas):</strong> La recompensa inmediata esperada por el agente al transicionar a un nuevo estado $s'$ desde $s$ usando la acción $a$: $R(s, a, s')$. El objetivo es maximizar la recompensa total futura.</li>
+                <li class="p-2 bg-blue-50 rounded-lg">
+                    <strong class="text-blue-600">$\gamma$ (Factor de Descuento):</strong> Un valor entre $[0, 1]$ que determina la importancia de las recompensas futuras. Un $\gamma$ cercano a 1 valora las recompensas lejanas; un $\gamma$ cercano a 0 solo valora las recompensas inmediatas.
+                    <p class="mt-2 text-sm text-gray-700 font-bold">
+                        <span class="text-red-500">¡OBSERVE ABAJO!</span> El valor de $V{índice}$ en la cuadrícula (Valor del Estado) es el resultado de estas variables.
+                    </p>
+                </li>
+            </ul>
+
+            
+
+<div class="mt-6 p-4 bg-yellow-50 rounded-lg shadow-md border border-yellow-200">
+                <h3 class="text-xl font-semibold text-yellow-700 mb-2">Concepto de Solución: El Valor del Estado ($V(s)$) y el Valor Q ($Q(s, a)$)</h3>
+                <p class="mb-3 text-gray-700">
+                    El <strong>Valor del Estado $V(s)$</strong> (centro de la celda) es la recompensa total acumulada que el agente espera obtener a largo plazo, asumiendo que toma las acciones óptimas.
+                </p>
+                <p class="mb-3 text-gray-700">
+                    El <strong>Valor Q ($Q(s, a)$)</strong> (bordes de la celda) es el valor esperado si el agente toma la acción $a$ desde el estado $s$. El Valor del Estado $V(s)$ es el máximo de estos Valores Q: $V(s) = \max_a Q(s, a)$.
+                </p>
+                <p class="text-gray-700 font-medium">
+                    Se calcula de forma <strong>iterativa</strong> (mediante el algoritmo de Iteración de Valor) hasta que la solución <strong>converge</strong>. La base de este cálculo es la <strong>Ecuación de Bellman de Optimalidad</strong>, que actualiza los números en la cuadrícula en cada paso:
+                </p>
+                <div class="mt-3 bg-yellow-100 p-3 rounded-md text-center">
+                    $$
+                    V^*(s) = \max_a Q^*(s, a) = \max_a \left[ \sum_{s'} P(s'|s, a) (R(s') + \gamma V^*(s')) \right]
+                    $$
+                    <p class="text-sm text-yellow-800 mt-2">
+                        La función maximiza la suma de la recompensa inmediata ($R(s')$) más la recompensa futura descontada ($\gamma V^*(s')$) en todos los estados futuros posibles $s'$.
+                    </p>
+                </div>
+            </div>
+            
+
+</div>
+    </header>
+
+    
+
+<section class="mt-8 mb-8 bg-indigo-50 p-6 rounded-xl shadow-inner border border-indigo-200">
+        <h2 class="text-2xl font-bold text-indigo-700 mb-3">Modo 1: Solución Convergida ($\gamma$)</h2>
+        <p class="text-gray-600 mb-4">Mueva el slider para ver la <strong>solución final ($V(s)$) y los valores Q de las acciones ($Q(s,a)$)</strong> para diferentes factores de descuento. El factor de descuento ($\gamma$) se aplica en la ecuación de Bellman.</p>
+        
+        <label for="gamma-slider" class="block text-lg font-medium text-gray-700 mb-2">
+            Factor de Descuento ($\gamma$): <span id="gamma-value" class="text-indigo-800 font-extrabold">0.9</span>
+        </label>
+        <input type="range" id="gamma-slider" min="0.0" max="1.0" step="0.05" value="0.9" class="w-full h-2 bg-indigo-300 rounded-lg appearance-none cursor-pointer">
+
+        <p class="mt-4 text-sm text-gray-500">
+            <strong>$\gamma = 0$ (Codicioso):</strong> Solo se preocupa por la recompensa inmediata.
+        </p>
+        <p class="text-sm text-gray-500">
+            <strong>$\gamma = 1$ (Visionario):</strong> Valora las recompensas futuras igual que las inmediatas.
+        </p>
+    </section>
+
+    
+
+<section class="mt-8 mb-8 bg-purple-50 p-6 rounded-xl shadow-inner border border-purple-200">
+        <h2 class="text-2xl font-bold text-purple-700 mb-3">Modo 2: Propagación de Valor por Iteración ($k$)</h2>
+        <p class="text-gray-600 mb-4">Muestra los valores de estado $V_k(s)$ y los valores Q de las acciones $Q_k(s,a)$ después de $k$ iteraciones, comenzando desde $V_0(s)=0$. Esto ilustra cómo los valores de recompensa se propagan a través de la cuadrícula.</p>
+        
+        
+
+<div class="mb-6 p-4 bg-purple-100 rounded-lg border border-purple-300">
+            <h3 class="text-xl font-semibold text-purple-800 mb-2">Ejemplo: Cálculo de $V_{1}(2)$ en la Iteración $k=0$</h3>
+            
+            <p class="mb-2 text-sm text-gray-700 font-medium">
+                Para calcular el nuevo valor de estado $V_{k+1}(s)$, primero calculamos el <strong>Valor Q ($Q(s, a)$)</strong> para cada acción ($a$). El valor Q es la recompensa total esperada que el agente obtendrá si toma la acción $a$ desde el estado $s$.
+            </p>
+
+            <p class="text-sm text-gray-700 mb-1">
+                Para el Estado 2 (fila 0, columna 2), calculamos su valor $V_1(2)$ usando los valores iniciales $V_0(s)$:
+            </p>
+            <ul class="text-xs text-gray-600 list-disc ml-4 mb-3">
+                <li>$V_0(\text{Normal}) = 0$.</li>
+                <li>$V_0(\text{Meta/Terminal}) = R(\text{Meta/Terminal})$ (El valor inicial de los estados terminales es su recompensa).</li>
+            </ul>
+            <div class="space-y-2 text-sm font-mono text-gray-800 bg-purple-200 p-3 rounded-md overflow-x-auto">
+                <p><strong>Estado Actual $s=2$</strong> (Recompensa de paso $R=-0.04$).</p>
+                <p class="text-xs text-gray-600 mb-1">Fórmula: $V_{k+1}(s) = \max_a Q_{k}(s, a)$ donde $Q_{k}(s, a) = \sum_{s'} P(s'|s, a) (R(s') + \gamma V_k(s'))$.</p>
+                <p>
+                    <strong class="text-red-700">Cálculo de $Q(\text{Derecha})$ (Valor Q para la acción Derecha):</strong>
+                    <span class="text-xs text-red-500 font-normal block">Esta acción resulta ser la óptima para este estado en la primera iteración.</span>
+                    $$
+                    \begin{aligned} 
+                    Q(\text{Derecha}) &= \underbrace{0.8 \cdot (R(3) + 0.9 V_0(3))}_{\text{Mov. Deseado a 3 (Meta)}} \\
+                    &+ \underbrace{0.1 \cdot (R(2) + 0.9 V_0(2))}_{\text{Mov. Lateral a 2 (Borde)}} \\
+                    &+ \underbrace{0.1 \cdot (R(6) + 0.9 V_0(6))}_{\text{Mov. Lateral a 6 (Normal)}} \\
+                    Q(\text{Derecha}) &= 0.8 \cdot (1.0 + 0.9 \cdot 1.0) + 0.1 \cdot (-0.04 + 0.9 \cdot 0) + 0.1 \cdot (-0.04 + 0.9 \cdot 0) \\
+                    Q(\text{Derecha}) &= 0.8 \cdot (1.9) - 0.004 - 0.004 \\
+                    Q(\text{Derecha}) &= 1.52 - 0.008 \\
+                    Q(\text{Derecha}) &= 1.512
+                    \end{aligned}
+                    $$
+                </p>
+                <p class="mt-3">
+                    <strong class="text-purple-700">Resultado:</strong> $V_1(2) = \max_a Q(2, a) = Q(\text{Derecha}) \approx \mathbf{1.51}$.
+                    <span class="text-xs text-purple-600">(Este valor se muestra en el centro de la celda V2. Los valores $Q(s,a)$ se muestran en los bordes de la celda).</span>
+                </p>
+            </div>
+        </div>
+        
+
+<div class="flex flex-col sm:flex-row justify-between items-center space-y-3 sm:space-y-0 sm:space-x-4">
+            <p class="text-lg font-medium text-gray-700 w-full sm:w-1/3">
+                Iteración Actual ($k$): <span id="iteration-count" class="text-purple-800 font-extrabold text-2xl ml-2">0</span>
+            </p>
+            <div class="flex space-x-2 w-full sm:w-2/3">
+                <button id="advance-iteration-btn" class="flex-1 bg-purple-500 hover:bg-purple-600 text-white font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150 transform hover:scale-105" disabled>
+                    Avanzar 1 Paso (k+1)
+                </button>
+                <button id="reset-iteration-btn" class="w-1/3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-4 rounded-lg shadow-md transition duration-150 transform hover:scale-105">
+                    Reiniciar Iteración
+                </button>
+            </div>
+        </div>
+        <p class="mt-4 text-sm text-red-600 font-semibold" id="iteration-status-message">
+            (El modo de Iteración de Valor está inactivo. Haz clic en "Reiniciar Iteración" para empezar con $\gamma = 0.9$).
+        </p>
+    </section>
+
+
+    
+
+<section class="mt-8">
+        <h2 class="text-3xl font-semibold text-gray-800 mb-4">Ejemplo Interactivo: El Mundo de Cuadrícula (Grid World)</h2>
+        <p class="text-gray-600 mb-6">Explore los estados y recompensas. Haga clic en las flechas de acción para que el agente intente moverse (el movimiento sigue siendo determinista, $P=1$).</p>
+        
+        <div class="flex flex-col lg:flex-row items-start gap-8">
+            
+            
+
+<div class="flex flex-col items-center p-6 bg-white rounded-xl shadow-lg border border-green-100 lg:order-2 w-full lg:w-1/3">
+                <h3 class="text-xl font-bold text-green-700 mb-4">Acciones (A)</h3>
+                
+                <div class="grid grid-cols-3 gap-2 mb-4">
+                    <button id="action-up" class="action-btn bg-gray-200 hover:bg-gray-300 p-3 rounded-full col-start-2 text-gray-800 font-bold shadow-md transition duration-150 transform hover:scale-105" data-action="Up">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
+                    </button>
+                    <div class="col-span-3 flex justify-between gap-2">
+                        <button id="action-left" class="action-btn bg-gray-200 hover:bg-gray-300 p-3 rounded-full text-gray-800 font-bold shadow-md transition duration-150 transform hover:scale-105" data-action="Left">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                        </button>
+                        <button id="action-right" class="action-btn bg-gray-200 hover:bg-gray-300 p-3 rounded-full text-gray-800 font-bold shadow-md transition duration-150 transform hover:scale-105" data-action="Right">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                    </div>
+                    <button id="action-down" class="action-btn bg-gray-200 hover:bg-gray-300 p-3 rounded-full col-start-2 text-gray-800 font-bold shadow-md transition duration-150 transform hover:scale-105" data-action="Down">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                        </button>
+                </div>
+                
+                <button id="reset-btn" class="mt-4 w-full bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md transition duration-150 transform hover:scale-105">
+                    Reiniciar Agente
+                </button>
+
+                <div id="result-message" class="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-sm w-full text-indigo-800 font-medium">
+                    Agente en Estado 0 (Inicio). Elija una Acción (A).
+                </div>
+            </div>
+
+            
+
+<div id="grid-container" class="lg:order-1 bg-white p-6 rounded-xl shadow-lg border border-gray-200 w-full lg:w-2/3 flex justify-center">
+                
+
+</div>
+
+            
+        </div>
+    </section>
+    
+    <footer class="mt-8 pt-4 border-t border-gray-300 text-center text-gray-500 text-sm">
+        <p>
+            Nota sobre P y R: La simulación de movimiento (al hacer clic en las flechas) es determinista ($P=1$). Sin embargo, la <strong>Valoración de Estado ($V(s)$)</strong> utiliza un modelo estocástico de Grid World (P=0.8 para el movimiento deseado, P=0.1 para cada movimiento lateral) para demostrar el concepto de Valor de Estado de manera más significativa.
+        </p>
+    </footer>
+
+    <script>
+        // --- DEFINICIÓN DEL PDM Y VARIABLES GLOBALES ---
+        const GRID_SIZE = 4;
+        const GRID_WORLD = [
+            // Row 0 (Índices 0-3)
+            { type: 'Start', reward: -0.04, text: 'Inicio (S)', isTerminal: false, isSolid: false }, // 0
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 1
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 2
+            { type: 'Goal', reward: 1.0, text: 'Meta (+1)', isTerminal: true, isSolid: false }, // 3
+            // Row 1 (Índices 4-7)
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 4
+            { type: 'Wall', reward: 0, text: 'Pared (W)', isTerminal: false, isSolid: true }, // 5
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 6
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 7
+            // Row 2 (Índices 8-11)
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 8
+            { type: 'Penalty', reward: -1.0, text: 'Trampa (-1)', isTerminal: true, isSolid: false }, // 9
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 10
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 11
+            // Row 3 (Índices 12-15)
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 12
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 13
+            { type: 'Normal', reward: -0.04, text: '', isTerminal: false, isSolid: false }, // 14
+            { type: 'Catastrophe', reward: -2.0, text: 'Catástrofe (-2)', isTerminal: true, isSolid: false }, // 15
+        ];
+
+        let agentPosition = 0; // Estado inicial (0,0)
+        let convergedV = new Array(GRID_WORLD.length).fill(0); 
+        let convergedQ = new Array(GRID_WORLD.length).fill(null).map(() => ({ 'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0 }));
+        
+        let iterativeV = new Array(GRID_WORLD.length).fill(0);  
+        let iterativeQ = new Array(GRID_WORLD.length).fill(null).map(() => ({ 'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0 }));
+        
+        let currentIteration = 0;
+
+        const ACTIONS = ['Up', 'Down', 'Left', 'Right'];
+        const TRANSITION_PROB = 0.8; 
+        const SIDE_PROB = 0.1;      
+        const THETA = 1e-6; 
+
+        // --- FUNCIONES AUXILIARES DE LA CUADRÍCULA ---
+
+        const getCoords = (index) => ({
+            row: Math.floor(index / GRID_SIZE),
+            col: index % GRID_SIZE
+        });
+
+        const getIndex = (row, col) => row * GRID_SIZE + col;
+
+        /**
+         * Calcula el siguiente estado real para una acción deseada, teniendo en cuenta
+         * los límites de la cuadrícula y las paredes.
+         */
+        const getNextStateIndex = (index, action) => {
+            let { row, col } = getCoords(index);
+            let newRow = row;
+            let newCol = col;
+
+            switch (action) {
+                case 'Up': newRow = row - 1; break;
+                case 'Down': newRow = row + 1; break;
+                case 'Left': newCol = col - 1; break;
+                case 'Right': newCol = col + 1; break;
+            }
+
+            // Chequeo de límites
+            if (newRow < 0 || newRow >= GRID_SIZE || newCol < 0 || newCol >= GRID_SIZE) {
+                return index; // Permanece en el estado actual si choca con el borde
+            }
+
+            const nextIndex = getIndex(newRow, newCol);
+            
+            // Chequeo de pared
+            if (GRID_WORLD[nextIndex].isSolid) {
+                return index; // Permanece en el estado actual si choca con una pared
+            }
+
+            return nextIndex; // Transición exitosa
+        };
+
+        const getLeftAction = (action) => {
+            if (action === 'Up') return 'Left';
+            if (action === 'Down') return 'Right';
+            if (action === 'Left') return 'Down';
+            if (action === 'Right') return 'Up';
+        };
+
+        const getRightAction = (action) => {
+            if (action === 'Up') return 'Right';
+            if (action === 'Down') return 'Left';
+            if (action === 'Left') return 'Up';
+            if (action === 'Right') return 'Down';
+        };
+
+        // --- ALGORITMO DE ITERACIÓN DE VALOR (VALUE ITERATION) ---
+
+        /**
+         * Ejecuta una sola actualización de Bellman (V_k+1) a partir de V_k y calcula los Q_values.
+         */
+        const runSingleBellmanStep = (gamma, V_in) => {
+            let V_out = [...V_in];
+            let Q_out = new Array(GRID_WORLD.length).fill(null).map(() => ({ 'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0 }));
+            let delta = 0;
+
+            for (let s = 0; s < GRID_WORLD.length; s++) {
+                if (GRID_WORLD[s].isTerminal || GRID_WORLD[s].isSolid) {
+                    V_out[s] = GRID_WORLD[s].reward; 
+                    Q_out[s] = { 'Up': V_out[s], 'Down': V_out[s], 'Left': V_out[s], 'Right': V_out[s] };
+                    continue; 
+                }
+
+                let maxQ = -Infinity;
+                let currentQValues = {};
+
+                // Bellman Optimality: Encuentra la mejor acción 'a'
+                ACTIONS.forEach(action => {
+                    let Q_value = 0;
+                    
+                    // Q(s,a) = SUM P(s'|s,a) * [ R(s') + gamma * V_k(s') ]
+                    
+                    // 1. Movimiento deseado (P=0.8)
+                    const s_prime_desired = getNextStateIndex(s, action);
+                    Q_value += TRANSITION_PROB * (GRID_WORLD[s_prime_desired].reward + gamma * V_in[s_prime_desired]);
+
+                    // 2. Movimiento 90 grados a la izquierda (P=0.1)
+                    const action_left = getLeftAction(action);
+                    const s_prime_left = getNextStateIndex(s, action_left);
+                    Q_value += SIDE_PROB * (GRID_WORLD[s_prime_left].reward + gamma * V_in[s_prime_left]);
+
+                    // 3. Movimiento 90 grados a la derecha (P=0.1)
+                    const action_right = getRightAction(action);
+                    const s_prime_right = getNextStateIndex(s, action_right);
+                    Q_value += SIDE_PROB * (GRID_WORLD[s_prime_right].reward + gamma * V_in[s_prime_right]);
+
+                    currentQValues[action] = Q_value;
+
+                    if (Q_value > maxQ) {
+                        maxQ = Q_value;
+                    }
+                });
+
+                // V_k+1(s) = max_a [ Q(s, a) ]
+                const new_value = maxQ; 
+                delta = Math.max(delta, Math.abs(new_value - V_in[s]));
+                V_out[s] = new_value;
+                Q_out[s] = currentQValues;
+            }
+
+            return { V: V_out, Q: Q_out, delta: delta };
+        };
+
+
+        /**
+         * Función para calcular la convergencia total (usada por el slider gamma).
+         */
+        const calculateFullConvergence = (gamma) => {
+            let V = new Array(GRID_WORLD.length).fill(0);
+            let Q = new Array(GRID_WORLD.length).fill(null).map(() => ({ 'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0 }));
+
+            // Inicializar V para estados terminales y paredes
+            GRID_WORLD.forEach((cell, index) => {
+                if (cell.isTerminal || cell.isSolid) {
+                    V[index] = cell.reward; 
+                    Q[index] = { 'Up': V[index], 'Down': V[index], 'Left': V[index], 'Right': V[index] };
+                }
+            });
+
+            const MAX_ITER = 1000; 
+
+            for (let i = 0; i < MAX_ITER; i++) {
+                const { V: V_new, Q: Q_new, delta } = runSingleBellmanStep(gamma, V);
+                V = V_new;
+                Q = Q_new;
+                if (delta < THETA) {
+                    break; 
+                }
+            }
+
+            convergedV = V; 
+            convergedQ = Q;
+            if (currentIteration === 0) { // Solo renderizar si no estamos en modo iterativo
+                 renderGrid(convergedV, convergedQ);
+            }
+        };
+
+        // --- CONTROL DE ITERACIÓN INTERACTIVA ---
+
+        const advanceIterationStep = () => {
+            const gamma = parseFloat(document.getElementById('gamma-slider').value);
+
+            // Ejecutar un paso de Bellman en los valores iterativos actuales
+            const { V: V_new, Q: Q_new, delta } = runSingleBellmanStep(gamma, iterativeV);
+            iterativeV = V_new;
+            iterativeQ = Q_new; // Actualizar Q-values iterativos
+            currentIteration++;
+            
+            // Actualizar UI
+            document.getElementById('iteration-count').textContent = currentIteration;
+            renderGrid(iterativeV, iterativeQ); // Renderizar con valores Q iterativos
+
+            // Verificar convergencia
+            if (delta < THETA) {
+                document.getElementById('advance-iteration-btn').disabled = true;
+                document.getElementById('iteration-status-message').className = 'mt-4 text-sm text-green-600 font-semibold';
+                document.getElementById('iteration-status-message').textContent = `¡CONVERGENCIA ALCANZADA! Los valores son estables después de ${currentIteration} iteraciones.`;
+            } else {
+                 document.getElementById('iteration-status-message').textContent = `Iteración $k = ${currentIteration}$. Delta de cambio: ${delta.toFixed(8)}.`;
+            }
+        };
+
+        const resetIteration = () => {
+            // Reiniciar V_k(s) a 0.0, excepto estados terminales y paredes que mantienen su Recompensa R
+            iterativeV = new Array(GRID_WORLD.length).fill(0);
+            iterativeQ = new Array(GRID_WORLD.length).fill(null).map(() => ({ 'Up': 0, 'Down': 0, 'Left': 0, 'Right': 0 })); // Reset Q-values
+            
+            GRID_WORLD.forEach((cell, index) => {
+                if (cell.isTerminal || cell.isSolid) { // Los estados terminales inician con su recompensa fija (R)
+                    iterativeV[index] = cell.reward;
+                    iterativeQ[index] = { 'Up': iterativeV[index], 'Down': iterativeV[index], 'Left': iterativeV[index], 'Right': iterativeV[index] };
+                }
+            });
+
+            currentIteration = 0;
+            document.getElementById('iteration-count').textContent = currentIteration;
+            document.getElementById('advance-iteration-btn').disabled = false;
+
+            // Renderizar los valores V_0 y Q_0
+            renderGrid(iterativeV, iterativeQ);
+            
+            // Mensaje de estado
+            const gamma = parseFloat(document.getElementById('gamma-slider').value);
+            document.getElementById('iteration-status-message').className = 'mt-4 text-sm text-purple-600 font-semibold';
+            document.getElementById('iteration-status-message').textContent = `Modo Iteración Activo (k=0). Factor $\gamma$ utilizado: ${gamma.toFixed(2)}.`;
+        };
+
+
+        // --- FUNCIONES DE RENDERIZADO Y CONTROL ---
+
+        /**
+         * Mapea un valor V(s) a un color en un espectro.
+         * Rango: Verde (positivo) -> Gris (cero) -> Rojo (negativo)
+         */
+        const getColorForValue = (value, minValue, maxValue) => {
+            // Caso trivial
+            if (minValue === maxValue) {
+                return 'rgb(200, 200, 200)'; 
+            }
+
+            const maxAbs = Math.max(Math.abs(minValue), Math.abs(maxValue));
+            
+            if (maxAbs < 0.001) {
+                return 'rgb(200, 200, 200)';
+            }
+
+            const baseIntensity = 150; 
+            let red, green, blue;
+
+            if (value > 0) {
+                 const t = value / maxValue;
+                 red = Math.round(baseIntensity + (255 - baseIntensity) * (1 - t));
+                 green = Math.round(baseIntensity + (255 - baseIntensity) * t);
+                 blue = Math.round(baseIntensity + (255 - baseIntensity) * (1 - t));
+            } else if (value < 0) {
+                 const t = Math.abs(value) / Math.abs(minValue);
+                 red = Math.round(baseIntensity + (255 - baseIntensity) * t);
+                 green = Math.round(baseIntensity + (255 - baseIntensity) * (1 - t));
+                 blue = Math.round(baseIntensity + (255 - baseIntensity) * (1 - t));
+            } else {
+                 red = baseIntensity; green = baseIntensity; blue = baseIntensity;
+            }
+
+            red = Math.min(255, Math.max(0, red));
+            green = Math.min(255, Math.max(0, green));
+            blue = Math.min(255, Math.max(0, blue));
+
+            return `rgb(${red}, ${green}, ${blue})`;
+        };
+
+
+        /**
+         * Función para renderizar la cuadrícula (Estados S, Valores V(s) y Q(s,a)).
+         */
+        const renderGrid = (valuesToDisplayV, valuesToDisplayQ) => {
+            const container = document.getElementById('grid-container');
+            container.innerHTML = '';
+            
+            container.className = 'grid grid-cols-4 gap-1 mx-auto max-w-sm lg:max-w-none w-full';
+            
+            let nonWallValues = valuesToDisplayV.filter((val, idx) => !GRID_WORLD[idx].isSolid);
+            let minValue = Math.min(...nonWallValues);
+            let maxValue = Math.max(...nonWallValues);
+            
+            if (nonWallValues.length === 0) { 
+                minValue = 0;
+                maxValue = 0;
+            }
+
+            GRID_WORLD.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.id = `cell-${index}`;
+                
+                let bgColor = '';
+                if (cell.isSolid) {
+                    bgColor = 'bg-gray-300 cursor-not-allowed'; 
+                    cellDiv.classList.add('bg-gray-300', 'cursor-not-allowed');
+                } else {
+                    bgColor = getColorForValue(valuesToDisplayV[index], minValue, maxValue);
+                    cellDiv.style.backgroundColor = bgColor; 
+                    cellDiv.classList.add('cursor-pointer');
+                }
+                
+                // Aplicar las clases de tamaño CSS (grid-cell) y bordes redondeados.
+                cellDiv.className = `grid-cell rounded-xl ${cell.isSolid ? 'cursor-not-allowed' : ''} transition-all duration-300 relative overflow-hidden`;
+                
+                // 1. Mostrar Recompensa R en la esquina superior derecha
+                if (Math.abs(cell.reward) > 0.0 || cell.type === 'Start') { 
+                    const rewardTag = document.createElement('span');
+                    rewardTag.className = `reward-tag ${cell.reward >= 0 ? 'bg-yellow-500 text-white' : 'bg-red-500 text-white'}`;
+                    rewardTag.textContent = `R: ${cell.reward.toFixed(2)}`;
+                    cellDiv.appendChild(rewardTag);
+                }
+
+                if (cell.isSolid) {
+                    // Texto para pared: grande y centrado
+                    const wallText = document.createElement('span');
+                    wallText.className = 'text-3xl font-extrabold text-center text-gray-700 z-10 absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-1/2';
+                    wallText.textContent = 'PARED';
+                    cellDiv.appendChild(wallText);
+                    container.appendChild(cellDiv);
+                    return;
+                }
+                
+                // 2. Etiqueta de Estado (Terminales y Normales)
+                const statusText = document.createElement('span');
+                if (cell.isTerminal) {
+                    // Grande y prominente para estados terminales
+                    statusText.className = `text-2xl font-extrabold text-center z-10 absolute bottom-1/2 left-1/2 transform -translate-x-1/2 translate-y-1/2 
+                                            ${cell.reward > 0 ? 'text-green-800' : 'text-red-800'}`;
+                    statusText.textContent = cell.text.split(' ')[0]; // Solo mostrar 'Meta', 'Trampa' o 'Catástrofe'
+                    cellDiv.appendChild(statusText);
+                    
+                    // Si es terminal, ya tenemos el status en grande.
+                } else {
+                    // Si no es terminal, el único texto es el valor V(s) en el centro.
+                    
+                    // 3. Mostrar el Valor del Estado V(s) en el centro de la celda
+                    const stateValueCenter = document.createElement('span');
+                    stateValueCenter.className = 'state-value-center';
+                    stateValueCenter.textContent = `V${index}: ${valuesToDisplayV[index].toFixed(2)}`;
+                    cellDiv.appendChild(stateValueCenter);
+
+                    // 4. Mostrar los Valores Q de las acciones en los bordes
+                    const qValues = valuesToDisplayQ[index];
+                    if (qValues) {
+                        ACTIONS.forEach(action => {
+                            const qValueDiv = document.createElement('span');
+                            qValueDiv.className = `action-q-value`;
+                            switch(action) {
+                                case 'Up': qValueDiv.classList.add('q-up'); break;
+                                case 'Down': qValueDiv.classList.add('q-down'); break;
+                                case 'Left': qValueDiv.classList.add('q-left'); break;
+                                case 'Right': qValueDiv.classList.add('q-right'); break;
+                            }
+                            qValueDiv.textContent = qValues[action].toFixed(2);
+                            cellDiv.appendChild(qValueDiv);
+                        });
+                    }
+                }
+
+
+                container.appendChild(cellDiv);
+            });
+
+            // Colocar al agente
+            placeAgent(agentPosition);
+        };
+
+        // Función para mover visualmente el agente (Deterministic Movement)
+        const placeAgent = (newIndex) => {
+            document.querySelectorAll('.agent').forEach(el => el.remove());
+            const newCell = document.getElementById(`cell-${newIndex}`);
+            if (newCell) {
+                const agentDiv = document.createElement('div');
+                agentDiv.className = 'agent';
+                newCell.appendChild(agentDiv);
+            }
+        };
+
+        // Lógica de Movimiento del PDM (Acciones A, Transiciones P=1, Recompensas R)
+        const moveAgent = (action) => {
+            
+            // Si ya está en un estado terminal, solo permite Reiniciar
+            if (GRID_WORLD[agentPosition].isTerminal) {
+                updateMessage(`¡Juego Terminado! Recompensa final: ${GRID_WORLD[agentPosition].reward.toFixed(2)}. Presione Reiniciar.`, 'bg-red-100 text-red-800');
+                return;
+            }
+
+            // Calculamos el estado de destino asumiendo movimiento determinista (P=1) para la interacción.
+            const nextIndex = getNextStateIndex(agentPosition, action);
+            const nextState = GRID_WORLD[nextIndex];
+            
+            // Chequeo de colisión (s' = s)
+            if (nextIndex === agentPosition) {
+                const message = `Acción "${action}": ¡El agente choca con borde o pared! Permanece en ${agentPosition}. Recompensa: ${GRID_WORLD[agentPosition].reward.toFixed(2)} (Costo de paso).`;
+                updateMessage(message, 'bg-yellow-100 text-yellow-800');
+                return; 
+            }
+
+            // Transición exitosa
+            agentPosition = nextIndex;
+            placeAgent(agentPosition);
+
+            // Recompensa R
+            const reward = nextState.reward;
+            let message;
+
+            if (nextState.isTerminal) {
+                message = `¡TRANSICIÓN EXITOSA! Nuevo Estado: ${agentPosition} (${nextState.text}). RECOMPENSA FINAL: ${reward.toFixed(2)}. Fin de la Simulación.`;
+                updateMessage(message, reward > 0 ? 'bg-green-100 text-green-800' : 'bg-red-300 text-red-900');
+            } else {
+                message = `¡TRANSICIÓN EXITOSA! Nuevo Estado: ${agentPosition}. Recompensa Inmediata: ${reward.toFixed(2)}.`;
+                updateMessage(message, 'bg-blue-100 text-blue-800');
+            }
+        };
+
+        // Función para actualizar el mensaje de resultado
+        const updateMessage = (text, className) => {
+            const messageEl = document.getElementById('result-message');
+            messageEl.className = `mt-4 p-3 rounded-lg text-sm w-full font-medium transition duration-300 ${className}`;
+            messageEl.textContent = text;
+        };
+
+        // Función para reiniciar el juego
+        const resetGame = () => {
+            agentPosition = 0;
+            placeAgent(agentPosition);
+            updateMessage('Agente Reiniciado. Elija una Acción (A).', 'bg-indigo-50 text-indigo-800 border border-indigo-200');
+        };
+
+        // --- INICIALIZACIÓN Y LISTENERS DE EVENTOS ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const gammaSlider = document.getElementById('gamma-slider');
+            const gammaValueSpan = document.getElementById('gamma-value');
+            
+            // 1. Inicializar V(s) con el valor por defecto de gamma (Modo Convergencia)
+            const initialGamma = parseFloat(gammaSlider.value);
+            calculateFullConvergence(initialGamma);
+            
+            // 2. Listener para el slider de gamma
+            gammaSlider.addEventListener('input', (e) => {
+                const newGamma = parseFloat(e.target.value);
+                gammaValueSpan.textContent = newGamma.toFixed(2);
+                calculateFullConvergence(newGamma); // Recalcular y renderizar V(s) y Q(s,a) Convergida
+
+                // Si se estaba en modo Iteración, actualiza el mensaje de estado con el nuevo gamma
+                 if (currentIteration > 0) {
+                    document.getElementById('iteration-status-message').textContent = `Modo Iteración Activo. Factor $\gamma$ utilizado: ${newGamma.toFixed(2)}. Reinicie para aplicar los nuevos valores.`;
+                 }
+            });
+            
+            // 3. Listeners para los botones de acción del agente
+            document.querySelectorAll('.action-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const action = e.currentTarget.getAttribute('data-action');
+                    moveAgent(action);
+                });
+            });
+
+            // 4. Listener para el botón de Reiniciar Agente
+            document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+            // 5. Listeners para el control de Iteración
+            document.getElementById('advance-iteration-btn').addEventListener('click', advanceIterationStep);
+            document.getElementById('reset-iteration-btn').addEventListener('click', resetIteration);
+        });
+    </script>
+</body>
+</html>
+

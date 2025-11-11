@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitecturas Básicas de CNN (LeNet & AlexNet)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #1f2937;
+            --card-dark: #374151;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-dark);
+            color: #d1d5db;
+        }
+        .card {
+            background-color: var(--card-dark);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .layer-box {
+            background-color: #4b5563;
+            color: white;
+            transition: background-color 0.2s;
+            cursor: pointer;
+            /* Fuerza el no-envoltorio de texto para los elementos pequeños */
+            white-space: nowrap; 
+        }
+        .layer-box:hover {
+            background-color: var(--accent-blue);
+        }
+        .active-detail {
+            border-left: 4px solid var(--accent-green);
+        }
+        /* La lógica de la flecha se maneja ahora con clases de Tailwind directamente en el HTML */
+    </style>
+</head>
+<body class="p-4 sm:p-8 min-h-screen">
+
+    <script>
+        // Objeto para almacenar la información detallada de cada capa/concepto
+        const details = {
+            'lenet-c1': {
+                name: 'C1: Capa Convolucional',
+                desc: 'Primera capa de convolución. Utiliza 6 filtros de 5x5 para extraer características básicas como bordes y esquinas. Reduce el tamaño de la imagen de entrada.',
+                innovation: 'Precursora en la extracción jerárquica de características.'
+            },
+            'lenet-s2': {
+                name: 'S2: Submuestreo (Pooling)',
+                desc: 'Utiliza un submuestreo promedio (similar al Pooling). Reduce la dimensionalidad espacial (2x2) y hace que la red sea más tolerante a pequeñas traslaciones.',
+                innovation: 'Ayuda a reducir el número de parámetros.'
+            },
+            'lenet-c3': {
+                name: 'C3: Capa Convolucional',
+                desc: 'Segunda capa de convolución. Usa 16 filtros de 5x5. Se conecta de forma dispersa con S2 para romper la simetría y forzar la especialización de las neuronas.',
+                innovation: 'Conexiones dispersas para eficiencia computacional.'
+            },
+            'lenet-f6': {
+                name: 'F6: Capa Totalmente Conectada',
+                desc: 'Penúltima capa totalmente conectada. Toma las características de C5 y las mapea a un vector de 84 características, que corresponden a los patrones de la cuadrícula de salida.',
+                innovation: 'Transición a la clasificación final.'
+            },
+            'alexnet-c1': {
+                name: 'CONV1: Gran Stride',
+                desc: 'Filtros 11x11 con un stride (paso) de 4. Este gran paso fue un diseño agresivo para reducir rápidamente la resolución espacial y hacer la red más eficiente.',
+                innovation: 'Uso de un stride muy grande (4) para la primera capa.'
+            },
+            'alexnet-relu': {
+                name: 'Activación ReLU',
+                desc: 'Uso de la función de activación Rectified Linear Unit (ReLU) en lugar de la tangente hiperbólica (tanh) o sigmoide. Permite un entrenamiento mucho más rápido al mitigar el problema del gradiente desvanecido.',
+                innovation: 'Adopción de ReLU, un cambio crucial para el entrenamiento profundo.'
+            },
+            'alexnet-lrn': {
+                name: 'LRN (Local Response Normalization)',
+                desc: 'Mecanismo de normalización que anima a las neuronas a especializarse en diferentes características, normalizando las activaciones localmente en el mapa de características. (Hoy en día está obsoleto, reemplazado por Batch Normalization).',
+                innovation: 'Intento temprano de normalización para mejorar la generalización.'
+            },
+            'alexnet-pool': {
+                name: 'Pooling Superpuesto',
+                desc: 'Utiliza ventanas de pooling que se superponen (ej. ventana 3x3 con stride 2). Esto redujo la tasa de error en comparación con el pooling no superpuesto.',
+                innovation: 'Pooling solapado para retener más información y evitar el sobreajuste.'
+            },
+            'alexnet-dropout': {
+                name: 'Dropout',
+                desc: 'Técnica de regularización donde las neuronas son "apagadas" al azar (0 con probabilidad p=0.5) durante el entrenamiento. Previene la coadaptación de las neuronas y reduce el sobreajuste.',
+                innovation: 'Uso de Dropout en las capas FC, esencial para regularizar una red tan grande.'
+            },
+            'alexnet-fc': {
+                name: 'FC6 & FC7: Capas Densas',
+                desc: 'Dos capas totalmente conectadas masivas de 4096 neuronas cada una. Realizan la clasificación final de las características extraídas.',
+                innovation: 'Demuestra el poder de la capacidad del modelo con capas FC muy anchas.'
+            }
+        };
+
+        let currentActive = null; // Para rastrear el elemento activo
+
+        /**
+         * Muestra los detalles de una capa o concepto al hacer clic.
+         * @param {string} id - El ID del detalle a mostrar (ej. 'lenet-c1')
+         * @param {string} targetId - El ID del contenedor de detalles (ej. 'lenet-details')
+         */
+        function showDetail(id, targetId) {
+            const detailInfo = details[id];
+            const detailContainer = document.getElementById(targetId);
+            const clickedElement = document.getElementById(id);
+
+            // Si el elemento clicado ya estaba activo, lo desactiva y limpia el contenedor
+            if (currentActive === clickedElement) {
+                currentActive.classList.remove('active-detail', 'shadow-lg');
+                currentActive = null;
+                detailContainer.innerHTML = `
+                    <p class="text-gray-400">
+                        Selecciona una capa o innovación
+                        para ver su descripción detallada.
+                    </p>
+                `;
+                return;
+            }
+
+            // Desactiva el elemento previamente activo si existe
+            if (currentActive) {
+                currentActive.classList.remove('active-detail', 'shadow-lg');
+            }
+
+            // Activa el nuevo elemento
+            clickedElement.classList.add('active-detail', 'shadow-lg');
+            currentActive = clickedElement;
+
+
+            // Actualiza el contenedor de detalles
+            detailContainer.innerHTML = `
+                <h3 class="text-xl font-bold text-white mb-2">${detailInfo.name}</h3>
+                <p class="text-gray-300 mb-4">${detailInfo.desc}</p>
+                <p class="text-sm font-semibold text-green-400">
+                    <span class="mr-2">💡</span>
+                    ${detailInfo.innovation}
+                </p>
+            `;
+        }
+
+        // Inicializar el contenido de los contenedores de detalles al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+             document.getElementById('lenet-details').innerHTML = `<p class="text-gray-400">Selecciona una capa o innovación para ver su descripción detallada.</p>`;
+             document.getElementById('alexnet-details').innerHTML = `<p class="text-gray-400">Selecciona una capa o innovación para ver su descripción detallada.</p>`;
+        });
+    </script>
+
+    <header class="text-center mb-12">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-white mb-2">
+            Arquitecturas Fundacionales de CNN
+        </h1>
+        <p class="text-xl text-indigo-400">
+            LeNet y AlexNet: Pilares de la Visión por Computadora (CV)
+        </p>
+    </header>
+
+    <!-- Contenedor principal de las dos tarjetas (apilamiento vertical) -->
+    <div class="grid grid-cols-1 gap-8">
+
+        <!-- Tarjeta LeNet-5 -->
+        <div id="lenet-card" class="card rounded-2xl p-6 flex flex-col">
+            <h2 class="text-3xl font-bold text-white mb-4 border-b border-gray-600 pb-2">
+                LeNet-5 (1998)
+            </h2>
+            <p class="text-sm text-gray-400 mb-6">
+                Pionera en la aplicación de redes neuronales convolucionales para la clasificación de dígitos escritos a mano (MNIST). Estableció el patrón de secuencia CONV → POOL.
+            </p>
+
+            <!-- Flujo de Capas LeNet (Modificado para una sola línea con espaciado ajustado) -->
+            <div class="flex items-center justify-center space-x-2 mb-6 overflow-x-auto">
+
+                <!-- Capas (Haz clic para detalles) -->
+                <div id="lenet-c1" onclick="showDetail('lenet-c1', 'lenet-details')" class="layer-box rounded-lg p-3 w-32 text-center font-medium shadow-md">
+                    CONV1 (5x5)
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="lenet-s2" onclick="showDetail('lenet-s2', 'lenet-details')" class="layer-box rounded-lg p-3 w-32 text-center font-medium shadow-md">
+                    POOL1 (2x2)
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="lenet-c3" onclick="showDetail('lenet-c3', 'lenet-details')" class="layer-box rounded-lg p-3 w-32 text-center font-medium shadow-md">
+                    CONV2 (5x5)
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="lenet-f6" onclick="showDetail('lenet-f6', 'lenet-details')" class="layer-box rounded-lg p-3 w-32 text-center font-medium shadow-md">
+                    FC (84)
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div class="layer-box bg-gray-600 rounded-lg p-3 w-32 text-center font-medium text-sm">
+                    OUTPUT (10)
+                </div>
+            </div>
+
+            <!-- Contenedor de Detalles LeNet -->
+            <div id="lenet-details" class="mt-auto p-4 rounded-xl bg-gray-700/50 min-h-[120px]">
+                <!-- El contenido se inyecta con JavaScript -->
+            </div>
+        </div>
+
+        <!-- Tarjeta AlexNet -->
+        <div id="alexnet-card" class="card rounded-2xl p-6 flex flex-col">
+            <h2 class="text-3xl font-bold text-white mb-4 border-b border-gray-600 pb-2">
+                AlexNet (2012)
+            </h2>
+            <p class="text-sm text-gray-400 mb-6">
+                Ganadora del ImageNet (ILSVRC-2012). Demostró la escalabilidad de las CNNs en hardware moderno y con grandes volúmenes de datos.
+            </p>
+
+            <!-- Flujo de Capas AlexNet (Modificado para ser más pequeño y caber en una sola línea) -->
+            <div class="flex items-center justify-center space-x-1 mb-6 flex-nowrap overflow-x-auto">
+
+                <!-- Capas (Haz clic para detalles) -->
+                <div id="alexnet-c1" onclick="showDetail('alexnet-c1', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-indigo-600 hover:bg-indigo-700 text-xs">
+                    CONV1
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="alexnet-relu" onclick="showDetail('alexnet-relu', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-pink-600 hover:bg-pink-700 text-xs">
+                    ReLU
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="alexnet-lrn" onclick="showDetail('alexnet-lrn', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-yellow-600 hover:bg-yellow-700 text-gray-900 text-xs">
+                    LRN
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="alexnet-pool" onclick="showDetail('alexnet-pool', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-indigo-600 hover:bg-indigo-700 text-xs">
+                    POOL
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="alexnet-dropout" onclick="showDetail('alexnet-dropout', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-red-600 hover:bg-red-700 text-xs">
+                    Drop
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div id="alexnet-fc" onclick="showDetail('alexnet-fc', 'alexnet-details')" class="layer-box rounded-lg p-1.5 w-16 text-center font-medium shadow-md bg-indigo-600 hover:bg-indigo-700 text-xs">
+                    FC x 2
+                </div>
+                <div class="text-green-300 text-2xl font-bold">→</div>
+
+                <div class="layer-box bg-gray-600 rounded-lg p-1.5 w-16 text-center font-medium text-xs">
+                    OUTPUT
+                </div>
+            </div>
+            
+            <!-- Contenedor de Detalles AlexNet -->
+            <div id="alexnet-details" class="mt-auto p-4 rounded-xl bg-gray-700/50 min-h-[120px]">
+                <!-- El contenido se inyecta con JavaScript -->
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
