@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detección de Objetos con OpenCV.js</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para el canvas y la interfaz */
+        .card {
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        #canvas_output {
+            border: 2px solid #6366f1; /* Indigo 500 */
+            border-radius: 0.5rem;
+            width: 100%;
+            height: auto;
+            max-width: 640px; /* Limita el tamaño del video para escritorio */
+        }
+        /* Ocultamos el video ya que solo necesitamos su stream */
+        #cam_input { display: none; } 
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#6366f1',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 flex flex-col items-center p-4 min-h-screen font-sans">
+
+    <div class="max-w-4xl w-full">
+        <h1 class="text-4xl font-extrabold text-gray-900 mb-2">
+            Detector de Rostros Interactivo (OpenCV.js)
+        </h1>
+        <p class="text-lg text-gray-600 mb-6">
+            Esta aplicación ilustra el flujo de trabajo de detección de objetos utilizando la librería OpenCV.js, cargando un modelo de cascada Haar para identificar rostros en tiempo real desde la cámara web.
+        </p>
+
+        <!-- Contenedor del Canvas y el Estado -->
+        <div class="card bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Vista de la Cámara y Resultado</h2>
+            
+            <!-- Elementos para el procesamiento -->
+            <video id="cam_input" width="640" height="480"></video>
+            <canvas id="canvas_output" class="mx-auto"></canvas>
+            <!-- CANVAS OCULTO: Usado para dibujar el frame del video antes de que OpenCV lo lea -->
+            <canvas id="temp_canvas" width="640" height="480" style="display: none;"></canvas>
+
+            <p id="status" class="text-primary text-xl mt-4 p-2 bg-indigo-50 rounded-md">Cargando OpenCV.js...</p>
+        </div>
+
+        <!-- Explicación del Proceso (CORREGIDO A FORMATO HTML PURO) -->
+        <div class="card bg-white p-6 rounded-xl shadow-lg">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">El Flujo de Detección (Paso a Paso)</h2>
+            <ol style="list-style-type: decimal; padding-left: 20px;" class="text-left space-y-3 text-gray-700">
+                <li><strong style="color: #6366f1;">Carga de Librería:</strong> Se carga <code>opencv.js</code> y se espera el evento <code>onload</code> para ejecutar <code>onOpenCvReady()</code>.</li>
+                <li><strong style="color: #6366f1;">Carga del Modelo:</strong> La función <code>loadFile()</code> descarga el archivo XML del clasificador Haar Cascade (<code>haarcascade_frontalface_default.xml</code>) y lo almacena en la memoria virtual de OpenCV.js.</li>
+                <li><strong style="color: #6366f1;">Inicio de la Cámara:</strong> <code>startCamera()</code> solicita acceso a <code>getUserMedia</code> y asocia el <i>stream</i> al elemento <code>&lt;video&gt;</code>. <u>¡Asegúrate de aceptar el permiso de la cámara!</u></li>
+                <li><strong style="color: #6366f1;">Bucle de Procesamiento:</strong> La función <code>processVideo()</code> se ejecuta continuamente a 30 FPS. En cada ciclo:
+                    <ul style="list-style-type: none; padding-left: 20px;">
+                        <li>- Se captura el frame de la cámara dibujándolo en un canvas auxiliar, y luego se lee en la matriz <b><code>src</code></b> (<code>cv.imread</code>).</li>
+                        <li>- Se convierte <code>src</code> a escala de grises (<b><code>dst</code></b>) para el clasificador.</li>
+                        <li>- Se ejecuta <code>classifier.detectMultiScale()</code> en <b><code>dst</code></b> para encontrar rostros.</li>
+                        <li>- Se dibujan rectángulos rojos sobre <b><code>src</code></b> usando las coordenadas detectadas.</li>
+                        <li>- El resultado final (<code>src</code> con los recuadros) se muestra en el elemento <b><code>&lt;canvas&gt;</code></b> (<code>canvas_output</code>).</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+    </div>
+
+    <!-- Script de OpenCV.js: La librería principal -->
+    <script async src="https://docs.opencv.org/3.4/opencv.js" onload="onOpenCvReady();"></script>
+
+    <!-- Lógica de la aplicación JavaScript -->
+    <script>
+        // Variables globales para OpenCV
+        let video = document.getElementById('cam_input');
+        let canvasOutput = document.getElementById('canvas_output');
+        let tempCanvas = document.getElementById('temp_canvas'); // Canvas auxiliar
+        let tempCtx = null;
+        let statusElement = document.getElementById('status');
+        let src = null; // Mat de entrada, será asignada en cada frame
+        let dst = null; // Mat de destino (escala de grises)
+        let classifier = null; 
+        const FPS = 30;
+
+        // ----------------------------------------------------------------
+        // 1. Carga del archivo XML de la cascada Haar
+        // ----------------------------------------------------------------
+        function loadFile(path, callback) {
+            statusElement.innerHTML = `Cargando archivo: ${path}... (Necesario para la detección)`;
+            let request = new XMLHttpRequest();
+            request.open('GET', path, true);
+            request.responseType = 'arraybuffer';
+            
+            request.onload = function() {
+                if (request.readyState === 4 && request.status === 200) {
+                    // Crea un archivo virtual en el sistema de archivos interno de OpenCV
+                    let data = new Uint8Array(request.response);
+                    cv.FS_createDataFile('/', 'haarcascade_frontalface_default.xml', data, true, true, false);
+                    callback();
+                } else {
+                    statusElement.innerHTML = `ERROR: No se pudo cargar el clasificador. Código: ${request.status}.`;
+                    console.error('Fallo al cargar el archivo de cascada.');
+                }
+            };
+            request.send();
+        };
+
+        // ----------------------------------------------------------------
+        // 2. Inicialización de la librería
+        // ----------------------------------------------------------------
+        function onOpenCvReady() {
+            if (typeof cv !== 'undefined') {
+                statusElement.innerHTML = 'OpenCV.js cargado exitosamente. Cargando modelo...';
+                
+                // URL estándar para el clasificador de rostros (versión 3.4)
+                const faceCascadeFile = 'https://raw.githubusercontent.com/opencv/opencv/3.4/data/haarcascades/haarcascade_frontalface_default.xml';
+                
+                // Carga el archivo y luego inicia la cámara
+                loadFile(faceCascadeFile, startCamera);
+            } else {
+                statusElement.innerHTML = 'ERROR: OpenCV.js no se cargó correctamente.';
+            }
+        }
+
+        // ----------------------------------------------------------------
+        // 3. Inicialización y arrancar la cámara
+        // ----------------------------------------------------------------
+        function startCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                statusElement.innerHTML = 'ERROR: Tu navegador no soporta la API getUserMedia.';
+                return;
+            }
+
+            statusElement.innerHTML = 'Solicitando acceso a la cámara... (Por favor, acepta la ventana emergente)';
+            
+            // ACCESO A CÁMARA
+            navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+                .then(function(stream) {
+                    video.srcObject = stream;
+                    video.play();
+                    
+                    video.onloadedmetadata = function() {
+                        // Ajusta los canvas al tamaño real del video
+                        canvasOutput.width = video.videoWidth;
+                        canvasOutput.height = video.videoHeight;
+
+                        tempCanvas.width = video.videoWidth;
+                        tempCanvas.height = video.videoHeight;
+                        tempCtx = tempCanvas.getContext('2d');
+                        
+                        // Inicializa la matriz 'dst' (src se inicializa en processVideo)
+                        dst = new cv.Mat(video.videoHeight, video.videoWidth, cv.CV_8UC1); // Mat de escala de grises
+                        
+                        // Carga el clasificador desde el archivo virtual
+                        classifier = new cv.CascadeClassifier();
+                        classifier.load('haarcascade_frontalface_default.xml');
+
+                        statusElement.innerHTML = 'Detección iniciada. Cámara activa.';
+                        
+                        // Comienza el bucle de procesamiento de video
+                        setTimeout(processVideo, 1000/FPS);
+                    };
+                })
+                .catch(function(err) {
+                    // Muestra el error específico que causó el fallo
+                    statusElement.innerHTML = 'ERROR DE CÁMARA: ' + err.name + '. Posibles causas: permiso denegado o cámara en uso.';
+                    console.error("Error al acceder a la cámara:", err);
+                });
+        }
+
+        // ----------------------------------------------------------------
+        // 4. Bucle principal de procesamiento (Detección en tiempo real)
+        // ----------------------------------------------------------------
+        function processVideo() {
+            let begin = Date.now();
+            let delay = 1000/FPS;
+
+            // 1. **CORRECCIÓN:** Liberar la matriz anterior de 'src' (creada por cv.imread)
+            if (src && !src.isDeleted()) {
+                src.delete();
+            }
+
+            // 2. **CORRECCIÓN:** Dibujar el frame del video en el canvas temporal
+            tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+            
+            // 3. **CORRECCIÓN:** Capturar el frame del canvas temporal en la Mat 'src'
+            src = cv.imread('temp_canvas'); 
+            
+            // 4. Convierte a escala de grises (necesario para el clasificador)
+            cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);
+
+            // 5. Ejecuta la detección
+            let faces = new cv.RectVector();
+            let minSize = new cv.Size(0, 0);
+            
+            // detectMultiScale encuentra objetos de diferentes tamaños
+            classifier.detectMultiScale(dst, faces, 1.1, 3, 0, minSize);
+
+            // 6. Dibuja los recuadros delimitadores
+            for (let i = 0; i < faces.size(); ++i) {
+                let face = faces.get(i);
+                let point1 = new cv.Point(face.x, face.y);
+                let point2 = new cv.Point(face.x + face.width, face.y + face.height);
+                // Dibuja un rectángulo rojo (RGBA: 255, 0, 0, 255)
+                cv.rectangle(src, point1, point2, [255, 0, 0, 255], 2);
+            }
+            
+            // 7. Muestra el resultado final en el canvas
+            cv.imshow(canvasOutput, src);
+
+            // Limpieza de memoria (IMPORTANTE en bucles)
+            faces.delete();
+            
+            // Programa el siguiente frame
+            let end = Date.now();
+            let timeDiff = end - begin;
+            let nextDelay = Math.max(0, delay - timeDiff);
+            setTimeout(processVideo, nextDelay);
+        }
+    </script>
+</body>
+</html>

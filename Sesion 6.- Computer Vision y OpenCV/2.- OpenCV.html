@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procesamiento de Imágenes con OpenCV.js</title>
+    <!-- Carga de Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados */
+        .canvas-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f3f4f6;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            min-height: 400px;
+            overflow: hidden;
+        }
+        canvas {
+            max-width: 100%;
+            height: auto;
+            border-radius: 0.5rem;
+            display: block;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-green-700 tracking-tight">
+                Procesamiento de Imágenes con OpenCV.js
+            </h1>
+            <p class="mt-2 text-xl text-gray-600">Seleccione una operación para cargar su código y experimente.</p>
+        </header>
+
+        <!-- Sección de Controles -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end mb-6">
+                <!-- Carga de Imagen -->
+                <div class="space-y-2 col-span-1">
+                    <label for="imageLoader" class="block text-sm font-medium text-gray-700">Cargar Imagen</label>
+                    <input type="file" id="imageLoader" accept="image/*" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                </div>
+                
+                <!-- Selector de Operación OpenCV Categorizado -->
+                <div class="space-y-2 col-span-2">
+                    <label for="operationSelect" class="block text-sm font-medium text-gray-700">Seleccionar Operación OpenCV</label>
+                    <select id="operationSelect" onchange="loadOpCode()" 
+                        class="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 p-2 border" 
+                        disabled>
+                        <option value="none">-- Seleccionar Operación para cargar el código --</option>
+                        
+                        <optgroup label="Filtros y Suavizado">
+                            <option value="gaussianBlur">Desenfoque Gaussiano (cv.GaussianBlur)</option>
+                            <option value="medianBlur">Desenfoque de Mediana (cv.medianBlur)</option>
+                        </optgroup>
+
+                        <optgroup label="Detección de Características">
+                            <option value="cannyEdges">Detección de Bordes Canny (cv.Canny)</option>
+                            <option value="findContours">Detección y Dibujado de Contornos (cv.findContours)</option>
+                        </optgroup>
+
+                        <optgroup label="Operaciones Morfológicas">
+                            <option value="threshold">Binarización/Umbralización (cv.threshold)</option>
+                            <option value="dilate">Dilatación (cv.dilate)</option>
+                            <option value="erode">Erosión (cv.erode)</option>
+                        </optgroup>
+                        
+                        <optgroup label="Operaciones Básicas">
+                            <option value="invertColor">Inversión de Color (cv.bitwise_not)</option>
+                            <option value="grayScale">Convertir a Escala de Grises (cv.cvtColor)</option>
+                        </optgroup>
+                    </select>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <p class="text-gray-600">
+                    Editor de Código Interactivo (Variables disponibles: <code class="font-mono bg-gray-100 p-0.5 rounded">src</code> (Mat de la imagen original), <code class="font-mono bg-gray-100 p-0.5 rounded">dst</code> (Mat de destino), <code class="font-mono bg-gray-100 p-0.5 rounded">cv</code> (objeto OpenCV)).
+                </p>
+                <textarea id="codeEditor" rows="10" class="w-full p-3 font-mono text-sm border border-gray-300 rounded-lg shadow-inner focus:ring-green-500 focus:border-green-500" 
+                    placeholder="// El código OpenCV.js se cargará aquí al seleccionar una operación..." 
+                    disabled></textarea>
+                
+                <div class="flex space-x-4">
+                    <button onclick="applyCodeOperation()" id="applyCodeButton"
+                        class="flex-1 px-6 py-2 bg-green-600 text-white font-bold rounded-full shadow-lg hover:bg-green-700 transition duration-150 ease-in-out disabled:opacity-50"
+                        disabled>
+                        Aplicar Código OpenCV
+                    </button>
+                    <button onclick="resetImage()" id="resetButton"
+                        class="px-6 py-2 bg-red-500 text-white font-bold rounded-full shadow-lg hover:bg-red-600 transition duration-150 ease-in-out disabled:opacity-50"
+                        disabled>
+                        Restablecer
+                    </button>
+                </div>
+            </div>
+
+            <div id="message" class="text-center mt-4 text-sm text-red-600 font-semibold"></div>
+        </div>
+
+        <!-- Área de Visualización -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700 text-center">Imagen Original</h2>
+                <div class="canvas-container bg-blue-50/50">
+                    <canvas id="originalCanvas"></canvas>
+                    <p id="originalPlaceholder" class="text-gray-500 p-8">Cargue una imagen y espere a que OpenCV.js se inicialice.</p>
+                </div>
+            </div>
+            <div class="space-y-4">
+                <h2 class="text-xl font-semibold text-gray-700 text-center">Imagen Procesada</h2>
+                <div class="canvas-container bg-green-50/50">
+                    <canvas id="processedCanvas"></canvas>
+                    <p id="processedPlaceholder" class="text-gray-500 p-8 hidden">El resultado de la operación aparecerá aquí.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 1. Carga de OpenCV.js -->
+    <script async src="https://docs.opencv.org/4.x/opencv.js" onload="onOpenCvReady()"></script>
+
+    <script>
+        let isCvReady = false;
+        let originalMat = null;
+        let currentMat = null;
+        let originalImageSource = null;
+
+        const originalCanvas = document.getElementById('originalCanvas');
+        const processedCanvas = document.getElementById('processedCanvas');
+        const imageLoader = document.getElementById('imageLoader');
+        const codeEditor = document.getElementById('codeEditor');
+        const operationSelect = document.getElementById('operationSelect');
+        const applyCodeButton = document.getElementById('applyCodeButton');
+        const resetButton = document.getElementById('resetButton');
+        const messageBox = document.getElementById('message');
+        const originalPlaceholder = document.getElementById('originalPlaceholder');
+
+        // Definición de snippets de código OpenCV
+        const OPENCV_SNIPPETS = {
+            // --- Filtros y Suavizado ---
+            gaussianBlur: 
+`// Convierte a escala de grises para un filtrado más limpio
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// Crea el Mat de destino
+let dst = new cv.Mat();
+
+// Aplica el filtro Gaussiano con un kernel de 5x5
+// (Entrada, Salida, Tamaño del kernel, Sigma X, Sigma Y, Tipo de borde)
+let ksize = new cv.Size(5, 5); 
+cv.GaussianBlur(gray, dst, ksize, 0, 0, cv.BORDER_DEFAULT);
+
+// Libera memoria
+gray.delete();`,
+
+            medianBlur:
+`// Crea el Mat de destino
+let dst = new cv.Mat();
+
+// Aplica el filtro de mediana (muy bueno para eliminar ruido sal y pimienta)
+// El tamaño del kernel debe ser impar (3, 5, 7, etc.)
+cv.medianBlur(src, dst, 5);`,
+
+            // --- Detección de Características ---
+            cannyEdges:
+`// Convierte a escala de grises (necesario para Canny)
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// Crea el Mat de destino (será una imagen binaria de 8 bits)
+let dst = new cv.Mat();
+
+// Aplica el detector de bordes Canny
+// (Entrada, Salida, Umbral 1, Umbral 2, Tamaño de apertura de Sobel, L2gradiente)
+cv.Canny(gray, dst, 50, 150, 3, false);
+
+// Libera memoria
+gray.delete();`,
+
+            findContours:
+`// 1. Convierte a escala de grises
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// 2. Umbraliza (o usa Canny) para obtener una imagen binaria
+let thresh = new cv.Mat();
+cv.threshold(gray, thresh, 127, 255, cv.THRESH_BINARY);
+
+// 3. Inicializa estructuras de salida (Contornos y Jerarquía)
+let contours = new cv.MatVector();
+let hierarchy = new cv.Mat();
+
+// 4. Encuentra los contornos
+// RETR_CCOMP recupera todos los contornos y los organiza en una jerarquía de dos niveles
+// CHAIN_APPROX_SIMPLE comprime los segmentos horizontales, verticales y diagonales
+cv.findContours(thresh, contours, hierarchy, cv.RETR_CCOMP, cv.CHAIN_APPROX_SIMPLE);
+
+// 5. Crea la Matriz de destino (una copia de la original para dibujar sobre ella)
+let dst = src.clone();
+
+// 6. Dibuja todos los contornos encontrados en un color aleatorio
+// El índice de contorno es -1 (todos), el color es verde (0, 255, 0, 255), grosor 2
+let color = new cv.Scalar(0, 255, 0, 255);
+cv.drawContours(dst, contours, -1, color, 2, cv.LINE_8, hierarchy, 100);
+
+// Libera memoria
+gray.delete();
+thresh.delete();
+contours.delete();
+hierarchy.delete();`,
+
+            // --- Operaciones Morfológicas ---
+            threshold:
+`// Convierte a escala de grises
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// Crea el Mat de destino
+let dst = new cv.Mat();
+
+// Aplica umbral (Threshold) binario
+// Píxeles > 127 se vuelven 255, el resto 0.
+cv.threshold(gray, dst, 127, 255, cv.THRESH_BINARY);
+
+// Libera memoria
+gray.delete();`,
+
+            dilate:
+`// 1. Convierte a escala de grises
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// 2. Crea un elemento estructurante (kernel) 3x3 rectangular
+let M = cv.Mat.ones(3, 3, cv.CV_8U);
+
+// 3. Crea el Mat de destino
+let dst = new cv.Mat();
+
+// 4. Aplica dilatación
+// Esto expande las áreas blancas o reduce los agujeros negros.
+cv.dilate(gray, dst, M);
+
+// Libera memoria
+gray.delete();
+M.delete();`,
+
+            erode:
+`// 1. Convierte a escala de grises
+let gray = new cv.Mat();
+cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+// 2. Crea un elemento estructurante (kernel) 3x3 rectangular
+let M = cv.Mat.ones(3, 3, cv.CV_8U);
+
+// 3. Crea el Mat de destino
+let dst = new cv.Mat();
+
+// 4. Aplica erosión
+// Esto reduce las áreas blancas o expande los agujeros negros.
+cv.erode(gray, dst, M);
+
+// Libera memoria
+gray.delete();
+M.delete();`,
+
+            // --- Operaciones Básicas ---
+            invertColor:
+`// Crea el Mat de destino
+let dst = new cv.Mat();
+
+// Invierte los valores de los píxeles (255 - valor) en todos los canales.
+cv.bitwise_not(src, dst);`,
+            
+            grayScale:
+`// Crea el Mat de destino
+let dst = new cv.Mat();
+
+// Convierte de color (RGBA) a escala de grises
+cv.cvtColor(src, dst, cv.COLOR_RGBA2GRAY, 0);`,
+
+            none: "// El código OpenCV.js se cargará aquí al seleccionar una operación...\n// Las variables disponibles son: cv, src (Mat original), dst (Mat de resultado)."
+        };
+
+        // ----------------------------------------------------
+        // 1. INICIALIZACIÓN DE OPENCV
+        // ----------------------------------------------------
+
+        /**
+         * Función llamada cuando OpenCV.js termina de cargarse.
+         */
+        window.onOpenCvReady = function() {
+            isCvReady = true;
+            messageBox.textContent = 'OpenCV.js cargado y listo.';
+            operationSelect.disabled = false;
+        };
+
+        // ----------------------------------------------------
+        // 2. GESTIÓN DE LA IMAGEN
+        // ----------------------------------------------------
+
+        /**
+         * Maneja la carga de la imagen, la dibuja y la prepara como cv.Mat.
+         */
+        imageLoader.addEventListener('change', (e) => {
+            messageBox.textContent = '';
+            const file = e.target.files[0];
+            if (!file || !isCvReady) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const img = new Image();
+                img.onload = () => {
+                    // Limpiar Mats previos para evitar fugas de memoria
+                    if (originalMat) originalMat.delete();
+                    if (currentMat) currentMat.delete();
+
+                    // Ajustar el canvas original para mostrar la imagen cargada
+                    originalCanvas.width = img.width;
+                    originalCanvas.height = img.height;
+                    const ctx = originalCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    
+                    // Ajustar el canvas procesado
+                    processedCanvas.width = img.width;
+                    processedCanvas.height = img.height;
+
+                    // Crear el Mat original desde el canvas y mantener la fuente de la imagen
+                    originalMat = cv.imread(originalCanvas); 
+                    currentMat = originalMat.clone();
+                    originalImageSource = event.target.result;
+
+                    // Mostrar en el canvas procesado (será igual a original inicialmente)
+                    cv.imshow('processedCanvas', currentMat);
+
+                    // Habilitar controles y ocultar placeholders
+                    originalPlaceholder.classList.add('hidden');
+                    document.getElementById('processedPlaceholder').classList.add('hidden');
+                    applyCodeButton.disabled = false;
+                    resetButton.disabled = false;
+                    codeEditor.disabled = false;
+                    
+                    messageBox.textContent = 'Imagen cargada. Seleccione una operación o edite el código.';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        /**
+         * Restablece la imagen procesada a la original.
+         */
+        window.resetImage = function() {
+            if (!originalMat || !isCvReady) return;
+            
+            // Recrear el Mat actual desde el original
+            if (currentMat) currentMat.delete();
+            currentMat = originalMat.clone();
+
+            // Mostrar el Mat original en el canvas procesado
+            cv.imshow('processedCanvas', currentMat);
+            messageBox.textContent = 'Imagen procesada restablecida a la original.';
+            
+            // Borrar el editor de código al restablecer
+            codeEditor.value = OPENCV_SNIPPETS.none; 
+        }
+
+        // ----------------------------------------------------
+        // 3. GESTIÓN DEL CÓDIGO INTERACTIVO
+        // ----------------------------------------------------
+
+        /**
+         * Carga el código de la operación seleccionada en el editor.
+         */
+        window.loadOpCode = function() {
+            const operation = operationSelect.value;
+            codeEditor.value = OPENCV_SNIPPETS[operation] || OPENCV_SNIPPETS.none;
+            if (operation !== 'none') {
+                messageBox.textContent = `Código para "${operationSelect.options[operationSelect.selectedIndex].text}" cargado. ¡Presione Aplicar!`;
+            } else {
+                 messageBox.textContent = OPENCV_SNIPPETS.none;
+            }
+        }
+
+        /**
+         * Ejecuta el código OpenCV.js personalizado del usuario.
+         */
+        window.applyCodeOperation = function() {
+            if (!originalMat || !isCvReady) {
+                messageBox.textContent = 'Error: Cargue una imagen y espere a que OpenCV.js esté listo.';
+                return;
+            }
+
+            const codeString = codeEditor.value;
+            if (!codeString.trim() || codeString.trim() === OPENCV_SNIPPETS.none.trim()) {
+                messageBox.textContent = 'El editor de código está vacío o contiene el código predeterminado. Seleccione una operación o escriba código.';
+                return;
+            }
+            
+            // Clonar la imagen original para la entrada de la operación. 
+            // Esto asegura que cada ejecución parte de la imagen original.
+            // Si quisiera que fuera iterativo, se debería clonar 'currentMat'.
+            // Para mantener la consistencia, volvemos a 'src'.
+            const src = originalMat.clone();
+            
+            let tempDst = null; // Variable para almacenar el resultado intermedio/final
+
+            messageBox.textContent = 'Ejecutando código OpenCV...';
+            
+            try {
+                // Crear una función dinámica y ejecutar el código del usuario.
+                // Se espera que el código del usuario cree una variable 'dst' (cv.Mat) 
+                // con el resultado, y se incluye 'return dst;' implícitamente en la función generada.
+                
+                // NOTA: 'tempDst' es usado aquí para capturar el retorno, pero en el código del usuario
+                // la variable debe llamarse 'dst'.
+                const customFunction = new Function('cv', 'src', codeString + '\n return dst;');
+                tempDst = customFunction(cv, src); 
+
+                if (tempDst instanceof cv.Mat) {
+                    // Si ya existe un Mat actual, lo liberamos.
+                    if (currentMat) currentMat.delete();
+                    
+                    // El Mat de resultado pasa a ser el Mat actual.
+                    currentMat = tempDst;
+                    cv.imshow('processedCanvas', currentMat); // Mostrar en el canvas
+                    
+                    // Forzamos a que el Mat de entrada 'src' se libere si no fue liberado en el código del usuario
+                    // Aunque en teoría 'src' se libera al final de la función, es buena práctica.
+                    src.delete(); 
+                    
+                    messageBox.textContent = 'Código OpenCV aplicado con éxito. Resultado actualizado.';
+                } else {
+                    // Si el usuario olvidó crear/devolver 'dst', restauramos y notificamos.
+                    src.delete(); 
+                    throw new Error('El código no devolvió una Matriz (cv.Mat) de OpenCV válida. Asegúrese de que su código cree y devuelva una matriz "dst".');
+                }
+
+            } catch (error) {
+                messageBox.textContent = `Error de ejecución de OpenCV: ${error.message}. Revise su código y el manejo de memoria.`;
+                // Es crucial liberar la matriz de entrada 'src' si la ejecución falló antes del 'finally'.
+                src.delete(); 
+                
+                // Si hubo un error en tiempo de ejecución, el Mat resultante (tempDst) podría estar 
+                // en un estado desconocido o no definido. No lo asignamos a currentMat.
+            }
+        }
+    </script>
+</body>
+</html>
