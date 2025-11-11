@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visión Artificial: Conceptos Fundamentales</title>
+    <!-- Carga de Tailwind CSS para un diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos generales */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+        }
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .accordion-content.active {
+            /* Altura ajustada a 3000px */
+            max-height: 3000px;
+        }
+        .content-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        /* Estilos para la cuadrícula de imágenes de aplicación (TARJETAS GRANDES Y RESPONSIVAS) */
+        .image-grid {
+            display: grid;
+            /* Contenedores más grandes, forzando 2 columnas en pantallas > 600px */
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .app-card { /* Clase añadida para el JS de las tarjetas */
+            /* Contenedor principal para el efecto de tarjeta */
+            position: relative; 
+            display: block;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+        .image-grid img {
+            width: 100%;
+            height: 240px; 
+            object-fit: cover;
+            font-size: 0; 
+        }
+        .image-grid figcaption {
+            /* Posición superpuesta DENTRO del contenedor */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.75); /* Fondo oscuro semi-transparente */
+            color: white;
+            text-align: left;
+            padding: 0; /* Padding manejado por los elementos internos */
+            font-size: 0.85rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        /* Encabezado visible y clickeable */
+        .figcaption-header {
+            padding: 1rem;
+            cursor: pointer;
+        }
+        .figcaption-sector {
+            font-size: 1rem; 
+            font-weight: 800;
+        }
+        /* Contenido que se oculta/muestra */
+        .app-details {
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease-in-out, opacity 0.3s;
+        }
+        .app-details.active {
+            max-height: 500px; /* Suficiente para expandir la lista */
+            opacity: 1;
+            padding: 0 1rem 1rem 1rem;
+        }
+        /* Rotación del icono al estar activo */
+        .app-card.active .figcaption-header svg {
+            transform: rotate(180deg);
+        }
+        /* Estilo para la imagen de relación de campos */
+        .relation-diagram svg {
+            /* Asegura que el SVG sea responsivo */
+            max-width: 100%;
+            height: auto;
+        }
+        /* Estilos para el diagrama de matriz de píxeles */
+        .matrix-container {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            flex-direction: column; /* Pila en móvil */
+            align-items: center;
+        }
+        @media (min-width: 640px) { /* Lado a lado en desktop */
+            .matrix-container {
+                flex-direction: row;
+                gap: 3rem;
+            }
+        }
+        .pixel-matrix-svg {
+            border: 2px solid #374151; /* Borde oscuro */
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto p-4 sm:p-8 max-w-4xl">
+        <header class="text-center py-6 mb-6 bg-blue-700 text-white rounded-xl shadow-lg">
+            <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">Visión Artificial: Conceptos Fundamentales</h1>
+            <p class="mt-2 text-blue-200 text-lg">Guía interactiva sobre el procesamiento de imágenes digitales.</p>
+        </header>
+
+        <!-- Contenedor principal de los acordeones -->
+        <div id="accordion-container" class="space-y-4">
+
+            <!-- Panel 1: Introducción a la Visión Artificial -->
+            <div class="content-card">
+                <button class="accordion-header flex justify-between items-center w-full py-3 text-xl font-semibold text-left text-gray-800 focus:outline-none" data-target="content-1">
+                    <span>1. Introducción a la Visión Artificial</span>
+                    <svg class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="content-1" class="accordion-content active">
+                    <div class="pt-4 border-t border-gray-200">
+                        <h2 class="text-2xl font-bold text-blue-700 mb-3">¿Qué es la Visión Artificial?</h2>
+                        <p class="text-gray-700 mb-4">
+                            La Visión Artificial (o Visión por Computadora) es un campo interdisciplinario de la ciencia y la ingeniería que busca dotar a las máquinas de la capacidad de "ver" y comprender el mundo que les rodea, de manera similar al sistema visual humano. Implica la adquisición, procesamiento, análisis y comprensión de imágenes digitales para obtener información numérica o simbólica de ellas.
+                        </p>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Definición y Aplicaciones</h3>
+                        <p class="text-gray-700 mb-2">
+                            La Visión Artificial automatiza tareas que el sistema visual humano realiza. Sus aplicaciones son vastas e impactan diversas industrias:
+                        </p>
+
+                        <!-- Cuadrícula de Aplicaciones - Tarjetas grandes y superpuestas -->
+                        <div class="image-grid">
+                            <!-- 1. Salud -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/6366f1/ffffff?text=Salud" alt="Placeholder para Diagnóstico Médico" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🏥 Salud</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Diagnóstico por imagen (radiografías, resonancias)</li>
+                                            <li>Cirugía asistida por robots</li>
+                                            <li>Análisis de muestras de células</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 2. Agricultura -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/10b981/ffffff?text=Agricultura" alt="Placeholder para Detección de Cultivos por Drones" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🚜 Agricultura</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Monitoreo de cosechas con drones</li>
+                                            <li>Detección temprana de plagas y enfermedades</li>
+                                            <li>Robots de siembra y cosecha selectiva</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 3. Banca -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/facc15/000000?text=Banca" alt="Placeholder para Detección de Fraude Bancario" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🏦 Banca</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Lectura automatizada de cheques</li>
+                                            <li>Verificación de identidad (KYC) biométrica</li>
+                                            <li>Detección de fraude en documentos</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 4. Automoción -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/ef4444/ffffff?text=Automocion" alt="Placeholder para Sistemas de Asistencia al Conductor (ADAS)" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🚗 Automoción</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Vehículos autónomos (detección de carril y obstáculos)</li>
+                                            <li>Sistemas ADAS</li>
+                                            <li>Monitoreo de la atención del conductor</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 5. Deporte -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/e11d48/ffffff?text=Deporte" alt="Placeholder para Análisis de Técnica Deportiva" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🏅 Deporte</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Seguimiento de jugadores en tiempo real</li>
+                                            <li>Análisis biomecánico de la técnica</li>
+                                            <li>Sistemas de arbitraje automatizado (VAR)</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 6. Manufactura -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/f97316/ffffff?text=Manufactura" alt="Placeholder para Inspección de Calidad en Fábricas" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🏭 Manufactura</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Control de calidad en líneas de montaje</li>
+                                            <li>Robótica de precisión</li>
+                                            <li>Inspección automatizada de defectos superficiales</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 7. Seguros -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/06b6d4/ffffff?text=Seguros" alt="Placeholder para Estimación de Daños en Reclamaciones" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🛡️ Seguros</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Evaluación automática de daños (vehículos, propiedades)</li>
+                                            <li>Prevención de fraudes</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                            <!-- 8. Vigilancia y seguridad -->
+                            <figure class="app-card">
+                                <img src="https://placehold.co/150x240/475569/ffffff?text=Vigilancia" alt="Placeholder para Vigilancia y Detección de Eventos" />
+                                <figcaption>
+                                    <div class="figcaption-header flex justify-between items-center w-full">
+                                        <span class="figcaption-sector flex items-center gap-2">🚨 Vigilancia y Seguridad</span>
+                                        <svg class="w-4 h-4 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                                    </div>
+                                    <div class="app-details">
+                                        <ul class="list-disc list-inside space-y-1 text-sm pt-2 border-t border-gray-600/50 ml-4">
+                                            <li>Detección de intrusiones y objetos olvidados</li>
+                                            <li>Seguimiento de personas y objetos</li>
+                                            <li>Control de acceso mediante reconocimiento facial</li>
+                                        </ul>
+                                    </div>
+                                </figcaption>
+                            </figure>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2 mb-4 italic text-right">
+                            Visualización de aplicaciones clave con ejemplos específicos. Haz clic en el encabezado de la tarjeta para ver los detalles.
+                        </p>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Relación con otros campos</h3>
+                        <p class="text-gray-700 mb-2">
+                            La Visión Artificial no es un campo aislado; se nutre y contribuye a otras disciplinas fundamentales:
+                        </p>
+                        <!-- Diagrama de Intersección - SVG VENN DIAGRAMA CON CÍRCULOS SUPERPUESTOS (AJUSTADO) -->
+                        <div class="flex justify-center my-4 relation-diagram">
+                            <figure class="max-w-md w-full p-4">
+                                <svg viewBox="0 0 350 250" class="w-full h-auto">
+                                    <!-- Definición de estilos para textos (etiquetas más pequeñas) -->
+                                    <defs>
+                                        <style>
+                                            .label { font: bold 10px sans-serif; fill: black; } /* Etiquetas más pequeñas */
+                                            .center-label { font: bold 12px sans-serif; fill: white; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); } /* Centro más pequeño */
+                                        </style>
+                                    </defs>
+
+                                    <!-- Círculo 1: IA / ML / COGNICIÓN (Top Left) - Azul (Radio 80) -->
+                                    <circle cx="110" cy="110" r="80" fill="#3B82F6" fill-opacity="0.6" stroke="#1D4ED8" stroke-width="2" />
+                                    <!-- Etiqueta actualizada para incluir Cognición en dos líneas -->
+                                    <text x="110" y="45" text-anchor="middle" class="label">IA / ML</text>
+                                    <text x="110" y="58" text-anchor="middle" class="label">/ COGNICIÓN</text>
+
+                                    <!-- Círculo 2: Matemáticas (Top Right) - Rojo (Radio 80) -->
+                                    <circle cx="240" cy="110" r="80" fill="#EF4444" fill-opacity="0.6" stroke="#B91C1C" stroke-width="2" />
+                                    <text x="240" y="50" text-anchor="middle" class="label">MATEMÁTICAS</text>
+
+                                    <!-- Círculo 3: Procesamiento de Señales (Bottom Center) - Verde (Radio 80) -->
+                                    <circle cx="175" cy="180" r="80" fill="#10B981" fill-opacity="0.6" stroke="#047857" stroke-width="2" />
+                                    <text x="175" y="230" text-anchor="middle" class="label">PROC. SEÑALES</text>
+                                    
+                                    <!-- Etiqueta central de la intersección (Visión Artificial) -->
+                                    <text x="175" y="115" text-anchor="middle" class="center-label">VISIÓN</text>
+                                    <text x="175" y="135" text-anchor="middle" class="center-label">ARTIFICIAL</text>
+                                </svg>
+                                <figcaption class="text-center text-xs text-gray-500 mt-2 italic">
+                                    Diagrama que ilustra la Visión Artificial como el área de intersección de la Inteligencia Artificial (inspirada en la Cognición), las Matemáticas y el Procesamiento de Señales.
+                                </figcaption>
+                            </figure>
+                        </div>
+                        <!-- FIN DIAGRAMA DE VENN SVG -->
+                        <ul class="list-disc list-inside space-y-2 text-gray-600 ml-4">
+                            <li><strong>Inteligencia Artificial (IA), Aprendizaje Automático (ML) y Cognición:</strong> La Visión Artificial es un subcampo de la IA que utiliza técnicas de ML (especialmente Deep Learning) para la toma de decisiones y el reconocimiento de patrones complejos, a menudo inspiradas en la neurociencia y la psicología cognitiva.</li>
+                            <li><strong>Matemáticas:</strong> Proporciona las herramientas fundamentales para la representación de imágenes (matrices), las transformaciones (geometría proyectiva), y la optimización de modelos (cálculo, álgebra lineal, estadística).</li>
+                            <li><strong>Física (Óptica) y Procesamiento de Señales:</strong> La óptica es crucial para entender cómo se forma la imagen (adquisición). El procesamiento de señales se aplica al análisis de la imagen como una señal 2D (filtros, frecuencias).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 2: Representación Digital de Imágenes (Con Interacción) -->
+            <div class="content-card">
+                <button class="accordion-header flex justify-between items-center w-full py-3 text-xl font-semibold text-left text-gray-800 focus:outline-none" data-target="content-2">
+                    <span>2. Representación Digital de Imágenes</span>
+                    <svg class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="content-2" class="accordion-content">
+                    <div class="pt-4 border-t border-gray-200">
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Píxeles</h3>
+                        <p class="text-gray-700 mb-4">
+                            Una imagen digital es una matriz bidimensional de puntos llamados <strong>píxeles</strong> (picture elements). Cada píxel almacena un valor que representa la intensidad o el color de la luz en ese punto. La calidad de la imagen depende del número de píxeles (resolución).
+                        </p>
+
+                        <!-- Diagrama de Matriz de Píxeles (Grayscale 5x5) -->
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 my-4">
+                            <h4 class="font-bold text-center mb-4 text-blue-700">La Imagen como Matriz de Datos (Escala de Grises)</h4>
+                            <p class="text-sm text-center text-gray-600 mb-4">
+                                En el ejemplo de 5x5, la intensidad de gris (0=negro, 255=blanco) es el valor almacenado en la matriz.
+                            </p>
+                            <div class="matrix-container">
+                                <!-- Diagrama 1: Visual + Valores (SVG) -->
+                                <figure class="flex flex-col items-center">
+                                    <svg viewBox="0 0 150 150" class="pixel-matrix-svg w-32 h-32 md:w-36 md:h-36">
+                                        <defs>
+                                            <style>
+                                                .val { font: bold 12px sans-serif; fill: white; text-anchor: middle; }
+                                                .val-dark { font: bold 12px sans-serif; fill: black; text-anchor: middle; }
+                                            </style>
+                                        </defs>
+
+                                        <!-- Función para generar un píxel: (x, y, valor, etiqueta) -->
+                                        <!-- Usamos 0 a 255. 0 es negro, 255 es blanco. -->
+
+                                        <!-- Fila 1 -->
+                                        <rect x="0" y="0" width="30" height="30" fill="rgb(20, 20, 20)" />
+                                        <text x="15" y="19" class="val">20</text>
+                                        <rect x="30" y="0" width="30" height="30" fill="rgb(50, 50, 50)" />
+                                        <text x="45" y="19" class="val">50</text>
+                                        <rect x="60" y="0" width="30" height="30" fill="rgb(100, 100, 100)" />
+                                        <text x="75" y="19" class="val">100</text>
+                                        <rect x="90" y="0" width="30" height="30" fill="rgb(150, 150, 150)" />
+                                        <text x="105" y="19" class="val-dark">150</text>
+                                        <rect x="120" y="0" width="30" height="30" fill="rgb(200, 200, 200)" />
+                                        <text x="135" y="19" class="val-dark">200</text>
+
+                                        <!-- Fila 2 -->
+                                        <rect x="0" y="30" width="30" height="30" fill="rgb(25, 25, 25)" />
+                                        <text x="15" y="49" class="val">25</text>
+                                        <rect x="30" y="30" width="30" height="30" fill="rgb(120, 120, 120)" />
+                                        <text x="45" y="49" class="val-dark">120</text>
+                                        <rect x="60" y="30" width="30" height="30" fill="rgb(255, 255, 255)" />
+                                        <text x="75" y="49" class="val-dark">255</text>
+                                        <rect x="90" y="30" width="30" height="30" fill="rgb(180, 180, 180)" />
+                                        <text x="105" y="49" class="val-dark">180</text>
+                                        <rect x="120" y="30" width="30" height="30" fill="rgb(80, 80, 80)" />
+                                        <text x="135" y="49" class="val">80</text>
+
+                                        <!-- Fila 3 -->
+                                        <rect x="0" y="60" width="30" height="30" fill="rgb(40, 40, 40)" />
+                                        <text x="15" y="79" class="val">40</text>
+                                        <rect x="30" y="60" width="30" height="30" fill="rgb(190, 190, 190)" />
+                                        <text x="45" y="79" class="val-dark">190</text>
+                                        <rect x="60" y="60" width="30" height="30" fill="rgb(150, 150, 150)" />
+                                        <text x="75" y="79" class="val-dark">150</text>
+                                        <rect x="90" y="60" width="30" height="30" fill="rgb(10, 10, 10)" />
+                                        <text x="105" y="79" class="val">10</text>
+                                        <rect x="120" y="60" width="30" height="30" fill="rgb(220, 220, 220)" />
+                                        <text x="135" y="79" class="val-dark">220</text>
+
+                                        <!-- Fila 4 -->
+                                        <rect x="0" y="90" width="30" height="30" fill="rgb(170, 170, 170)" />
+                                        <text x="15" y="109" class="val-dark">170</text>
+                                        <rect x="30" y="90" width="30" height="30" fill="rgb(90, 90, 90)" />
+                                        <text x="45" y="109" class="val">90</text>
+                                        <rect x="60" y="90" width="30" height="30" fill="rgb(60, 60, 60)" />
+                                        <text x="75" y="109" class="val">60</text>
+                                        <rect x="90" y="90" width="30" height="30" fill="rgb(140, 140, 140)" />
+                                        <text x="105" y="109" class="val-dark">140</text>
+                                        <rect x="120" y="90" width="30" height="30" fill="rgb(250, 250, 250)" />
+                                        <text x="135" y="109" class="val-dark">250</text>
+
+                                        <!-- Fila 5 -->
+                                        <rect x="0" y="120" width="30" height="30" fill="rgb(230, 230, 230)" />
+                                        <text x="15" y="139" class="val-dark">230</text>
+                                        <rect x="30" y="120" width="30" height="30" fill="rgb(160, 160, 160)" />
+                                        <text x="45" y="139" class="val-dark">160</text>
+                                        <rect x="60" y="120" width="30" height="30" fill="rgb(30, 30, 30)" />
+                                        <text x="75" y="139" class="val">30</text>
+                                        <rect x="90" y="120" width="30" height="30" fill="rgb(110, 110, 110)" />
+                                        <text x="105" y="139" class="val">110</text>
+                                        <rect x="120" y="120" width="30" height="30" fill="rgb(70, 70, 70)" />
+                                        <text x="135" y="139" class="val">70</text>
+
+                                        <!-- Líneas de la cuadrícula -->
+                                        <g stroke="#374151" stroke-width="1">
+                                            <line x1="30" y1="0" x2="30" y2="150" />
+                                            <line x1="60" y1="0" x2="60" y2="150" />
+                                            <line x1="90" y1="0" x2="90" y2="150" />
+                                            <line x1="120" y1="0" x2="120" y2="150" />
+
+                                            <line x1="0" y1="30" x2="150" y2="30" />
+                                            <line x1="0" y1="60" x2="150" y2="60" />
+                                            <line x1="0" y1="90" x2="150" y2="90" />
+                                            <line x1="0" y1="120" x2="150" y2="120" />
+                                        </g>
+                                    </svg>
+                                    <figcaption class="text-sm text-gray-500 mt-2 italic font-semibold">
+                                        Imagen con valores superpuestos
+                                    </figcaption>
+                                </figure>
+
+                                <!-- Flecha (solo en desktop) -->
+                                <div class="hidden sm:flex text-4xl text-blue-500 font-bold items-center justify-center">
+                                    <span class="sr-only">Se convierte en</span>
+                                    &rarr;
+                                </div>
+                                
+                                <!-- Diagrama 2: Solo Matriz Numérica (Simulación de un bloque de código/datos) -->
+                                <figure class="flex flex-col items-center">
+                                    <div class="p-3 bg-white border border-gray-300 rounded-lg shadow-md font-mono text-xs md:text-sm text-gray-800">
+                                        <pre class="whitespace-pre-wrap leading-relaxed">
+[ 20,  50, 100, 150, 200 ]
+[ 25, 120, 255, 180,  80 ]
+[ 40, 190, 150,  10, 220 ]
+[ 170, 90,  60, 140, 250 ]
+[ 230, 160, 30, 110,  70 ]
+                                        </pre>
+                                    </div>
+                                    <figcaption class="text-sm text-gray-500 mt-2 italic font-semibold">
+                                        Representación solo matricial
+                                    </figcaption>
+                                </figure>
+
+                            </div>
+                            <p class="text-xs text-gray-500 mt-4 text-center">
+                                <strong>Nota:</strong> Los algoritmos solo "ven" la matriz de números a la derecha y operan sobre ellos para producir la imagen de la izquierda.
+                            </p>
+                        </div>
+                        <!-- Fin Diagrama de Matriz de Píxeles -->
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Espacios de Color (RGB, Escala de Grises)</h3>
+                        <p class="text-gray-700 mb-4">
+                            El espacio de color define cómo se representa el color en la imagen. El más común es <strong>RGB (Rojo, Verde, Azul)</strong>, donde cada píxel tiene 3 canales, y cada canal (típicamente de 0 a 255) controla la intensidad de ese color primario. La <strong>Escala de Grises</strong> usa solo un canal (intensidad de la luz), donde 0 es negro y 255 es blanco.
+                        </p>
+
+                        <!-- DEMO INTERACTIVA DE COLOR -->
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <h4 class="font-bold text-center mb-4 text-blue-700">Demostración: Espacio de Color RGB</h4>
+                            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                                <!-- Controles RGB -->
+                                <div class="w-full md:w-1/2 space-y-3">
+                                    <div class="flex items-center">
+                                        <label for="redRange" class="w-12 text-sm font-medium text-red-600">R:</label>
+                                        <input type="range" id="redRange" min="0" max="255" value="100" class="w-full h-2 bg-red-100 rounded-lg appearance-none cursor-pointer range-lg">
+                                        <span id="redValue" class="w-10 ml-3 text-center text-sm">100</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="greenRange" class="w-12 text-sm font-medium text-green-600">G:</label>
+                                        <input type="range" id="greenRange" min="0" max="255" value="150" class="w-full h-2 bg-green-100 rounded-lg appearance-none cursor-pointer range-lg">
+                                        <span id="greenValue" class="w-10 ml-3 text-center text-sm">150</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <label for="blueRange" class="w-12 text-sm font-medium text-blue-600">B:</label>
+                                        <input type="range" id="blueRange" min="0" max="255" value="200" class="w-full h-2 bg-blue-100 rounded-lg appearance-none cursor-pointer range-lg">
+                                        <span id="blueValue" class="w-10 ml-3 text-center text-sm">200</span>
+                                    </div>
+                                </div>
+
+                                <!-- Cuadro de Color -->
+                                <div class="w-full md:w-1/2 flex flex-col items-center">
+                                    <div id="colorPixel" class="w-32 h-32 rounded-lg border-4 border-gray-300 transition-colors duration-200 mb-3" style="background-color: rgb(100, 150, 200);"></div>
+                                    <button id="grayscaleBtn" class="px-4 py-2 bg-gray-500 text-white font-medium rounded-lg hover:bg-gray-600 transition duration-150">
+                                        Cambiar a Escala de Grises
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- FIN DEMO INTERACTIVA -->
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Formatos de imagen y video</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-600 ml-4">
+                            <li><strong>JPEG:</strong> Formato con compresión con pérdida. Ideal para fotografías y reduce el tamaño de archivo significativamente.</li>
+                            <li><strong>PNG:</strong> Formato sin pérdida. Ideal para gráficos, iconos y conservar la transparencia (canal alfa).</li>
+                            <li><strong>MPEG (MP4, etc.):</strong> Estándares de compresión de video. Aplican compresión con pérdida, aprovechando la redundancia temporal (cambios entre fotogramas) y espacial (dentro de un fotograma).</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Panel 3: Resumen de OpenCV -->
+            <div class="content-card">
+                <button class="accordion-header flex justify-between items-center w-full py-3 text-xl font-semibold text-left text-gray-800 focus:outline-none" data-target="content-3">
+                    <span>3. Resumen de OpenCV</span>
+                    <svg class="w-5 h-5 transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                </button>
+                <div id="content-3" class="accordion-content">
+                    <div class="pt-4 border-t border-gray-200">
+                        <h3 class="text-2xl font-bold text-blue-700 mb-3">OpenCV (Open Source Computer Vision Library)</h3>
+                        <p class="text-gray-700 mb-4">
+                            OpenCV es la biblioteca de código abierto más popular para la Visión Artificial y el Aprendizaje Automático. Está escrita en C++ y tiene interfaces para Python, Java, y más.
+                        </p>
+
+                        <h3 class="text-xl font-semibold text-gray-800 mt-4 mb-2">Características Clave</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-600 ml-4">
+                            <li><strong>Procesamiento de Imágenes:</strong> Manipulación de píxeles, filtros (suavizado, detección de bordes), transformaciones geométricas.</li>
+                            <li><strong>Análisis de Video:</strong> Lectura/escritura de archivos de video, seguimiento de objetos.</li>
+                            <li><strong>Detección y Reconocimiento:</strong> Contiene algoritmos para detección de caras, reconocimiento de objetos (a través de módulos de Machine Learning), y extracción de características (SIFT, SURF).</li>
+                            <li><strong>Estructura:</strong> Las imágenes en OpenCV se representan comúnmente como matrices NumPy en Python, lo que facilita las operaciones matemáticas rápidas.</li>
+                        </ul>
+                        
+                        <!-- NUEVO APARTADO DE ISSUES DE GITHUB -->
+                        <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-2">Análisis de Issues en GitHub</h3>
+                        <p class="text-gray-700 mb-2">
+                            El repositorio de OpenCV en GitHub es un centro activo de desarrollo y colaboración. La gestión de "issues" (problemas) se realiza mediante etiquetas claras para organizar las contribuciones y fallos reportados, siendo los grupos más comunes:
+                        </p>
+                        <ul class="list-disc list-inside space-y-2 text-gray-600 ml-4">
+                            <li><strong>Bugs/Errores:</strong> Fallos de código que necesitan corrección inmediata en las funciones existentes.</li>
+                            <li><strong>Feature/Mejora:</strong> Sugerencias para nuevas funcionalidades o expansiones de algoritmos.</li>
+                            <li><strong>Documentation:</strong> Problemas o solicitudes de mejora en los tutoriales y la documentación oficial de la API.</li>
+                            <li><strong>Performance:</strong> Discusiones sobre optimización de velocidad y eficiencia de los algoritmos.</li>
+                            <li><strong>Module Specific:</strong> Etiquetas que especifican a qué módulo de la librería pertenece el problema (e.g., <code>dnn</code> para Deep Neural Networks o <code>imgproc</code> para Procesamiento de Imágenes).</li>
+                        </ul>
+                        <p class="text-gray-700 mt-4 mb-4">
+                            Puedes explorar el código fuente, reportar problemas o contribuir directamente en el repositorio principal:
+                            <a href="https://github.com/opencv/opencv/" target="_blank" class="text-blue-600 hover:text-blue-800 font-medium underline break-words">https://github.com/opencv/opencv/</a>
+                        </p>
+                        <!-- FIN NUEVO APARTADO -->
+
+                        <blockquote class="mt-4 p-3 border-l-4 border-blue-500 bg-blue-50 text-blue-800 italic rounded-md">
+                            OpenCV es la herramienta fundamental para pasar de la teoría de la Visión Artificial a la implementación práctica de algoritmos en aplicaciones del mundo real.
+                        </blockquote>
+                    </div>
+                </div>
+            </div>
+
+        </div> <!-- Fin Contenedor principal de los acordeones -->
+        
+        <footer class="text-center mt-8 py-4 text-gray-500 text-sm">
+            Documento interactivo generado con Gemini.
+        </footer>
+
+    </div>
+
+    <script>
+        // JavaScript para la funcionalidad del acordeón (se mantiene igual)
+        document.querySelectorAll('.accordion-header').forEach(button => {
+            button.addEventListener('click', () => {
+                const contentId = button.getAttribute('data-target');
+                const content = document.getElementById(contentId);
+                const icon = button.querySelector('svg');
+
+                // Cierra todos los contenidos excepto el actual
+                document.querySelectorAll('.accordion-content').forEach(item => {
+                    if (item.id !== contentId && item.classList.contains('active')) {
+                        item.classList.remove('active');
+                        // Reset the rotation of the icon of the closed one
+                        document.querySelector(`[data-target="${item.id}"] svg`).classList.remove('rotate-180');
+                    }
+                });
+
+                // Alterna el contenido actual
+                content.classList.toggle('active');
+                icon.classList.toggle('rotate-180');
+            });
+        });
+
+        // JavaScript para la interacción de las tarjetas de aplicación (figuras)
+        document.querySelectorAll('.app-card').forEach(card => {
+            const header = card.querySelector('.figcaption-header');
+            const details = card.querySelector('.app-details');
+
+            header.addEventListener('click', () => {
+                details.classList.toggle('active');
+                card.classList.toggle('active');
+            });
+        });
+
+        // Inicio de la Corrección para la demo de Espacios de Color
+        const redRange = document.getElementById('redRange');
+        const greenRange = document.getElementById('greenRange');
+        const blueRange = document.getElementById('blueRange');
+        const redValue = document.getElementById('redValue');
+        const greenValue = document.getElementById('greenValue');
+        const blueValue = document.getElementById('blueValue');
+        const colorPixel = document.getElementById('colorPixel');
+        const grayscaleBtn = document.getElementById('grayscaleBtn');
+        let isGrayscale = false;
+
+        /**
+         * Convierte valores RGB a un valor de luminancia simple (promedio).
+         * @param {number} r
+         * @param {number} g
+         * @param {number} b
+         * @returns {number} Valor de luminancia (0-255)
+         */
+        function calculateLuminance(r, g, b) {
+            return Math.round((r + g + b) / 3);
+        }
+
+        /**
+         * Actualiza la visualización del color y los textos de los canales.
+         */
+        function updateDisplay() {
+            let r = parseInt(redRange.value);
+            let g = parseInt(greenRange.value);
+            let b = parseInt(blueRange.value);
+            
+            // Actualiza los textos de los valores con los valores reales del slider
+            redValue.textContent = r;
+            greenValue.textContent = g;
+            blueValue.textContent = b;
+
+            if (isGrayscale) {
+                // Si está en modo grises, calcula la luminancia para el color del cuadro.
+                const luminance = calculateLuminance(r, g, b);
+                colorPixel.style.backgroundColor = `rgb(${luminance}, ${luminance}, ${luminance})`;
+            } else {
+                // Modo RGB estándar
+                colorPixel.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        /**
+         * Maneja el evento de entrada de cualquier deslizador.
+         * Si el modo Grises está activo, sincroniza los tres deslizadores.
+         */
+        function handleSliderInput() {
+            if (isGrayscale) {
+                let r = parseInt(redRange.value);
+                let g = parseInt(greenRange.value);
+                let b = parseInt(blueRange.value);
+                
+                // Calcula la nueva luminancia colectiva
+                const luminance = calculateLuminance(r, g, b);
+                
+                // Forzar la posición de todos los sliders al nuevo valor de luminancia
+                redRange.value = luminance;
+                greenRange.value = luminance;
+                blueRange.value = luminance;
+
+                // Asegura que el botón refleje el estado activo
+                grayscaleBtn.textContent = 'Modo Grises: ON';
+                grayscaleBtn.classList.remove('bg-gray-500');
+                grayscaleBtn.classList.add('bg-teal-600');
+            } else {
+                // Asegura que el botón refleje el estado inactivo
+                grayscaleBtn.textContent = 'Cambiar a Escala de Grises';
+                grayscaleBtn.classList.add('bg-gray-500');
+                grayscaleBtn.classList.remove('bg-teal-600');
+            }
+            // Actualiza la visualización con los nuevos valores (sincronizados o no)
+            updateDisplay();
+        }
+
+        /**
+         * Toggles el modo de escala de grises.
+         */
+        grayscaleBtn.addEventListener('click', () => {
+            isGrayscale = !isGrayscale;
+
+            if (isGrayscale) {
+                // Si se activa, sincroniza los sliders de inmediato al promedio actual
+                const r = parseInt(redRange.value);
+                const g = parseInt(greenRange.value);
+                const b = parseInt(blueRange.value);
+                const luminance = calculateLuminance(r, g, b);
+
+                redRange.value = luminance;
+                greenRange.value = luminance;
+                blueRange.value = luminance;
+                
+                grayscaleBtn.textContent = 'Modo Grises: ON';
+                grayscaleBtn.classList.remove('bg-gray-500');
+                grayscaleBtn.classList.add('bg-teal-600');
+            } else {
+                // Si se desactiva, restablece la apariencia del botón. Los sliders permanecen en su última posición (gris).
+                grayscaleBtn.textContent = 'Cambiar a Escala de Grises';
+                grayscaleBtn.classList.add('bg-gray-500');
+                grayscaleBtn.classList.remove('bg-teal-600');
+            }
+
+            updateDisplay();
+        });
+
+        // Event listeners para los sliders, usando la nueva función de manejo
+        redRange.addEventListener('input', handleSliderInput);
+        greenRange.addEventListener('input', handleSliderInput);
+        blueRange.addEventListener('input', handleSliderInput);
+
+        // Inicializar la visualización
+        updateDisplay();
+        
+        // Abrir el primer acordeón por defecto
+        document.getElementById('content-1').classList.add('active');
+        document.querySelector('[data-target="content-1"] svg').classList.add('rotate-180');
+    </script>
+</body>
+</html>
