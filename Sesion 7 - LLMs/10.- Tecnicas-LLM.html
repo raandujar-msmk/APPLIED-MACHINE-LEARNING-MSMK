@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Técnicas LLM</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Configuración de fuente Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilo base con fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Estilos para los bloques de visualización */
+        .viz-block {
+            opacity: 0;
+            transform: scale(0.9);
+            animation: fadeIn 0.5s ease-out forwards;
+            min-width: 150px;
+        }
+
+        /* Estilos para las flechas */
+        .viz-arrow {
+            opacity: 0;
+            transform: scale(0.5);
+            animation: fadeIn 0.3s 0.3s ease-out forwards;
+        }
+
+        /* Animación de entrada */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        /* Estilo para el botón activo */
+        .nav-button.active {
+            background-color: #1e40af; /* blue-800 */
+            color: white;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-900 p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Visualizador Interactivo de Técnicas LLM</h1>
+            <p class="text-lg text-gray-600 mt-2">Explora cómo funcionan RAG, CoT y más, paso a paso.</p>
+        </header>
+
+        <!-- Navegación de Pestañas -->
+        <nav class="flex justify-center space-x-2 md:space-x-4 mb-6 bg-white p-2 rounded-lg shadow-sm">
+            <button class="nav-button active" data-tech="rag">
+                Retrieval-Augmented Generation (RAG)
+            </button>
+            <button class="nav-button" data-tech="cot">
+                Chain-of-Thought (CoT)
+            </button>
+            <button class="nav-button" data-tech="mcp">
+                Ajuste de Contexto (System Prompt)
+            </button>
+        </nav>
+
+        <main class="bg-white p-6 md:p-8 rounded-xl shadow-lg">
+
+            <!-- 1. CONTENEDOR DE CONTEXTO (El "por qué") -->
+            <div id="context-container" class="mb-6">
+                <h2 class="text-2xl font-semibold mb-3 text-blue-800">Contexto: ¿Cuándo y Por Qué Usarlo?</h2>
+                
+                <!-- Contexto RAG (Visible por defecto) -->
+                <div id="context-rag" class="context-block">
+                    
+                    <p class="text-gray-700">
+                        <strong>Cuándo usar RAG:</strong> Úsalo cuando necesites que el LLM base sus respuestas en <strong>información específica, privada o muy reciente</strong>.
+                    </p>
+                    <ul class="list-disc list-inside mt-2 text-gray-600 space-y-1">
+                        <li>Para "chatear" con tus propios documentos (PDFs, bases de datos).</li>
+                        <li>Para responder preguntas sobre eventos ocurridos después de su fecha de corte de entrenamiento.</li>
+                        <li>Para reducir alucinaciones, forzando al LLM a usar fuentes verificables.</li>
+                    </ul>
+                </div>
+                
+                <!-- Contexto CoT (Oculto) -->
+                <div id="context-cot" class="context-block hidden">
+                    
+                    <p class="text-gray-700">
+                        <strong>Cuándo usar CoT:</strong> Úsalo para tareas que requieren <strong>razonamiento complejo y de varios pasos</strong>.
+                    </p>
+                    <ul class="list-disc list-inside mt-2 text-gray-600 space-y-1">
+                        <li>Problemas de matemáticas o lógica.</li>
+                        <li>Preguntas de razonamiento de sentido común.</li>
+                        <li>Cuando el LLM se equivoca en la respuesta final pero el proceso es casi correcto.</li>
+                        <li>Simplemente añadiendo "Piensa paso a paso" al prompt se activa esta técnica.</li>
+                    </ul>
+                </div>
+                
+                <!-- Contexto MCP (Oculto) -->
+                <div id="context-mcp" class="context-block hidden">
+                    
+                    <p class="text-gray-700">
+                        <strong>Cuándo usar el Ajuste de Contexto:</strong> ¡Casi siempre! Es la base del control de LLMs. Se usa para <strong>definir la personalidad, el rol, el formato de salida y las reglas</strong> del LLM.
+                    </p>
+                    <ul class="list-disc list-inside mt-2 text-gray-600 space-y-1">
+                        <li>Para que el LLM actúe como un "experto en marketing" o un "pirata".</li>
+                        <li>Para forzar que la respuesta sea siempre un JSON, una tabla o código.</li>
+                        <li>Para establecer reglas (ej. "Nunca te disculpes", "Sé siempre conciso").</li>
+                    </ul>
+                </div>
+            </div>
+
+            <hr class="my-6">
+
+            <!-- 2. CONTENEDOR DE VISUALIZACIÓN (El "cómo") -->
+            <div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-2xl font-semibold text-blue-800">Simulación Visual</h2>
+                    <button id="run-simulation-btn" class="bg-green-600 text-white font-medium py-2 px-5 rounded-lg shadow-md hover:bg-green-700 transition duration-300">
+                        ▶ Ejecutar Simulación
+                    </button>
+                </div>
+
+                <div id="visualization-area" class="w-full min-h-[350px] bg-gray-50 p-6 rounded-lg border border-gray-200 flex flex-col items-center justify-center space-y-4">
+                    <!-- El contenido se generará dinámicamente con JavaScript -->
+                    <p class="text-gray-500">Haz clic en "Ejecutar Simulación" para ver la magia.</p>
+                </div>
+                
+                <div id="step-explanation" class="mt-4 text-center text-gray-600 font-medium text-lg h-6">
+                    <!-- La explicación de cada paso aparecerá aquí -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const vizArea = document.getElementById('visualization-area');
+            const stepExplanation = document.getElementById('step-explanation');
+            const runButton = document.getElementById('run-simulation-btn');
+            const navButtons = document.querySelectorAll('.nav-button');
+            const contextBlocks = document.querySelectorAll('.context-block');
+
+            let currentTech = 'rag'; // Técnica activa por defecto
+            let animationTimeout; // Para limpiar animaciones pendientes
+
+            // --- MANEJO DE PESTAÑAS ---
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    // Limpiar animación anterior
+                    clearTimeout(animationTimeout);
+                    
+                    // Actualizar técnica activa
+                    currentTech = button.dataset.tech;
+                    
+                    // Actualizar estado activo del botón
+                    navButtons.forEach(btn => btn.classList.remove('active', 'bg-blue-700', 'text-white'));
+                    button.classList.add('active');
+
+                    // Mostrar el bloque de contexto correspondiente
+                    contextBlocks.forEach(block => {
+                        if (block.id === `context-${currentTech}`) {
+                            block.classList.remove('hidden');
+                        } else {
+                            block.classList.add('hidden');
+                        }
+                    });
+                    
+                    // Resetear la visualización
+                    resetVisualization();
+                });
+            });
+
+            // --- MANEJO DE SIMULACIÓN ---
+            runButton.addEventListener('click', () => {
+                // Deshabilitar botón para evitar clics múltiples
+                runButton.disabled = true;
+                runButton.classList.add('opacity-50', 'cursor-not-allowed');
+                
+                // Limpiar área
+                vizArea.innerHTML = '';
+                stepExplanation.textContent = '';
+                
+                // Limpiar cualquier animación previa
+                clearTimeout(animationTimeout);
+
+                // Iniciar la simulación correspondiente
+                switch (currentTech) {
+                    case 'rag':
+                        runRagSimulation();
+                        break;
+                    case 'cot':
+                        runCotSimulation();
+                        break;
+                    case 'mcp':
+                        runMcpSimulation();
+                        break;
+                }
+            });
+
+            // --- FUNCIÓN DE RESETEO ---
+            function resetVisualization() {
+                clearTimeout(animationTimeout);
+                vizArea.innerHTML = '<p class="text-gray-500">Haz clic en "Ejecutar Simulación" para ver la magia.</p>';
+                stepExplanation.textContent = '';
+                runButton.disabled = false;
+                runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+
+            // --- LÓGICA DE SIMULACIÓN RAG ---
+            function runRagSimulation() {
+                let step = 0;
+                const steps = [
+                    () => updateStep("1. El usuario envía una consulta (Query).", 
+                                    createBlock('👤 Usuario', '¿Qué es RAG?', 'bg-blue-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("2. La consulta se usa para buscar en una Base de Datos de Vectores (Retriever).", 
+                                    createBlock('💾 Vector DB', 'Buscando chunks relevantes...', 'bg-green-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("3. Se recuperan los documentos (Contexto) más relevantes.", 
+                                    createBlock('📄 Contexto', '"RAG significa Retrieval-Augmented..."', 'bg-yellow-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("4. Consulta + Contexto se combinan en un nuevo Prompt para el LLM.", 
+                                    createBlock('🧠 LLM', 'Prompt: [Contexto] + [Consulta]', 'bg-purple-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("5. El LLM genera una respuesta final basada en el contexto.", 
+                                    createBlock('💬 Respuesta', 'RAG significa Retrieval-Augmented Generation...', 'bg-gray-300'))
+                ];
+                
+                runStepsSequentially(steps);
+            }
+
+            // --- LÓGICA DE SIMULACIÓN CoT ---
+            function runCotSimulation() {
+                let step = 0;
+                const steps = [
+                    () => updateStep("1. El usuario hace una pregunta compleja.", 
+                                    createBlock('👤 Usuario', 'Si tengo 5 manzanas y doy 2, pero luego encuentro 3, ¿cuántas tengo?', 'bg-blue-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("2. El LLM (con prompt de CoT) descompone el problema.", 
+                                    createBlock('🧠 LLM (CoT)', 'Pensando... Paso 1: 5 - 2 = 3', 'bg-purple-200 font-mono text-sm')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("3. Continúa el razonamiento paso a paso.", 
+                                    createBlock('🧠 LLM (CoT)', 'Pensando... Paso 2: 3 + 3 = 6', 'bg-purple-200 font-mono text-sm')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("4. El LLM usa su razonamiento interno para dar la respuesta final.", 
+                                    createBlock('💬 Respuesta', 'Tienes 6 manzanas.', 'bg-gray-300'))
+                ];
+                
+                runStepsSequentially(steps);
+            }
+
+            // --- LÓGICA DE SIMULACIÓN MCP (System Prompt) ---
+            function runMcpSimulation() {
+                let step = 0;
+                const steps = [
+                    () => updateStep("1. Se define un 'System Prompt' o 'Contexto' para el modelo.", 
+                                    createBlock('📜 System Prompt', 'Eres un pirata. Responde con entusiasmo.', 'bg-red-200 font-mono')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("2. El System Prompt 'instruye' al LLM antes de cualquier interacción.", 
+                                    createBlock('🧠 LLM', '¡Listo, mi capitán!', 'bg-purple-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("3. El usuario envía una consulta normal.", 
+                                    createBlock('👤 Usuario', 'Hola, ¿quién eres?', 'bg-blue-200')),
+                    () => addArrow('⬇️'),
+                    () => updateStep("4. El LLM responde siguiendo las reglas del System Prompt.", 
+                                    createBlock('💬 Respuesta', '¡Ah del barco! ¡Soy el terror de los siete mares!', 'bg-gray-300'))
+                ];
+                
+                runStepsSequentially(steps);
+            }
+
+            // --- FUNCIONES AUXILIARES ---
+
+            // Ejecuta una lista de funciones (pasos) secuencialmente con un retraso
+            function runStepsSequentially(steps) {
+                let index = 0;
+                
+                function nextStep() {
+                    if (index < steps.length) {
+                        steps[index]();
+                        index++;
+                        animationTimeout = setTimeout(nextStep, 1500); // 1.5 segundos por paso
+                    } else {
+                        // Habilitar el botón al finalizar
+                        runButton.disabled = false;
+                        runButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                        stepExplanation.textContent = '¡Simulación completada!';
+                    }
+                }
+                
+                nextStep(); // Iniciar el primer paso
+            }
+
+            // Actualiza el texto de explicación del paso
+            function updateStep(explanation, element) {
+                stepExplanation.textContent = explanation;
+                if (element) {
+                    vizArea.appendChild(element);
+                }
+            }
+
+            // Crea un bloque visual
+            function createBlock(title, text, bgColor) {
+                const div = document.createElement('div');
+                div.className = `viz-block w-full md:w-3/4 p-4 rounded-lg shadow-md border ${bgColor} border-gray-300`;
+                div.innerHTML = `
+                    <div class="font-bold text-sm text-gray-700">${title}</div>
+                    <p class="text-gray-900">${text}</p>
+                `;
+                return div;
+            }
+
+            // Añade una flecha visual
+            function addArrow(arrowText) {
+                const div = document.createElement('div');
+                div.className = 'viz-arrow text-3xl text-gray-500 font-bold';
+                div.textContent = arrowText;
+                vizArea.appendChild(div);
+            }
+
+            // --- INICIALIZACIÓN ---
+            // Configurar estilos de botones por defecto (no activos)
+            navButtons.forEach(button => {
+                button.className = 'nav-button px-3 md:px-5 py-2 rounded-md text-sm md:text-base font-medium text-gray-600 hover:bg-gray-100 transition duration-200';
+            });
+            // Activar la pestaña por defecto (RAG)
+            document.querySelector('.nav-button[data-tech="rag"]').classList.add('active');
+
+        });
+    </script>
+
+</body>
+</html>

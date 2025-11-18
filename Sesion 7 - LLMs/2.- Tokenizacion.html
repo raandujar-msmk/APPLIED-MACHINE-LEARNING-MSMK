@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Demostración de Tokenización (LLM vs. Visión)</title>
+    <!-- Incluimos Tailwind CSS para un diseño limpio -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para la demo */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para los tokens de LLM */
+        .token {
+            position: relative;
+            padding: 8px 12px;
+            margin: 4px;
+            border-radius: 6px;
+            background-color: #e0f2fe; /* bg-sky-100 */
+            color: #0c4a6e; /* text-sky-800 */
+            font-family: monospace;
+            font-size: 0.9em;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .token .token-id {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #0c4a6e; /* bg-sky-800 */
+            color: white;
+            font-size: 0.7em;
+            font-weight: bold;
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        /* Estilo para la cuadrícula de la imagen */
+        #image-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            border: 2px solid #6b7280; /* border-gray-500 */
+            width: 256px; /* 8 * 32px */
+            height: 256px; /* 8 * 32px */
+            margin-top: 1rem;
+        }
+        #image-grid .pixel {
+            width: 32px;
+            height: 32px;
+            background-color: #d1d5db; /* bg-gray-300 */
+            border: 1px solid #9ca3af; /* border-gray-400 */
+            box-sizing: border-box; /* Para que el borde no aumente el tamaño */
+            transition: all 0.2s ease-in-out;
+        }
+        /* Estilos para los bordes del parche */
+        .patch-border-t {
+            border-top-width: 3px !important;
+            border-top-color: #ef4444 !important; /* border-red-500 */
+        }
+        .patch-border-l {
+            border-left-width: 3px !important;
+            border-left-color: #ef4444 !important; /* border-red-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="max-w-5xl mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-blue-700 mb-2">Tokenización en Inferencia de IA</h1>
+            <p class="text-xl text-gray-600">Comparativa: Modelos de Lenguaje (LLM) vs. Visión por Computadora (ViT)</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Columna de LLM -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold text-blue-600 mb-4">1. Tokenización en Modelos de Lenguaje (LLM)</h2>
+                <p class="mb-4">
+                    Los LLM no entienden palabras, sino números. La tokenización es el proceso de convertir un texto (string) en una secuencia de números (tokens IDs).
+                    Los modelos modernos usan "subpalabras": palabras comunes son un token, mientras que palabras raras se dividen (ej: "tokenización" -> "token" + "##ización").
+                </p>
+                <p class="mb-4">
+                    <strong>Demo:</strong> Escribe una frase y mira cómo un tokenizador (simulado) la divide. Añadimos tokens especiales como <code>[BOS]</code> (Beginning of Sequence) y <code>[EOS]</code> (End of Sequence).
+                </p>
+                
+                <!-- Interfaz interactiva de LLM -->
+                <div class="mb-4">
+                    <label for="llm-input" class="block text-sm font-medium text-gray-700 mb-1">Escribe tu texto:</label>
+                    <textarea id="llm-input" rows="3" class="w-full p-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500" placeholder="Ej: ¡Hola, mundo! Esto es una prueba.">¡Hola, mundo! Esto es una prueba.</textarea>
+                </div>
+                <button id="tokenize-btn" class="w-full bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700 transition-colors">
+                    Tokenizar
+                </button>
+                
+                <!-- Salida de LLM -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Salida de Tokens:</h3>
+                    <div id="llm-output" class="flex flex-wrap bg-gray-50 p-4 rounded-md border min-h-[50px]">
+                        <!-- Los tokens se insertarán aquí -->
+                    </div>
+                </div>
+                <p id="llm-explanation" class="mt-4 text-sm text-gray-600 italic"></p>
+            </div>
+
+            <!-- Columna de Visión por Computadora -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h2 class="text-2xl font-semibold text-green-600 mb-4">2. "Tokenización" en Visión (Ej: ViT)</h2>
+                <p class="mb-4">
+                    Los modelos de visión como los <em>Vision Transformers (ViT)</em> no usan "tokens" de la misma manera. En su lugar, dividen la imagen en una cuadrícula de parches (patches) de tamaño fijo (ej: 16x16 píxeles).
+                </p>
+                <p class="mb-4">
+                    Cada parche es "aplanado" (convertido en un vector largo) y luego proyectado linealmente para crear un "token de parche". A esta secuencia de parches también se le añade un token <code>[CLASS]</code> para la clasificación final.
+                </p>
+                <p class="mb-4">
+                    <strong>Demo:</strong> Simula una imagen de 8x8 "píxeles". Presiona el botón para dividirla en "parches" de 2x2.
+                </p>
+                
+                <!-- Interfaz interactiva de Visión -->
+                <div class="flex flex-col items-center">
+                    <div id="image-grid">
+                        <!-- Píxeles se insertarán aquí -->
+                    </div>
+                    <button id="patchify-btn" class="w-full max-w-xs mt-6 bg-green-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-700 transition-colors">
+                        Dividir en Parches (Pachear)
+                    </button>
+                </div>
+                
+                <!-- Salida de Visión -->
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2">Salida de "Tokens" (Parches):</h3>
+                    <div id="cv-output" class="bg-gray-50 p-4 rounded-md border min-h-[50px]">
+                        <!-- La explicación de los parches irá aquí -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- LÓGICA DE LLM ---
+
+            const llmInput = document.getElementById('llm-input');
+            const tokenizeBtn = document.getElementById('tokenize-btn');
+            const llmOutput = document.getElementById('llm-output');
+            const llmExplanation = document.getElementById('llm-explanation');
+            let nextTokenId = 101; // ID inicial para [BOS]
+
+            // Función para "hashear" un string a un ID numérico simple para la demo
+            function getMockTokenId(token) {
+                if (token === '[BOS]') return 101;
+                if (token === '[EOS]') return 102;
+                
+                let hash = 0;
+                for (let i = 0; i < token.length; i++) {
+                    hash = (hash << 5) - hash + token.charCodeAt(i);
+                    hash |= 0; // Convertir a 32bit integer
+                }
+                return 1000 + Math.abs(hash % 9000); // IDs entre 1000 y 9999
+            }
+
+            function createTokenElement(token) {
+                const tokenId = getMockTokenId(token);
+                const tokenEl = document.createElement('div');
+                tokenEl.className = 'token';
+                
+                const textEl = document.createElement('span');
+                textEl.textContent = token === ' ' ? "' '" : token; // Mostrar espacios explícitamente
+                
+                const idEl = document.createElement('span');
+                idEl.className = 'token-id';
+                idEl.textContent = tokenId;
+                
+                tokenEl.appendChild(idEl);
+                tokenEl.appendChild(textEl);
+                return tokenEl;
+            }
+
+            function tokenizeLlm() {
+                const text = llmInput.value;
+                llmOutput.innerHTML = ''; // Limpiar salida anterior
+                
+                // Simulación de tokenizador: separa palabras, números y puntuación.
+                // También captura espacios como tokens separados.
+                const tokens = text.match(/\w+|[^\w\s]|\s+/g) || [];
+                
+                // Añadir tokens especiales
+                const allTokens = ['[BOS]', ...tokens, '[EOS]'];
+
+                let tokenCount = 0;
+                allTokens.forEach(tokenStr => {
+                    // Ignoramos tokens de solo espacio vacío si no son el token ' '
+                    if (tokenStr.trim().length > 0 || tokenStr === ' ') {
+                        const tokenEl = createTokenElement(tokenStr);
+                        llmOutput.appendChild(tokenEl);
+                        tokenCount++;
+                    }
+                });
+
+                llmExplanation.textContent = `El texto se ha dividido en ${tokenCount} tokens (incluyendo [BOS] y [EOS]). Cada token se mapea a un ID numérico único que el modelo puede procesar.`;
+            }
+
+            tokenizeBtn.addEventListener('click', tokenizeLlm);
+            // Ejecutar al inicio
+            tokenizeLlm();
+
+            // --- LÓGICA DE VISIÓN POR COMPUTADORA ---
+
+            const imageGrid = document.getElementById('image-grid');
+            const patchifyBtn = document.getElementById('patchify-btn');
+            const cvOutput = document.getElementById('cv-output');
+            const gridSize = 8;
+            const patchSize = 2;
+            let isPatched = false;
+            let pixelElements = [];
+
+            // Crear la cuadrícula de píxeles
+            for (let i = 0; i < gridSize * gridSize; i++) {
+                const pixel = document.createElement('div');
+                pixel.className = 'pixel';
+                // Dar a los píxeles colores aleatorios de gris para simular una imagen
+                const shade = 180 + Math.floor(Math.random() * 50);
+                pixel.style.backgroundColor = `rgb(${shade}, ${shade}, ${shade})`;
+                imageGrid.appendChild(pixel);
+                pixelElements.push(pixel);
+            }
+
+            function patchifyGrid() {
+                if (isPatched) {
+                    // Resetear
+                    pixelElements.forEach(pixel => {
+                        pixel.classList.remove('patch-border-t', 'patch-border-l');
+                    });
+                    cvOutput.innerHTML = '';
+                    patchifyBtn.textContent = 'Dividir en Parches (Pachear)';
+                    patchifyBtn.classList.replace('bg-red-600', 'bg-green-600');
+                    patchifyBtn.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+                    isPatched = false;
+                } else {
+                    // Pachear
+                    pixelElements.forEach((pixel, i) => {
+                        const row = Math.floor(i / gridSize);
+                        const col = i % gridSize;
+
+                        // Añadir borde superior al inicio de una fila de parche
+                        if (row % patchSize === 0) {
+                            pixel.classList.add('patch-border-t');
+                        }
+                        // Añadir borde izquierdo al inicio de una columna de parche
+                        if (col % patchSize === 0) {
+                            pixel.classList.add('patch-border-l');
+                        }
+                    });
+                    
+                    const numPatches = (gridSize / patchSize) * (gridSize / patchSize);
+                    cvOutput.innerHTML = `
+                        <p>La "imagen" de 8x8 se ha dividido en <strong>${numPatches} parches</strong> de 2x2.</p>
+                        <p class="mt-2">El modelo ahora procesa esta secuencia de parches:</p>
+                        <ul class="list-disc list-inside text-sm font-mono mt-1">
+                            <li>Token 0: [CLASS] (Token especial de clasificación)</li>
+                            <li>Token 1: Parche (0,0)</li>
+                            <li>Token 2: Parche (0,1)</li>
+                            <li>...</li>
+                            <li>Token ${numPatches}: Parche (3,3)</li>
+                        </ul>
+                    `;
+                    patchifyBtn.textContent = 'Resetear Cuadrícula';
+                    patchifyBtn.classList.replace('bg-green-600', 'bg-red-600');
+                    patchifyBtn.classList.replace('hover:bg-green-700', 'hover:bg-red-700');
+                    isPatched = true;
+                }
+            }
+            
+            patchifyBtn.addEventListener('click', patchifyGrid);
+
+        });
+    </script>
+
+</body>
+</html>

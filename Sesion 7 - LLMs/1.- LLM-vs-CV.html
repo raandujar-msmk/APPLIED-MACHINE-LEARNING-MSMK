@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comparación: LLM vs Computer Vision</title>
+    <!-- Cargar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Usar una fuente más limpia */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos de pestañas eliminados - ya no son necesarios */
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen p-6 md:p-12">
+
+    <div class="max-w-6xl mx-auto bg-white rounded-xl shadow-lg overflow-hidden">
+        
+        <!-- Encabezado -->
+        <div class="p-6 md:p-10 bg-gray-50 border-b border-gray-200">
+            <h1 class="text-3xl font-bold text-gray-800 text-center">Entrenamiento de Modelos: LLM vs. Visión por Computadora</h1>
+            <p class="text-gray-600 text-center mt-2">Una comparación lado a lado de sus datos, arquitecturas y objetivos.</p>
+        </div>
+
+        <!-- Botones de Pestañas eliminados - ya no son necesarios -->
+
+        <!-- Contenido de Comparación en Columnas -->
+        <div class="p-6 md:p-10">
+
+            <!-- Fila de Títulos -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-6">
+                <h2 class="text-2xl font-bold text-blue-800">🤖 Entrenamiento LLM (Ej: GPT, Llama)</h2>
+                <h2 class="text-2xl font-bold text-green-800">👁️ Entrenamiento CV (Ej: YOLO, ResNet)</h2>
+            </div>
+
+            <!-- Fila de Comparación 1: Datos de Entrada -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-6">
+                <div class="p-5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">1. Datos de Entrada</h3>
+                    <p class="text-gray-700"><strong>Texto secuencial.</strong> Se divide en "tokens" (palabras o sub-palabras). La entrada es una secuencia 1D de estos tokens.</p>
+                </div>
+                <div class="p-5 bg-green-50 border border-green-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">1. Datos de Entrada</h3>
+                    <p class="text-gray-700"><strong>Matrices de píxeles.</strong> Una imagen es una cuadrícula 2D (o 3D si incluimos el color RGB). Un video es una secuencia de estas cuadrículas.</p>
+                </div>
+            </div>
+            
+            <!-- Fila de Comparación 2: Arquitectura Base -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-6">
+                <div class="p-5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">2. Arquitectura Base</h3>
+                    <p class="text-gray-700"><strong>Transformers.</strong> La arquitectura dominante. Usa un mecanismo llamado "Atención" para entender cómo se relaciona cada palabra con todas las demás en la oración, sin importar qué tan lejos estén.</p>
+                </div>
+                <div class="p-5 bg-green-50 border border-green-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">2. Arquitectura Base</h3>
+                    <p class="text-gray-700"><strong>Redes Neuronales Convolucionales (CNNs).</strong> Son la base clásica. Usan "filtros" que se deslizan por la imagen para detectar patrones simples (bordes, esquinas) y luego los combinan en patrones complejos (ojos, ruedas, caras).</p>
+                </div>
+            </div>
+            
+            <!-- Fila de Comparación 3: Tarea Principal -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-6">
+                <div class="p-5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">3. Tarea Principal</h3>
+                    <p class="text-gray-700"><strong>"Predecir la siguiente palabra"</strong> (o rellenar palabras faltantes). Se le da una enorme cantidad de texto de internet y aprende las estadísticas del lenguaje: qué palabra es probable que venga después de "el cielo es...".</p>
+                </div>
+                <div class="p-5 bg-green-50 border border-green-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">3. Tarea Principal</h3>
+                    <p class="text-gray-700"><strong>Varias tareas:</strong></p>
+                    <ol class="text-gray-700 list-decimal list-inside mt-2 space-y-1">
+                        <li><strong>Clasificación:</strong> Decir "esto es un gato".</li>
+                        <li><strong>Detección:</strong> Dibujar una caja alrededor de "todos los gatos" en la imagen.</li>
+                        <li><strong>Segmentación:</strong> Colorear cada píxel que pertenezca a "un gato".</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Fila de Comparación 4: "Comprensión" -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 mb-6">
+                <div class="p-5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">4. "Comprensión"</h3>
+                    <p class="text-gray-700">Aprende <strong>relaciones semánticas y gramaticales</strong>. Entiende que "rey" es a "reina" como "hombre" es a "mujer".</p>
+                </div>
+                <div class="p-5 bg-green-50 border border-green-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">4. "Comprensión"</h3>
+                    <p class="text-gray-700">Aprende <strong>jerarquías visuales</strong>. Entiende que un "ojo" y una "nariz" juntos forman una "cara", y que "cuatro ruedas" y "ventanas" forman un "coche".</p>
+                </div>
+            </div>
+
+            <!-- Fila de Comparación 5: Función de Pérdida -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10">
+                <div class="p-5 bg-blue-50 border border-blue-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-blue-800 mb-2">5. Función de Pérdida (Loss)</h3>
+                    <p class="text-gray-700">Generalmente <strong>Cross-Entropy Loss</strong> sobre un vocabulario de 50,000+ tokens. Mide qué tan "sorprendido" está el modelo por la palabra correcta.</p>
+                </div>
+                <div class="p-5 bg-green-50 border border-green-200 rounded-lg shadow-sm h-full">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">5. Función de Pérdida (Loss)</h3>
+                    <p class="text-gray-700"><strong>Depende de la tarea.</strong> Puede ser <strong>Cross-Entropy</strong> (para clasificación) o pérdidas más complejas como <strong>Bounding Box Loss</strong> (para medir qué tan precisa es la caja de detección).</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script eliminado - ya no es necesario -->
+
+</body>
+</html>

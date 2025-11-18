@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitectura de GPT-3 (Simplificada)</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de three.js (para la visualización 3D) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <style>
+        /* Usar la fuente Inter de Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6;
+        }
+        /* Contenedor para el canvas 3D */
+        #canvas-container {
+            width: 100%;
+            height: 400px;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background-color: #1a202c; /* Fondo oscuro para el canvas */
+            cursor: move;
+        }
+        /* Estilo para la fila seleccionada en la tabla */
+        .selected-row {
+            background-color: #e0f2fe !important; /* Azul claro */
+            --tw-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --tw-shadow-colored: 0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);
+            box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto p-4 md:p-10">
+        
+        <header class="text-center mb-10">
+            <h1 class="text-3xl md:text-5xl font-bold text-gray-900">Arquitectura de un Transformer (GPT-3)</h1>
+            <p class="text-lg text-gray-600 mt-2">Una visualización interactiva de las matrices clave en un bloque Transformer.</p>
+        </header>
+
+        <!-- Sección de Visualización 3D -->
+        <section class="mb-10">
+            <h2 class="text-2xl font-semibold mb-4 text-center">Visualización 3D de las Matrices</h2>
+            <div id="canvas-container" class="shadow-lg rounded-lg"></div>
+            <p class="text-center text-gray-500 text-sm mt-2">Haz clic y arrastra para rotar la escena. Haz clic en una fila de la tabla para resaltar una matriz.</p>
+        </section>
+
+        <!--  -->
+
+        <!-- Sección de la Tabla -->
+        <section>
+            <h2 class="text-2xl font-semibold mb-4 text-center">Componentes de la Arquitectura</h2>
+            <p class="text-gray-700 mb-6 max-w-3xl mx-auto text-center">
+                El corazón de GPT-3 es el "Transformer Decoder". Este proceso se repite múltiples veces (96 veces en el modelo de 175B).
+                A continuación se muestran las matrices de peso principales para <strong>un solo bloque decoder completo</strong>. Estas matrices operan a nivel del bloque (incluyendo todos los cabezales de atención) y muestran cómo la información fluye y se transforma.
+                Los tamaños se basan en el modelo GPT-3 175B (`d_model = 12288`, `vocab_size = 50257`).
+            </p>
+            
+            <div class="bg-white shadow-xl rounded-lg overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-800 text-white">
+                            <tr>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Matriz / Paso</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Tamaño (GPT-3 175B)</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Explicación</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            <!-- Filas de la tabla (interactivas) -->
+                            <tr data-matrix="embedding" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Embedding (W<sub>e</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[50257, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Convierte los "tokens" (IDs de palabras) de entrada en vectores numéricos (`d_model`) que el modelo puede entender.</td>
+                            </tr>
+                            <tr data-matrix="query" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Query (W<sub>q</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">En "self-attention", esta matriz crea el vector "Query". Es la pregunta: "¿Qué información estoy buscando?"</td>
+                            </tr>
+                            <tr data-matrix="key" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Key (W<sub>k</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Crea el vector "Key". Es la etiqueta: "¿Qué información contengo?" El modelo compara Queries con Keys.</td>
+                            </tr>
+                            <tr data-matrix="value" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Value (W<sub>v</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Crea el vector "Value". Es el contenido: "Si mi Key coincide con tu Query, esta es la información que te doy".</td>
+                            </tr>
+                            <tr data-matrix="output" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Output (W<sub>o</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Combina los resultados de todas las "cabezas de atención" (multi-head attention) en un solo vector de salida cohesivo.</td>
+                            </tr>
+                            <tr data-matrix="up_proj" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Up-Projection (W<sub>1</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 49152]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Parte de la red "Feed-Forward". Expande la dimensión del vector (de `d_model` a `4 * d_model`) para un procesamiento más rico.</td>
+                            </tr>
+                            <tr data-matrix="down_proj" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Down-Projection (W<sub>2</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[49152, 12288]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Contrae el vector de vuelta a su tamaño original (`d_model`) después de la expansión en la red Feed-Forward.</td>
+                            </tr>
+                            <tr data-matrix="unembedding" class="hover:bg-gray-100 cursor-pointer transition-colors duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900">Unembedding (W<sub>u</sub>)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono">[12288, 50257]</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">Al final del modelo, proyecta el vector de estado final de vuelta al espacio del vocabulario, generando "logits" para predecir la siguiente palabra.</td>
+                            </tr>
+                            
+                            <!-- Fila de Total Añadida -->
+                            <tr class="bg-gray-50 font-semibold">
+                                <td class="px-6 py-4 whitespace-nowrap text-gray-900">Total por Bloque (Decoder)</td>
+                                <td class="px-6 py-4 whitespace-nowrap font-mono text-gray-900">~1.81 mil millones</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">
+                                    Suma de Atención (W<sub>q</sub>, W<sub>k</sub>, W<sub>v</sub>, W<sub>o</sub>) y Feed-Forward (W<sub>1</sub>, W<sub>2</sub>).
+                                    (El modelo 175B tiene 96 de estos bloques en serie).
+                                </td>
+                            </tr>
+                            <!-- Fin de Fila Añadida -->
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- NUEVA SECCIÓN AÑADIDA -->
+        <section class="mt-10 max-w-4xl mx-auto">
+            <div class="bg-white shadow-xl rounded-lg overflow-hidden p-6 md:p-8">
+                <h2 class="text-2xl font-semibold mb-4 text-gray-900">Relación entre Longitud del Contexto y Tamaño de Matrices</h2>
+                <div class="space-y-4 text-gray-700">
+                    <p>
+                        Es un punto clave distinguir entre los <strong>parámetros del modelo</strong> (las matrices en la tabla) y las <strong>activaciones</strong> (los cálculos intermedios).
+                    </p>
+                    <p>
+                        Las matrices que ves en la tabla (como W<sub>q</sub>, W<sub>k</sub>, W<sub>v</sub>, W<sub>1</sub>, W<sub>2</sub>) son los <strong>parámetros</strong> o "pesos" del modelo. Sus dimensiones (ej. <code>[12288, 12288]</code>) se definen por la configuración de la arquitectura (como <code>d_model</code>) y son <strong>fijas</strong>. No cambian si procesas 10 tokens o 2000 tokens.
+                    </p>
+                    <p>
+                        La <strong>longitud del contexto</strong> (ej. <code>T = 2048</code> tokens) define el tamaño máximo de las <em>activaciones</em> que el modelo puede manejar. Cuando alimentas una secuencia de <code>T</code> tokens al modelo:
+                    </p>
+                    <ul class="list-disc list-inside pl-4">
+                        <li>La matriz de "Embedding" de entrada (la activación) tendrá un tamaño de <code>[T, d_model]</code>.</li>
+                        <li>Las matrices de Query, Key y Value (después de multiplicarse por W<sub>q</sub>, W<sub>k</sub>, W<sub>v</sub>) también tendrán un tamaño de <code>[T, d_model]</code>.</li>
+                        <li>El cálculo de auto-atención (<code>Query @ Key.T</code>) crea una matriz de puntuación de tamaño <code>[T, T]</code>.</li>
+                    </ul>
+                    <p>
+                        Por lo tanto, mientras que los <strong>parámetros</strong> (las matrices de la tabla) son de tamaño constante, el <strong>costo computacional y de memoria</strong> para las <em>activaciones</em> (especialmente la matriz de atención <code>[T, T]</code>) crece cuadráticamente (<code>O(T<sup>2</sup>)</code>) con la longitud de la secuencia de entrada <code>T</code>.
+                    </p>
+                </div>
+            </div>
+        </section>
+        <!-- FIN DE LA NUEVA SECCIÓN -->
+
+    </div>
+
+    <script>
+        // Declaración de variables globales para la escena 3D
+        let scene, camera, renderer, group;
+        let matrixMeshes = {}; // Objeto para almacenar las mallas de las matrices
+        let originalMaterials = {}; // Objeto para almacenar los materiales originales
+        
+        // Material para mallas no seleccionadas
+        const dimmedMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0x888888, 
+            opacity: 0.2, 
+            transparent: true 
+        });
+        
+        // Material para la malla seleccionada
+        const highlightMaterial = new THREE.MeshPhongMaterial({ 
+            color: 0xffff00, // Amarillo brillante
+            emissive: 0xaaaa00,
+            shininess: 100
+        });
+
+        // Configuración de dimensiones proporcionales (visuales, no reales)
+        const D_MODEL = 12;
+        const D_FFN = 48; // 4 * D_MODEL
+        const VOCAB = 25; // Tamaño visual para vocab_size
+
+        /**
+         * Inicializa la escena 3D de three.js
+         */
+        function init() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+
+            // --- Configuración básica ---
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            // Posición original:
+            // camera.position.z = 40;
+            // camera.position.y = 10;
+
+            // Nueva posición para vista lateral (Embedding a la izquierda)
+            // Posición anterior en x: 45
+            camera.position.x = -45; // Mover la cámara al eje X negativo
+            camera.position.y = 15; // Elevar un poco la cámara
+            camera.position.z = 0;  // Centrar la cámara en el eje Z
+            camera.lookAt(0, 0, 0); // Apuntar al centro de la escena (el grupo de matrices)
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x000000, 0); // Fondo transparente
+            container.appendChild(renderer.domElement);
+
+            // --- Grupo para rotar todo ---
+            group = new THREE.Group();
+            scene.add(group);
+
+            // --- Luces ---
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(5, 10, 7.5);
+            scene.add(directionalLight);
+
+            // --- Crear las matrices ---
+            // Las dimensiones (ancho, alto) son simbólicas para representar las dimensiones de la matriz
+            // La profundidad (Z) es constante para todas
+            // La posición Z las apila "una detrás de otra"
+            
+            // 1. Embedding [V, Dm]
+            createMatrix('embedding', VOCAB, D_MODEL, -28, 0x007bff, 'Embedding');
+            
+            // 2. Query [Dm, Dm]
+            createMatrix('query', D_MODEL, D_MODEL, -20, 0x6c757d, 'Query (Wq)');
+            
+            // 3. Key [Dm, Dm]
+            createMatrix('key', D_MODEL, D_MODEL, -16, 0x6c757d, 'Key (Wk)');
+            
+            // 4. Value [Dm, Dm]
+            createMatrix('value', D_MODEL, D_MODEL, -12, 0x6c757d, 'Value (Wv)');
+            
+            // 5. Output [Dm, Dm]
+            createMatrix('output', D_MODEL, D_MODEL, -4, 0x28a745, 'Output (Wo)');
+            
+            // 6. Up-Projection [Dm, Dffn]
+            createMatrix('up_proj', D_MODEL, D_FFN, 4, 0xffc107, 'Up-Proj (W1)');
+            
+            // 7. Down-Projection [Dffn, Dm]
+            createMatrix('down_proj', D_FFN, D_MODEL, 12, 0xffc107, 'Down-Proj (W2)');
+            
+            // 8. Unembedding [Dm, V]
+            createMatrix('unembedding', D_MODEL, VOCAB, 28, 0xdc3545, 'Unembedding');
+
+            // --- Controles (Arrastrar para rotar) ---
+            let isDragging = false;
+            let previousMousePosition = { x: 0, y: 0 };
+            
+            container.addEventListener('mousedown', e => {
+                isDragging = true;
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+            container.addEventListener('mouseup', () => { isDragging = false; });
+            container.addEventListener('mouseleave', () => { isDragging = false; });
+            container.addEventListener('mousemove', e => {
+                if (!isDragging) return;
+                const deltaMove = {
+                    x: e.clientX - previousMousePosition.x,
+                    y: e.clientY - previousMousePosition.y
+                };
+                
+                group.rotation.y += deltaMove.x * 0.005;
+                group.rotation.x += deltaMove.y * 0.005;
+                
+                previousMousePosition = { x: e.clientX, y: e.clientY };
+            });
+
+            // --- Responsividad ---
+            window.addEventListener('resize', onWindowResize);
+
+            // Iniciar animación
+            animate();
+        }
+
+        /**
+         * Crea una malla de matriz y su etiqueta
+         */
+        function createMatrix(key, width, height, zPos, color, labelText) {
+            const geometry = new THREE.BoxGeometry(width, height, 1); // Profundidad constante
+            const material = new THREE.MeshPhongMaterial({ color: color, shininess: 50 });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.z = zPos;
+            
+            group.add(mesh);
+            matrixMeshes[key] = mesh; // Guardar la malla
+            originalMaterials[key] = material; // Guardar el material original
+
+            // Crear etiqueta de texto
+            const label = createLabel(labelText);
+            
+            let labelYPos = height / 2 + 2; // Posición Y base
+            
+            // Alternar la altura Y para las matrices problemáticas para evitar superposición
+            if (key === 'key' || key === 'output') {
+                labelYPos += 5; // Elevar esta etiqueta un poco más
+            }
+            
+            label.position.set(0, labelYPos, zPos); // Posicionar con el Y-offset ajustado
+            group.add(label);
+        }
+
+        /**
+         * Crea una etiqueta de texto como un Sprite
+         */
+        function createLabel(text) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            // Tamaño de fuente anterior: '72px Arial'
+            context.font = '54px Arial'; // Tamaño de fuente reducido (75% de 72px)
+            context.fillStyle = 'rgba(255, 255, 255, 0.9)'; 
+            context.fillText(text, 0, 54); // Ajustar el offset Y para la nueva fuente
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const material = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            
+            const sprite = new THREE.Sprite(material);
+            // Escala anterior: sprite.scale.set(18, 9, 1.0);
+            sprite.scale.set(13.5, 6.75, 1.0); // Escala reducida (75% de 18 y 9)
+            return sprite;
+        }
+
+        /**
+         * Bucle de animación
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+            // Rotación automática sutil si no se está arrastrando - Eliminada por petición
+            /*
+            if (!document.querySelector('#canvas-container:active')) {
+                 group.rotation.y += 0.002;
+            }
+            */
+            renderer.render(scene, camera);
+        }
+
+        /**
+         * Maneja el redimensionamiento de la ventana
+         */
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            if (!container) return;
+            
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        /**
+         * Resalta una matriz específica en la escena 3D
+         */
+        function highlightMatrix(key) {
+            // 1. Reiniciar todas las mallas a su material original (o atenuado)
+            for (const k in matrixMeshes) {
+                if (matrixMeshes.hasOwnProperty(k)) {
+                    matrixMeshes[k].material = dimmedMaterial;
+                }
+            }
+            
+            // 2. Resaltar la malla seleccionada
+            if (matrixMeshes[key]) {
+                matrixMeshes[key].material = originalMaterials[key];
+                // Podríamos aplicar un material de resaltado en lugar del original
+                // matrixMeshes[key].material = highlightMaterial;
+            }
+        }
+        
+        /**
+         * Reinicia todos los resaltados
+         */
+        function resetHighlights() {
+            for (const k in matrixMeshes) {
+                if (matrixMeshes.hasOwnProperty(k)) {
+                    matrixMeshes[k].material = originalMaterials[k];
+                }
+            }
+        }
+
+        // --- Configuración de interactividad de la tabla ---
+        document.addEventListener('DOMContentLoaded', () => {
+            init(); // Iniciar la escena 3D
+            
+            const rows = document.querySelectorAll('tbody tr[data-matrix]');
+            
+            rows.forEach(row => {
+                row.addEventListener('click', () => {
+                    const matrixKey = row.getAttribute('data-matrix');
+                    
+                    // Manejar clase CSS en la tabla
+                    rows.forEach(r => r.classList.remove('selected-row'));
+                    row.classList.add('selected-row');
+                    
+                    // Resaltar en 3D
+                    highlightMatrix(matrixKey);
+                });
+            });
+            
+            // Opcional: Clic fuera de la tabla para reiniciar
+            document.querySelector('#canvas-container').addEventListener('click', (e) => {
+                 // Si se hace clic en el canvas, reiniciar la selección de la tabla y los resaltados 3D
+                if (e.target.tagName === 'CANVAS') {
+                    rows.forEach(r => r.classList.remove('selected-row'));
+                    resetHighlights();
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>

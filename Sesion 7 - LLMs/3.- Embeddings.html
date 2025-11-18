@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Embeddings 3D</title>
+    <!-- Carga de Tailwind CSS para el estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Three.js para la visualización 3D -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <style>
+        /* Usamos la fuente Inter de Tailwind */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            /* overflow: hidden; HA SIDO ELIMINADO PARA PERMITIR EL SCROLL */
+        }
+        #scene-container {
+            width: 100%;
+            height: 100%; /* Cambiado de 60vh a 100% */
+            background-color: #111827; /* Fondo oscuro para la escena */
+            border-radius: 0.5rem;
+            cursor: move;
+        }
+        /* Estilo para el cuadro de mensaje */
+        #message-box {
+            transition: opacity 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+
+    <!-- Panel de control (Ahora es el contenedor principal) -->
+    <div class="w-full p-6 space-y-4">
+        <h1 class="text-2xl font-bold text-white">Visualizador de Embeddings 3D</h1>
+        <p class="text-gray-400">
+            Esta demo ilustra cómo funcionan los "embeddings" de palabras. Palabras con significados similares
+            se agrupan en el espacio vectorial.
+        </p>
+        
+        <!-- PANEL DE EXPLICACIÓN (MOVIDO Y ACTUALIZADO) -->
+        <div class="space-y-2">
+            <h2 class="text-lg font-semibold">¿Cómo se generan estos vectores?</h2>
+            <div class="bg-gray-800 p-4 rounded-lg space-y-3 text-sm text-gray-300">
+                <p>
+                    Los "embeddings" se generan entrenando modelos en grandes cantidades de texto. El principio clave es el <span class="font-semibold">"contexto"</span>:
+                    palabras que aparecen en contextos similares terminan con vectores numéricos similares.
+                </p>
+                <p>
+                    Estos vectores originales suelen tener cientos de dimensiones. Abajo hay una <span class="font-semibold">simulación de vectores de 10 dimensiones</span>.
+                    Observa cómo las palabras de la misma categoría (ej. "rey" y "reina") tienen vectores parecidos.
+                </p>
+
+                <!-- NUEVA TABLA DE VECTORES DE ALTA DIMENSIÓN -->
+                <div class="max-h-48 overflow-y-auto rounded-lg bg-gray-900 p-2 border border-gray-700">
+                    <table class="min-w-full text-xs">
+                        <thead class="sticky top-0 bg-gray-900">
+                            <tr>
+                                <th class="p-2 text-left">Palabra</th>
+                                <th class="p-2 text-left">Vector de 10-D (Simulado)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="high-dim-table-body" class="divide-y divide-gray-700">
+                            <!-- Se poblará con JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <p>
+                    Para visualizarlos en 3D como en esta demo, se usan técnicas de <span class="font-semibold">reducción de dimensionalidad</span> (como PCA o t-SNE)
+                    para "comprimir" esas 10+ dimensiones en solo 3 (X, Y, Z), intentando mantener las relaciones espaciales originales.
+                </p>
+            </div>
+        </div>
+
+        <!-- NUEVO PANEL DE ILUSTRACIÓN DEL ENTRENAMIENTO -->
+        <div class="space-y-2">
+            <h2 class="text-lg font-semibold">Ilustración del Entrenamiento (Modelo CBOW)</h2>
+            <div class="bg-gray-800 p-4 rounded-lg space-y-4 text-sm text-gray-300">
+                <p>
+                    Como mencionamos, el modelo aprende "viendo" miles de millones de frases. Usa un método llamado <span class="font-semibold">"ventana deslizante" (sliding window)</span>.
+                    El modelo (ej. CBOW) intenta predecir una palabra objetivo basándose en las palabras de su contexto (la "ventana").
+                </p>
+
+                <!-- Gráfico 1: Ventana Deslizante -->
+                <div>
+                    <p class="mb-2">Imagina la frase: "El perro marrón corre rápido por el parque."</p>
+                    <p class="mb-1 text-xs text-gray-400">Paso 1 (Ventana sobre "marrón"):</p>
+                    <div class="font-mono p-2 bg-gray-900 rounded text-center">
+                      El <span class="bg-blue-900 p-1 rounded">perro</span> <span class="bg-green-700 p-1 rounded font-bold">marrón</span> <span class="bg-blue-900 p-1 rounded">corre</span> rápido por el parque.
+                    </div>
+                    <div class="text-center p-2 text-xs">
+                      <span class="text-blue-400">Contexto: [perro, corre]</span> &rarr; <span class="text-green-400">Objetivo: "marrón"</span>
+                    </div>
+
+                    <p class="mb-1 mt-2 text-xs text-gray-400">Paso 2 (La ventana se desliza):</p>
+                    <div class="font-mono p-2 bg-gray-900 rounded text-center">
+                      El perro <span class="bg-blue-900 p-1 rounded">marrón</span> <span class="bg-green-700 p-1 rounded font-bold">corre</span> <span class="bg-blue-900 p-1 rounded">rápido</span> por el parque.
+                    </div>
+                    <div class="text-center p-2 text-xs">
+                      <span class="text-blue-400">Contexto: [marrón, rápido]</span> &rarr; <span class="text-green-400">Objetivo: "corre"</span>
+                    </div>
+                </div>
+
+                <!-- Gráfico 2: Arquitectura Simplificada -->
+                <p>
+                    El modelo se entrena para que, dada la entrada de contexto, prediga la palabra objetivo correcta.
+                    El "embedding" es, en esencia, el vector que se genera en la <span class="font-semibold text-purple-400">capa oculta</span> del modelo.
+                </p>
+                <div class="flex justify-between items-center text-center p-3 space-x-2">
+                    <div class="bg-blue-900 p-3 rounded-lg flex-1">
+                        <strong class="text-blue-300">ENTRADA</strong><br>(Palabras de Contexto)
+                    </div>
+                    <span class="text-2xl font-bold text-gray-500">&rarr;</span>
+                    <div class="bg-purple-900 p-3 rounded-lg flex-1">
+                        <strong class="text-purple-300">MODELO</strong><br>(Capa Oculta = Embedding)
+                    </div>
+                    <span class="text-2xl font-bold text-gray-500">&rarr;</span>
+                    <div class="bg-green-900 p-3 rounded-lg flex-1">
+                        <strong class="text-green-300">SALIDA</strong><br>(Predicción de Objetivo)
+                    </div>
+                </div>
+                <p>
+                    Después de entrenar con millones de frases, palabras que aparecen en contextos similares (ej. "perro" y "gato")
+                    forzarán al modelo a crear vectores similares en esa capa oculta. ¡Esos son los embeddings!
+                </p>
+            </div>
+        </div>
+        <!-- FIN DEL NUEVO PANEL -->
+
+        <!-- Cuadro de mensaje para errores/éxito -->
+        <div id="message-box" class="hidden p-3 rounded-lg text-white"></div>
+
+        <!-- Controles de entrada (ELIMINADOS) -->
+
+        <!-- FIX: RE-ADDING MISSING HTML BLOCKS -->
+
+        <!-- Palabras Disponibles -->
+        <div class="space-y-2">
+            <h2 class="text-lg font-semibold">Palabras Disponibles</h2>
+            <div id="available-words-container" class="flex flex-wrap gap-2 text-sm">
+                <!-- Se poblará con JavaScript -->
+            </div>
+        </div>
+
+        <!-- Palabras Proyectadas -->
+        <div class="space-y-2">
+            <h2 class="text-lg font-semibold">Palabras Proyectadas</h2>
+            <div id="plotted-words-container" class="flex flex-wrap gap-2 text-sm">
+                <!-- Se poblará con JavaScript -->
+            </div>
+        </div>
+
+        <!-- Tarjeta de Vector -->
+        <div class="space-y-2">
+            <h2 class="text-lg font-semibold">Vector de la Palabra</h2>
+            <div id="vector-display-card" class="bg-gray-800 p-4 rounded-lg border border-gray-700 transition-all duration-300">
+                <h3 class="text-xl font-bold text-white mb-2">
+                    Palabra: <span id="vector-word-name" class="text-blue-400 transition-colors">---</span>
+                </h3>
+                <div class="grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-gray-700 p-2 rounded-lg">
+                        <span class="block text-xs text-gray-400">X</span>
+                        <span id="vector-x" class="text-lg font-medium">---</span>
+                    </div>
+                    <div class="bg-gray-700 p-2 rounded-lg">
+                        <span class="block text-xs text-gray-400">Y</span>
+                        <span id="vector-y" class="text-lg font-medium">---</span>
+                    </div>
+                    <div class="bg-gray-700 p-2 rounded-lg">
+                        <span class="block text-xs text-gray-400">Z</span>
+                        <span id="vector-z" class="text-lg font-medium">---</span>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <span class="text-xs text-gray-400">Categoría: </span>
+                    <span id="vector-category" class="font-medium">---</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- END OF RE-ADDED BLOCKS -->
+
+
+        <!-- Panel de Explicación (Eliminado de aquí, movido arriba) -->
+
+
+        <!-- Escena 3D (Movida aquí al final del panel) -->
+        <div class="w-full pt-6 flex items-center justify-center" style="height: 60vh;">
+            <div id="scene-container"></div>
+        </div>
+    </div>
+
+    <!-- Escena 3D (Derecha) - Este DIV ya no se usa, el contenido se movió arriba -->
+    <!-- 
+    <div class="w-full md:w-2/3 p-6 flex items-center justify-center" style="height: 100vh;">
+        <div id="scene-container"></div>
+    </div> 
+    -->
+
+    <script type="module">
+        // --- 1. DATOS: SIMULACIÓN DE EMBEDDINGS ---
+        
+        // DATOS DE ALTA DIMENSIÓN (SIMULADOS) - Para la tabla
+        // Vectores de 10 dimensiones
+        const highDimWordEmbeddings = {
+            "rey":      [ 0.8,  0.1,  0.9,  0.2, -0.1,  0.7,  0.6, -0.1,  0.5,  0.3],
+            "reina":    [ 0.7,  0.2,  0.8,  0.1, -0.2,  0.6,  0.5, -0.2,  0.6,  0.2],
+            "castillo": [ 0.5,  0.1,  0.6,  0.1,  0.1,  0.4,  0.7,  0.0,  0.3,  0.1],
+            "manzana":  [-0.9, -0.7,  0.1, -0.5,  0.8, -0.2, -0.6,  0.3, -0.1, -0.7],
+            "naranja":  [-0.8, -0.6,  0.2, -0.4,  0.7, -0.1, -0.5,  0.2, -0.2, -0.6],
+            "comer":    [-0.5, -0.8, -0.1, -0.7,  0.5,  0.1, -0.3,  0.1,  0.0, -0.4],
+            "perro":    [ 0.1, -0.8,  0.7, -0.1, -0.7,  0.8,  0.1, -0.9,  0.6, -0.3],
+            "gato":     [ 0.2, -0.7,  0.6, -0.2, -0.8,  0.7,  0.2, -0.8,  0.5, -0.2],
+            "correr":   [ 0.3, -0.5,  0.2,  0.0, -0.4,  0.5, -0.1, -0.6,  0.2, -0.5],
+            "computadora":[-0.2, 0.8, -0.7,  0.9,  0.6, -0.8, -0.1,  0.7, -0.9,  0.5],
+            "código":   [-0.1, 0.7, -0.8,  0.8,  0.7, -0.9,  0.0,  0.6, -0.8,  0.6],
+            "internet": [-0.3, 0.9, -0.6,  0.7,  0.5, -0.7, -0.2,  0.8, -0.7,  0.4],
+        };
+
+        // DATOS 3D (REDUCIDOS) - Para la visualización
+        // Estos son los que se usarán para la gráfica 3D
+        const wordEmbeddings = {
+            // --- FIX: RE-ADDING MISSING CLUSTERS ---
+            // Cluster 1: Realeza (Amarillo)
+            "rey": { x: 5, y: 5, z: 5, category: "realeza" },
+            "reina": { x: 5, y: 6, z: 5, category: "realeza" },
+            "príncipe": { x: 4, y: 5, z: 6, category: "realeza" },
+            "princesa": { x: 4, y: 6, z: 6, category: "realeza" },
+            "castillo": { x: 5, y: 5, z: 4, category: "realeza" },
+            "corona": { x: 6, y: 6, z: 5, category: "realeza" },
+
+            // Cluster 2: Comida (Verde)
+            "manzana": { x: -5, y: -5, z: -5, category: "comida" },
+            "pan": { x: -4, y: -5, z: -5, category: "comida" },
+            "queso": { x: -5, y: -4, z: -5, category: "comida" },
+            "comer": { x: -5, y: -5, z: -4, category: "comida" }, // Verbo cercano
+            "naranja": { x: -6, y: -5, z: -6, category: "comida" },
+            "leche": { x: -4, y: -4, z: -4, category: "comida" },
+            // --- END OF FIX ---
+
+            // Cluster 3: Animales (Azul)
+            // ... (resto de las palabras) -> Comentario eliminado, los datos de abajo son correctos
+            "perro": { x: 5, y: -5, z: 5, category: "animales" },
+            "gato": { x: 6, y: -5, z: 5, category: "animales" },
+            "pájaro": { x: 5, y: -4, z: 5, category: "animales" },
+            "pez": { x: 4, y: -5, z: 6, category: "animales" },
+            "león": { x: 6, y: -6, z: 4, category: "animales" },
+            "correr": { x: 5, y: -5, z: 3, category: "animales" }, // Verbo cercano
+
+            // Cluster 4: Tecnología (Magenta)
+            "computadora": { x: -5, y: 5, z: -5, category: "tecnologia" },
+            "teléfono": { x: -4, y: 5, z: -5, category: "tecnologia" },
+            "internet": { x: -5, y: 6, z: -5, category: "tecnologia" },
+            "código": { x: -6, y: 5, z: -4, category: "tecnologia" },
+            "pantalla": { x: -4, y: 4, z: -5, category: "tecnologia" },
+            "teclado": { x: -5, y: 4, z: -4, category: "tecnologia" },
+        };
+
+        const categoryColors = {
+            "realeza": 0xffd700, // Amarillo
+            "comida": 0x00ff00, // Verde
+            "animales": 0x0077ff, // Azul
+            "tecnologia": 0xff00ff, // Magenta
+            "default": 0xffffff // Blanco
+        };
+
+        // --- 2. CONFIGURACIÓN DE THREE.JS ---
+        let scene, camera, renderer, controls;
+        let plottedWords = new Map(); // Almacena los objetos 3D de las palabras
+        
+        const container = document.getElementById('scene-container');
+        
+        function initThreeJS() {
+            // Escena
+            scene = new THREE.Scene();
+            
+            // Cámara
+            camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.z = 15;
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            // Controles de órbita (para mover la cámara)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Luces
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 0.8);
+            camera.add(pointLight); // La luz sigue a la cámara
+            scene.add(camera);
+
+            // Ejes (para referencia)
+            const axesHelper = new THREE.AxesHelper(10);
+            scene.add(axesHelper);
+
+            // Iniciar bucle de animación
+            animate();
+
+            // Mover el listener aquí para asegurar que todo esté inicializado
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // Bucle de animación
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Ajustar al cambiar tamaño de ventana
+        function onWindowResize() {
+            // FIX: Add guard clause for uninitialized components
+            if (!container || !camera || !renderer) return;
+
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+        // window.addEventListener('resize', onWindowResize); // <-- Quitado de aquí
+
+        // --- 3. LÓGICA DE LA APLICACIÓN ---
+
+        // Función para crear etiquetas de texto (Sprites)
+        function createTextSprite(text, color) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            const fontSize = 48;
+            context.font = `bold ${fontSize}px Inter, sans-serif`;
+            
+            // Ajustar tamaño de canvas al texto
+            const metrics = context.measureText(text);
+            const textWidth = metrics.width;
+            canvas.width = textWidth + 20; // Añadir padding
+            canvas.height = fontSize + 20;
+
+            // Re-aplicar fuente después de redimensionar
+            context.font = `bold ${fontSize}px Inter, sans-serif`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+            
+            // Fondo semitransparente
+            context.fillStyle = "rgba(0, 0, 0, 0.3)";
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Texto
+            context.fillStyle = `rgb(${ (color >> 16) & 255 }, ${ (color >> 8) & 255 }, ${ color & 255 })`;
+            context.fillText(text, canvas.width / 2, canvas.height / 2);
+
+            const texture = new THREE.CanvasTexture(canvas);
+            const spriteMaterial = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(spriteMaterial);
+            
+            // Escalar el sprite
+            sprite.scale.set(canvas.width / 100, canvas.height / 100, 1);
+            return sprite;
+        }
+
+        // Función para añadir una palabra a la escena
+        function plotWord(word) {
+            word = word.toLowerCase().trim();
+            if (!word) return;
+
+            const wordData = wordEmbeddings[word];
+
+            // Error: Palabra no encontrada
+            if (!wordData) {
+                showMessage(`Palabra "${word}" no encontrada en el diccionario.`, true);
+                return;
+            }
+
+            // Evitar duplicados
+            if (plottedWords.has(word)) {
+                showMessage(`Palabra "${word}" ya está proyectada.`, false);
+                return;
+            }
+
+            const color = categoryColors[wordData.category] || categoryColors["default"];
+
+            // 1. Crear el punto (esfera)
+            const geometry = new THREE.SphereGeometry(0.2, 16, 16);
+            const material = new THREE.MeshBasicMaterial({ color: color });
+            const sphere = new THREE.Mesh(geometry, material);
+            sphere.position.set(wordData.x, wordData.y, wordData.z);
+            scene.add(sphere);
+
+            // 2. Crear la etiqueta
+            const label = createTextSprite(word, color);
+            label.position.set(wordData.x, wordData.y + 0.5, wordData.z); // Un poco arriba del punto
+            scene.add(label);
+
+            // 3. Guardar y actualizar UI
+            plottedWords.set(word, { sphere, label, color });
+            updatePlottedWordsUI();
+            showMessage(`"${word}" añadido al clúster de ${wordData.category}.`, false);
+            updateVectorCard(word, wordData); // <-- NUEVA LLAMADA
+        }
+
+        // Función para mostrar mensajes al usuario
+        const messageBox = document.getElementById('message-box');
+        let messageTimer;
+        function showMessage(message, isError = false) {
+            clearTimeout(messageTimer);
+            messageBox.textContent = message;
+            messageBox.classList.remove('hidden', 'opacity-0');
+            if (isError) {
+                messageBox.classList.remove('bg-green-500');
+                messageBox.classList.add('bg-red-500');
+            } else {
+                messageBox.classList.remove('bg-red-500');
+                messageBox.classList.add('bg-green-500');
+            }
+            
+            messageTimer = setTimeout(() => {
+                messageBox.classList.add('opacity-0');
+                setTimeout(() => messageBox.classList.add('hidden'), 300);
+            }, 3000);
+        }
+
+        // --- NUEVAS FUNCIONES PARA LA TARJETA DE VECTORES ---
+
+        function updateVectorCard(word, data) {
+            // FIX: Add guard clause for missing element
+            const wordNameEl = document.getElementById('vector-word-name');
+            if (!wordNameEl) return; // Salir si la tarjeta no existe
+
+            wordNameEl.textContent = word;
+            document.getElementById('vector-x').textContent = data.x;
+            document.getElementById('vector-y').textContent = data.y;
+            document.getElementById('vector-z').textContent = data.z;
+            document.getElementById('vector-category').textContent = data.category;
+            
+            const card = document.getElementById('vector-display-card');
+            const color = categoryColors[data.category] || categoryColors['default'];
+            const colorHex = color.toString(16).padStart(6, '0');
+            
+            card.style.borderColor = `#${colorHex}`;
+            card.classList.remove('border-gray-700');
+            card.classList.add('border-2'); // Añadir un borde más grueso
+            
+            // Cambiar el color del nombre de la palabra
+            document.getElementById('vector-word-name').style.color = `#${colorHex}`;
+        }
+
+        function resetVectorCard() {
+            // FIX: Add guard clause for missing element
+            const wordNameEl = document.getElementById('vector-word-name');
+            if (!wordNameEl) return; // Salir si la tarjeta no existe
+
+            wordNameEl.textContent = '---';
+            document.getElementById('vector-x').textContent = '---';
+            document.getElementById('vector-y').textContent = '---';
+            document.getElementById('vector-z').textContent = '---';
+            document.getElementById('vector-category').textContent = '---';
+            
+            const card = document.getElementById('vector-display-card');
+            card.style.borderColor = '';
+            card.classList.remove('border-2');
+            card.classList.add('border-gray-700');
+            
+            // Resetear el color del nombre de la palabra al color por defecto de la clase
+            document.getElementById('vector-word-name').style.color = '';
+        }
+
+        // --- FIN DE NUEVAS FUNCIONES ---
+        
+        // --- NUEVA FUNCIÓN PARA POBLAR LA TABLA DE ALTA DIMENSIÓN ---
+        function populateHighDimTable() {
+            const tableBody = document.getElementById('high-dim-table-body');
+            if (!tableBody) return;
+            
+            tableBody.innerHTML = ''; // Limpiar
+            
+            for (const word in highDimWordEmbeddings) {
+                const vector = highDimWordEmbeddings[word];
+                const row = document.createElement('tr');
+                
+                // Celda de Palabra
+                const wordCell = document.createElement('td');
+                wordCell.textContent = word;
+                wordCell.className = 'p-2 font-medium';
+                row.appendChild(wordCell);
+                
+                // Celda de Vector
+                const vectorCell = document.createElement('td');
+                vectorCell.className = 'p-2 font-mono';
+                
+                // Mapear números a spans coloreados
+                const vectorSpans = vector.map(num => {
+                    const value = num.toFixed(1);
+                    let colorClass = 'text-gray-400'; // Cerca de cero
+                    if (num > 0.3) colorClass = 'text-green-400'; // Positivo
+                    if (num < -0.3) colorClass = 'text-red-400'; // Negativo
+                    return `<span class="inline-block w-8 text-right ${colorClass}">${value}</span>`;
+                }).join(' ');
+                
+                vectorCell.innerHTML = vectorSpans;
+                row.appendChild(vectorCell);
+                
+                tableBody.appendChild(row);
+            }
+        }
+        // --- FIN DE NUEVA FUNCIÓN ---
+
+
+        // --- 4. POBLAR UI Y AÑADIR EVENTOS ---
+        
+        // Poblar lista de palabras disponibles
+        const availableWordsContainer = document.getElementById('available-words-container');
+        const availableWords = Object.keys(wordEmbeddings);
+        availableWords.forEach(word => {
+            // FIX: Check if container exists
+            if (!availableWordsContainer) return;
+
+            const wordData = wordEmbeddings[word];
+            const colorHex = categoryColors[wordData.category].toString(16).padStart(6, '0');
+            const tag = document.createElement('span');
+            tag.textContent = word;
+            tag.className = 'py-1 px-2 rounded-full text-xs cursor-pointer hover:opacity-80';
+            tag.style.backgroundColor = `#${colorHex}`;
+            // Calcular color de texto (blanco o negro) para contraste
+            const r = (wordData.category === "realeza") ? 255 : 0; // Excepción para amarillo
+            const g = (wordData.category === "realeza" || wordData.category === "comida") ? 255 : 0;
+            const b = (wordData.category === "realeza") ? 0 : 255;
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            tag.style.color = luminance > 0.5 ? '#000000' : '#ffffff';
+            
+            // Al hacer clic, se añade a la entrada y se proyecta
+            tag.onclick = () => {
+                // document.getElementById('wordInput').value = word; // <-- LÍNEA ELIMINADA
+                plotWord(word);
+            };
+            availableWordsContainer.appendChild(tag);
+        });
+
+        // Poblar lista de palabras proyectadas
+        const plottedWordsContainer = document.getElementById('plotted-words-container');
+        function updatePlottedWordsUI() {
+            // FIX: Check if container exists
+            if (!plottedWordsContainer) return;
+            
+            plottedWordsContainer.innerHTML = ''; // Limpiar
+            if (plottedWords.size === 0) {
+                plottedWordsContainer.innerHTML = '<span class="text-gray-500">Ninguna palabra proyectada aún.</span>';
+                return;
+            }
+            plottedWords.forEach((data, word) => {
+                const colorHex = data.color.toString(16).padStart(6, '0');
+                const tag = document.createElement('span');
+                tag.textContent = `x ${word}`; // 'x' para borrar
+                tag.className = 'py-1 px-2 rounded-full text-xs cursor-pointer hover:opacity-80';
+                tag.style.backgroundColor = `#${colorHex}`;
+                tag.style.color = (wordEmbeddings[word].category === "realeza") ? '#000000' : '#ffffff';
+
+                // Al hacer clic, se elimina de la escena
+                tag.onclick = () => {
+                    removeWord(word);
+                };
+                plottedWordsContainer.appendChild(tag);
+            });
+        }
+        
+        // Función para eliminar una palabra
+        function removeWord(word) {
+            const objects = plottedWords.get(word);
+            if (objects) {
+                scene.remove(objects.sphere);
+                scene.remove(objects.label);
+                // Limpiar geometría y material (buena práctica)
+                objects.sphere.geometry.dispose();
+                objects.sphere.material.dispose();
+                objects.label.material.map.dispose();
+                objects.label.material.dispose();
+
+                plottedWords.delete(word);
+                updatePlottedWordsUI();
+                showMessage(`"${word}" eliminado de la escena.`, false);
+
+                // Si la palabra eliminada es la que se está mostrando, resetear la tarjeta
+                // FIX: Check if element exists before accessing textContent
+                const wordNameEl = document.getElementById('vector-word-name');
+                if (wordNameEl && wordNameEl.textContent === word) {
+                    resetVectorCard();
+                }
+            }
+        }
+
+        // Manejador del botón y 'Enter' (BLOQUE ELIMINADO)
+        /*
+        const input = document.getElementById('wordInput');
+        const button = document.getElementById('addWordButton');
+
+        function handleAdd() {
+            plotWord(input.value);
+            input.value = ''; // Limpiar entrada
+            input.focus();
+        }
+
+        button.addEventListener('click', handleAdd);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                handleAdd();
+            }
+        });
+        */
+
+        // Iniciar todo
+        initThreeJS();
+        updatePlottedWordsUI(); // Mostrar mensaje inicial
+        resetVectorCard(); // Asegurar que la tarjeta esté en su estado inicial
+        populateHighDimTable(); // <-- NUEVA LLAMADA para rellenar la tabla
+    </script>
+</body>
+</html>

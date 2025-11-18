@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualización de minGPT</title>
+    <!-- Incluimos Tailwind CSS desde el CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilo para la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Importamos la fuente Inter */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        
+        /* Pequeños estilos para el diagrama de flujo */
+        .flow-arrow {
+            position: relative;
+            width: 50px;
+            height: 2px;
+            background-color: #4b5563; /* gray-600 */
+            margin: 0 10px;
+        }
+        .flow-arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+            border-left: 6px solid #4b5563; /* gray-600 */
+        }
+        .flow-block {
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .flow-block:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 font-inter antialiased">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        
+        <!-- Barra Lateral de Navegación -->
+        <nav class="w-full md:w-64 bg-gray-800 p-6 shadow-lg">
+            <h1 class="text-2xl font-bold text-white mb-6">minGPT</h1>
+            <ul class="space-y-3">
+                <li><a href="#introduccion" class="tab-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-tab="introduccion">Introducción</a></li>
+                <li><a href="#archivos" class="tab-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-tab="archivos">Archivos Clave</a></li>
+                <li><a href="#arquitectura" class="tab-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-tab="arquitectura">Arquitectura</a></li>
+                <li><a href="#como-funciona" class="tab-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-tab="como-funciona">¿Cómo Funciona?</a></li>
+            </ul>
+            <div class="mt-8 text-xs text-gray-500">
+                <p>Visualización basada en el repositorio de Andrej Karpathy:</p>
+                <a href="https://github.com/karpathy/minGPT" target="_blank" class="text-blue-400 hover:underline break-all">github.com/karpathy/minGPT</a>
+            </div>
+        </nav>
+
+        <!-- Contenido Principal -->
+        <main class="flex-1 p-6 md:p-10">
+            
+            <!-- Pestaña: Introducción -->
+            <div id="introduccion" class="tab-content">
+                <h2 class="text-3xl font-bold text-white mb-4">Introducción a minGPT</h2>
+                <p class="text-lg text-gray-300 mb-6">
+                    `minGPT` es una implementación mínima y limpia de GPT (Generative Pre-trained Transformer) escrita en PyTorch. Su autor, Andrej Karpathy, la diseñó con fines educativos.
+                </p>
+                <div class="bg-gray-800 p-6 rounded-lg shadow-inner">
+                    <h3 class="text-xl font-semibold text-white mb-3">Objetivos Principales</h3>
+                    <ul class="list-disc list-inside space-y-2 text-gray-300">
+                        <li><strong>Simple y Educativo:</strong> El código es corto, limpio y fácil de leer. No hay abstracciones innecesarias.</li>
+                        <li><strong>Completo:</strong> Aunque mínimo, implementa la funcionalidad central de un modelo GPT, incluyendo el entrenamiento y la generación de texto.</li>
+                        <li><strong>Base para Proyectos:</strong> Sirve como un excelente punto de partida para entender y construir sobre la arquitectura Transformer.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Pestaña: Archivos Clave -->
+            <div id="archivos" class="tab-content hidden">
+                <h2 class="text-3xl font-bold text-white mb-6">Archivos Clave del Repositorio</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
+                    <div class="bg-gray-800 p-5 rounded-lg shadow-lg">
+                        <code class="text-lg font-mono text-green-400">mingpt/model.py</code>
+                        <p class="mt-2 text-gray-300">
+                            El corazón del proyecto. Contiene la implementación del bloque Transformer, el mecanismo de auto-atención (self-attention) y la clase `GPT` principal.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 p-5 rounded-lg shadow-lg">
+                        <code class="text-lg font-mono text-green-400">mingpt/trainer.py</code>
+                        <p class="mt-2 text-gray-300">
+                            Una clase `Trainer` simple que maneja el bucle de entrenamiento, la optimización y la evaluación del modelo.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 p-5 rounded-lg shadow-lg">
+                        <code class="text-lg font-mono text-green-400">mingpt/bpe.py</code>
+                        <p class="mt-2 text-gray-300">
+                            Un tokenizador simple de Byte-Pair Encoding (BPE) que se utiliza para pre-procesar el texto de entrada.
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 p-5 rounded-lg shadow-lg">
+                        <code class="text-lg font-mono text-green-400">demo.ipynb / play_*.py</code>
+                        <p class="mt-2 text-gray-300">
+                            Ejemplos y demostraciones de cómo entrenar y usar el modelo `minGPT` para diferentes tareas (generación de texto a nivel de carácter, etc.).
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pestaña: Arquitectura -->
+            <div id="arquitectura" class="tab-content hidden">
+                <h2 class="text-3xl font-bold text-white mb-6">Arquitectura del Modelo (Interactivo)</h2>
+                <p class="text-gray-300 mb-8">Haz clic en los bloques para ver una explicación.</p>
+                
+                <!-- Diagrama de Flujo del Modelo -->
+                <div class="bg-gray-800 p-8 rounded-lg shadow-inner">
+                    <div class="flex flex-col items-center space-y-4">
+                        
+                        <div class="flow-block bg-blue-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('input')">
+                            Entrada (Tokens)
+                        </div>
+                        <div class="text-gray-400 text-2xl">↓</div>
+                        <div class="flow-block bg-blue-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('embedding')">
+                            Token & Positional Embedding
+                        </div>
+                        <div class="text-gray-400 text-2xl">↓</div>
+                        
+                        <!-- Bloque Transformer -->
+                        <div class="w-full p-6 bg-gray-700 rounded-lg border-2 border-dashed border-gray-500">
+                            <h4 class="text-center text-lg font-semibold mb-4">Bloque Transformer (xN)</h4>
+                            <div class="flex flex-col items-center space-y-4">
+                                <div class="flow-block bg-purple-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('attention')">
+                                    Multi-Head Causal Self-Attention
+                                </div>
+                                <div class="text-gray-400 text-2xl">↓</div>
+                                <div class="flow-block bg-gray-600 text-white p-3 rounded-lg" onclick="showInfo('addnorm1')">
+                                    Add & Norm
+                                </div>
+                                <div class="text-gray-400 text-2xl">↓</div>
+                                <div class="flow-block bg-purple-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('mlp')">
+                                    Feed Forward (MLP)
+                                </div>
+                                <div class="text-gray-400 text-2xl">↓</div>
+                                <div class="flow-block bg-gray-600 text-white p-3 rounded-lg" onclick="showInfo('addnorm2')">
+                                    Add & Norm
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="text-gray-400 text-2xl">↓</div>
+                        <div class="flow-block bg-green-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('output')">
+                            Capa de Salida (Linear + Softmax)
+                        </div>
+                        <div class="text-gray-400 text-2xl">↓</div>
+                        <div class="flow-block bg-green-600 text-white p-4 rounded-lg shadow-md" onclick="showInfo('logits')">
+                            Salida (Logits/Probabilidades)
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Contenedor de Información -->
+                <div id="info-box" class="mt-8 bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700">
+                    <h3 id="info-title" class="text-xl font-semibold text-white mb-2">Haz clic en un bloque</h3>
+                    <p id="info-description" class="text-gray-300">Selecciona un componente del diagrama para leer su descripción aquí.</p>
+                </div>
+            </div>
+
+            <!-- Pestaña: ¿Cómo Funciona? -->
+            <div id="como-funciona" class="tab-content hidden">
+                <h2 class="text-3xl font-bold text-white mb-6">¿Cómo Funciona? (El Proceso)</h2>
+                <div class="space-y-6">
+                    
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold text-white mb-3">1. Tokenización y Embeddings</h3>
+                        <p class="text-gray-300 mb-4">
+                            El texto de entrada se divide en "tokens" (palabras o sub-palabras). Cada token se mapea a un vector (embedding). Además, se añade un "positional embedding" para que el modelo sepa el orden de las palabras.
+                        </p>
+                        <pre class="bg-gray-900 text-gray-400 p-4 rounded-md overflow-x-auto text-sm">
+<code>
+# En model.py:
+self.tok_emb = nn.Embedding(config.vocab_size, config.embed_dim)
+self.pos_emb = nn.Parameter(torch.zeros(1, config.block_size, config.embed_dim))
+# ...
+x = self.tok_emb(idx) + self.pos_emb[:, :t, :]
+</code>
+</pre>
+                    </div>
+
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold text-white mb-3">2. Bloques Transformer</h3>
+                        <p class="text-gray-300 mb-4">
+                            Los embeddings pasan a través de una pila de Bloques Transformer. Cada bloque tiene dos sub-capas:
+                            <br><br>
+                            - <strong>Multi-Head Self-Attention:</strong> Permite que cada token "mire" y se relacione con otros tokens en la secuencia para construir una mejor representación. En GPT, es "causal" (enmascarada), lo que significa que un token solo puede ver a los tokens anteriores (para no hacer trampa al predecir el futuro).
+                            <br>
+                            - <strong>Feed Forward (MLP):</strong> Una red neuronal simple que procesa cada token de forma independiente.
+                            <br><br>
+                            Ambas sub-capas usan conexiones residuales ("Add") y normalización de capa ("Norm").
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                        <h3 class="text-xl font-semibold text-white mb-3">3. Predicción del Siguiente Token</h3>
+                        <p class="text-gray-300 mb-4">
+                            Después de pasar por todos los bloques, la salida final se proyecta de nuevo al tamaño del vocabulario (vocab_size) usando una capa lineal. El resultado (llamado "logits") pasa por una función Softmax para obtener una distribución de probabilidad sobre cuál debería ser el siguiente token.
+                        </p>
+                        <pre class="bg-gray-900 text-gray-400 p-4 rounded-md overflow-x-auto text-sm">
+<code>
+# En model.py:
+self.ln_f = nn.LayerNorm(config.embed_dim)
+self.head = nn.Linear(config.embed_dim, config.vocab_size, bias=False)
+# ...
+x = self.ln_f(x)
+logits = self.head(x)
+</code>
+</pre>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        // --- Lógica para Pestañas ---
+        const tabLinks = document.querySelectorAll('.tab-link');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const tabId = link.getAttribute('data-tab');
+
+                // Ocultar todo el contenido
+                tabContents.forEach(content => {
+                    content.classList.add('hidden');
+                });
+
+                // Mostrar el contenido seleccionado
+                document.getElementById(tabId).classList.remove('hidden');
+
+                // Actualizar estado activo (opcional)
+                tabLinks.forEach(l => l.classList.remove('bg-gray-700', 'text-white'));
+                link.classList.add('bg-gray-700', 'text-white');
+            });
+        });
+
+        // Activar la primera pestaña por defecto
+        if (tabLinks.length > 0) {
+            tabLinks[0].click();
+        }
+
+        // --- Lógica para la Info-Box de Arquitectura ---
+        const info = {
+            input: {
+                title: "Entrada (Tokens)",
+                description: "La secuencia de entrada, generalmente un fragmento de texto, que ha sido convertida en una secuencia de IDs numéricos (tokens) usando un tokenizador."
+            },
+            embedding: {
+                title: "Token & Positional Embedding",
+                description: "Cada ID de token se convierte en un vector denso (Token Embedding). A esto se le suma un vector que indica su posición en la secuencia (Positional Embedding). El modelo necesita saber tanto 'qué' es una palabra como 'dónde' está."
+            },
+            attention: {
+                title: "Multi-Head Causal Self-Attention",
+                description: "El mecanismo central. 'Multi-head' significa que el modelo mira la secuencia de varias maneras (cabezas) en paralelo. 'Self-Attention' permite a cada token ponderar la importancia de otros tokens. 'Causal' (o enmascarada) asegura que un token en la posición 'i' solo pueda atender a tokens en posiciones anteriores (de 0 a i)."
+            },
+            addnorm1: {
+                title: "Add & Norm (1)",
+                description: "Se utiliza una conexión residual ('Add') sumando la entrada de la capa de atención a su salida. Esto ayuda a evitar el problema de desvanecimiento del gradiente. Luego, 'LayerNorm' normaliza las activaciones para estabilizar el entrenamiento."
+            },
+            mlp: {
+                title: "Feed Forward (MLP)",
+                description: "Una red neuronal simple (Multi-Layer Perceptron) que se aplica a cada token de forma independiente. Generalmente consta de dos capas lineales con una activación (como GELU) en el medio. Ayuda a procesar y transformar la información de cada token."
+            },
+            addnorm2: {
+                title: "Add & Norm (2)",
+                description: "Otra conexión residual y normalización de capa, idéntica a la primera, pero aplicada después de la capa Feed Forward."
+            },
+            output: {
+                title: "Capa de Salida (Linear + Softmax)",
+                description: "Después de pasar por N bloques Transformer, la representación final del token se pasa por una capa de normalización final y luego por una capa Lineal (la 'cabeza' del modelo) que la proyecta de nuevo al tamaño del vocabulario."
+            },
+            logits: {
+                title: "Salida (Logits/Probabilidades)",
+                description: "La salida de la capa lineal son los 'logits'. Estos se pueden convertir en probabilidades (usando Softmax) que representan la predicción del modelo para el *siguiente* token en la secuencia."
+            }
+        };
+
+        const infoTitle = document.getElementById('info-title');
+        const infoDescription = document.getElementById('info-description');
+
+        function showInfo(key) {
+            if (info[key]) {
+                infoTitle.textContent = info[key].title;
+                infoDescription.textContent = info[key].description;
+            }
+        }
+    </script>
+</body>
+</html>

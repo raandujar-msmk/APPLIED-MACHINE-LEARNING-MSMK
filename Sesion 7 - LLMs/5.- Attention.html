@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Título traducido -->
+    <title>Mecanismo de Atención Interactivo</title>
+    <!-- 1. Cargar Tailwind CSS para estilos -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 2. Usar la familia de fuentes 'Inter' */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilos personalizados para los spans de palabras/valores */
+        .word-span {
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .query-word:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        .query-word.active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+            font-weight: 600;
+            transform: scale(1.05);
+        }
+        /* Animación simple de aparición */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-200 min-h-screen p-4 md:p-8">
+
+    <!-- Contenedor Principal -->
+    <div class="max-w-5xl mx-auto fade-in">
+
+        <!-- Cabecera -->
+        <div class="text-center mb-8">
+            <!-- Títulos traducidos -->
+            <h1 class="text-3xl md:text-4xl font-bold text-blue-400 mb-2">Mecanismo de Atención Interactivo</h1>
+            <p class="text-lg text-gray-400">Visualizando cómo Consultas (Queries), Claves (Keys) y Valores (Values) crean contexto.</p>
+        </div>
+
+        <!-- 
+            ==============================================
+            SECCIÓN 1: ATENCIÓN EN LENGUAJE NATURAL (TEXTO)
+            ==============================================
+        -->
+        <div class="mb-12">
+            <!-- Título de sección traducido -->
+            <h2 class="text-2xl font-semibold text-blue-300 mb-4 border-b border-gray-700 pb-2">Dominio 1: Procesamiento de Lenguaje Natural</h2>
+            <!-- Sección de Entrada -->
+            <div class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                <!-- Textos de UI traducidos -->
+                <label for="sentence-input" class="block text-sm font-medium text-gray-300 mb-2">Introduce una frase:</label>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <textarea id="sentence-input" rows="2" class="flex-grow p-3 bg-gray-700 text-gray-100 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" placeholder="p.ej., El rápido zorro marrón salta sobre el perro perezoso"></textarea>
+                    <button id="visualize-btn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-all duration-300">
+                        Visualizar Atención
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de Visualización -->
+            <div class="space-y-6">
+                <!-- 1. Palabras de Consulta (Query) -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">1. Consulta (Q) - (Haz clic en una palabra)</h3>
+                    <p class="text-sm text-gray-400 mb-4">Esta es la palabra que está "buscando" contexto. Haz clic en una para ver sus puntuaciones de atención.</p>
+                    <div id="query-words" class="flex flex-wrap gap-3 p-4 bg-gray-800 rounded-2xl shadow-inner min-h-[50px]">
+                        <!-- Las palabras de consulta se insertarán dinámicamente aquí -->
+                    </div>
+                </div>
+
+                <!-- 2. Palabras Clave/Valor -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">2. Claves (K) y Valores (V) - (Pesos de Atención)</h3>
+                    <p class="text-sm text-gray-400 mb-4">Estas son las palabras "observadas". El resaltado muestra cuánta atención presta la palabra de Consulta activa a cada Clave. El resultado final es una suma ponderada de los Valores.</p>
+                    <div id="key-words" class="flex flex-wrap gap-3 p-4 bg-gray-800 rounded-2xl shadow-inner min-h-[50px]">
+                        <!-- Las palabras clave se insertarán dinámicamente aquí -->
+                    </div>
+                </div>
+
+                <!-- 3. Caja de Explicación -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">3. ¿Qué está pasando? (Texto)</h3>
+                    <div id="attention-details" class="p-6 bg-gray-800 rounded-2xl shadow-lg text-gray-300 min-h-[100px]">
+                        <p>Haz clic en una palabra de "Consulta" para comenzar.</p>
+                        <p class="text-sm text-gray-500 mt-4">
+                            <strong>Detalles de la simulación:</strong> Estamos simulando <span class="font-mono text-blue-300">Atención de Producto Escalar (Scaled Dot-Product)</span>.
+                            <br>1. Cada palabra obtiene un vector "falso" determinista de 4D (embedding) basado en sus caracteres.
+                            <br>2. Para esta demo, <span class="font-mono text-blue-300">Consulta = Clave = Valor = embedding</span>.
+                            <br>3. <span class="font-mono text-blue-300">Puntuaciones = (Consulta · Clave) / sqrt(4)</span>
+                            <br>4. <span class="font-mono text-blue-300">Pesos = softmax(Puntuaciones)</span>
+                            <br>5. Los resaltados en las palabras "Clave" representan estos pesos finales.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 
+            ==============================================
+            SECCIÓN 2: ATENCIÓN EN SERIES TEMPORALES
+            ==============================================
+        -->
+        <div class="mb-12">
+            <!-- Título de sección traducido -->
+            <h2 class="text-2xl font-semibold text-blue-300 mb-4 border-b border-gray-700 pb-2">Dominio 2: Predicción de Series Temporales</h2>
+            <!-- Sección de Entrada -->
+            <div class="mb-8 p-6 bg-gray-800 rounded-2xl shadow-lg">
+                <!-- Textos de UI traducidos -->
+                <label for="ts-input" class="block text-sm font-medium text-gray-300 mb-2">Introduce datos de series temporales (números separados por comas):</label>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <textarea id="ts-input" rows="2" class="flex-grow p-3 bg-gray-700 text-gray-100 rounded-lg border border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none" placeholder="p.ej., 10, 20, 15, 30, 25, 40, 35, 50"></textarea>
+                    <button id="ts-visualize-btn" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-all duration-300">
+                        Visualizar Atención
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sección de Visualización -->
+            <div class="space-y-6">
+                <!-- 1. Pasos de Tiempo de Consulta (Query) -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">1. Consulta (Q) - (Haz clic en un paso de tiempo)</h3>
+                    <p class="text-sm text-gray-400 mb-4">Este es el paso de tiempo (p.ej., "hoy") que está "mirando" al pasado en busca de contexto. Haz clic en uno para ver sus puntuaciones de atención.</p>
+                    <div id="ts-query-words" class="flex flex-wrap gap-3 p-4 bg-gray-800 rounded-2xl shadow-inner min-h-[50px]">
+                        <!-- Los pasos de tiempo de consulta se insertarán dinámicamente aquí -->
+                    </div>
+                </div>
+
+                <!-- 2. Pasos de Tiempo Clave/Valor -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">2. Claves (K) y Valores (V) - (Pesos de Atención)</h3>
+                    <p class="text-sm text-gray-400 mb-4">Estos son los pasos de tiempo "observados" (p.ej., "el pasado"). El resaltado muestra cuánta atención presta el paso de Consulta activo a cada Clave.</p>
+                    <div id="ts-key-words" class="flex flex-wrap gap-3 p-4 bg-gray-800 rounded-2xl shadow-inner min-h-[50px]">
+                        <!-- Los pasos de tiempo clave se insertarán dinámicamente aquí -->
+                    </div>
+                </div>
+
+                <!-- 3. Caja de Explicación -->
+                <div>
+                    <!-- Textos de UI traducidos -->
+                    <h3 class="text-sm text-gray-400 uppercase font-semibold mb-2">3. ¿Qué está pasando? (Series Temporales)</h3>
+                    <div id="ts-attention-details" class="p-6 bg-gray-800 rounded-2xl shadow-lg text-gray-300 min-h-[100px]">
+                        <p>Haz clic en un paso de tiempo de "Consulta" para comenzar.</p>
+                        <p class="text-sm text-gray-500 mt-4">
+                            <strong>Detalles de la simulación:</strong> Estamos simulando <span class="font-mono text-blue-300">Atención de Producto Escalar (Scaled Dot-Product)</span>.
+                            <br>1. Cada paso obtiene un vector "falso" de 4D (embedding) basado en su <span class="font-mono text-blue-300">valor</span> y su <span class="font-mono text-blue-300">posición</span> en la secuencia.
+                            <br>2. Para esta demo, <span class="font-mono text-blue-300">Consulta = Clave = Valor = embedding</span>.
+                            <br>3. <span class="font-mono text-blue-300">Puntuaciones = (Consulta · Clave) / sqrt(4)</span>
+                            <br>4. <span class="font-mono text-blue-300">Pesos = softmax(Puntuaciones)</span>
+                            <br>5. Los resaltados en los pasos "Clave" representan estos pesos finales. Esto muestra qué valores pasados son más "importantes" para el valor de consulta.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Constantes ---
+        const EMBEDDING_DIM = 4; // Mantener pequeño para demostración
+        const SCALE_FACTOR = Math.sqrt(EMBEDDING_DIM);
+
+        // --- Funciones de Ayuda Genéricas ---
+
+        /**
+         * Calcula el producto escalar de dos vectores.
+         * @param {number[]} vecA - El primer vector.
+         * @param {number[]} vecB - El segundo vector.
+         * @returns {number} El producto escalar.
+         */
+        function dotProduct(vecA, vecB) {
+            let sum = 0;
+            for (let i = 0; i < vecA.length; i++) {
+                sum += vecA[i] * vecB[i];
+            }
+            return sum;
+        }
+
+        /**
+         * Aplica la función softmax a un array de puntuaciones.
+         * @param {number[]} scores - Un array de puntuaciones brutas.
+         * @returns {number[]} Un array de probabilidades (pesos) que suman 1.
+         */
+        function softmax(scores) {
+            // Restar la puntuación máxima para estabilidad numérica
+            const maxScore = Math.max(...scores);
+            const exps = scores.map(score => Math.exp(score - maxScore));
+            const sumExps = exps.reduce((sum, exp) => sum + exp, 0);
+            return exps.map(exp => exp / sumExps);
+        }
+
+        // =============================================
+        // === LÓGICA DE ATENCIÓN DE TEXTO
+        // =============================================
+
+        // --- Elementos DOM (Texto) ---
+        const sentenceInput = document.getElementById('sentence-input');
+        const visualizeBtn = document.getElementById('visualize-btn');
+        const queryWordsContainer = document.getElementById('query-words');
+        const keyWordsContainer = document.getElementById('key-words');
+        const attentionDetails = document.getElementById('attention-details');
+
+        /**
+         * Crea un vector "falso" de embedding determinista para una palabra (texto).
+         */
+        function createFakeWordEmbedding(word) {
+            let vector = new Array(EMBEDDING_DIM).fill(0);
+            for (let i = 0; i < word.length; i++) {
+                for (let j = 0; j < EMBEDDING_DIM; j++) {
+                    vector[j] = (vector[j] * (i + 1) * 31 + word.charCodeAt(i) * (j + 1)) % 255;
+                }
+            }
+            const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0)) || 1;
+            return vector.map(v => (v / 255) * 2 - 1); // Escalar a [-1, 1]
+        }
+
+        /**
+         * Calcula los pesos de atención para una palabra de consulta dada (texto).
+         */
+        function calculateTextAttention(queryWord, allWords) {
+            const queryVector = createFakeWordEmbedding(queryWord);
+            const keyVectors = allWords.map(createFakeWordEmbedding);
+            
+            const scores = keyVectors.map(keyVector => {
+                return dotProduct(queryVector, keyVector) / SCALE_FACTOR;
+            });
+
+            return softmax(scores);
+        }
+
+        /**
+         * Actualiza la UI para mostrar los pesos de atención para la palabra de consulta seleccionada (texto).
+         */
+        function showTextAttention(queryElement, allWords) {
+            const queryWord = queryElement.dataset.word;
+            
+            document.querySelectorAll('#query-words .query-word').forEach(el => el.classList.remove('active'));
+            queryElement.classList.add('active');
+            
+            const weights = calculateTextAttention(queryWord, allWords);
+            
+            const keyWordElements = document.querySelectorAll('#key-words .key-word');
+            // Textos de UI traducidos
+            let detailsHtml = `<p class="mb-2">Atención desde '<strong>${queryWord}</strong>' a todas las claves:</p><ul class="list-disc list-inside">`;
+            
+            weights.forEach((weight, index) => {
+                const keyElement = keyWordElements[index];
+                if (keyElement) {
+                    const intensity = Math.max(0.1, weight * 2.5);
+                    keyElement.style.backgroundColor = `rgba(59, 130, 246, ${intensity})`;
+                    keyElement.style.borderColor = `rgba(96, 165, 250, ${intensity + 0.2})`;
+                }
+                detailsHtml += `<li>'<strong>${allWords[index]}</strong>': ${weight.toFixed(4)}</li>`;
+            });
+            
+            // Textos de UI traducidos
+            detailsHtml += `</ul><p class="text-sm text-gray-500 mt-4"><strong>Nota:</strong> Mayor intensidad = mayor peso de atención. La palabra "Consulta" está decidiendo qué palabras "Clave" son más relevantes para ella.</p>`;
+            attentionDetails.innerHTML = detailsHtml;
+        }
+
+        /**
+         * Función principal para construir la visualización desde el texto de entrada.
+         */
+        function buildTextVisualization() {
+            const text = sentenceInput.value.trim();
+            if (!text) return;
+            
+            const words = text.split(/\s+/).filter(Boolean);
+            
+            queryWordsContainer.innerHTML = '';
+            keyWordsContainer.innerHTML = '';
+            // Texto de UI traducido
+            attentionDetails.innerHTML = '<p>Haz clic en una palabra de "Consulta" para comenzar.</p>'; // Reseteo simplificado
+            
+            words.forEach((word, index) => {
+                const querySpan = document.createElement('span');
+                querySpan.textContent = word;
+                querySpan.dataset.word = word;
+                querySpan.dataset.index = index;
+                querySpan.className = "word-span query-word p-2 px-3 bg-gray-700 rounded-lg cursor-pointer border border-transparent hover:border-blue-500";
+                querySpan.onclick = () => showTextAttention(querySpan, words);
+                queryWordsContainer.appendChild(querySpan);
+                
+                const keySpan = document.createElement('span');
+                keySpan.textContent = word;
+                keySpan.dataset.index = index;
+                keySpan.className = "word-span key-word p-2 px-3 bg-gray-700 rounded-lg border border-gray-600";
+                keyWordsContainer.appendChild(keySpan);
+            });
+        }
+
+        // --- Event Listeners (Texto) ---
+        visualizeBtn.addEventListener('click', buildTextVisualization);
+
+        // --- Carga Inicial (Texto) ---
+        // Valor por defecto traducido
+        sentenceInput.value = "El rápido zorro marrón salta sobre el perro perezoso";
+        buildTextVisualization();
+
+        // =============================================
+        // === LÓGICA DE ATENCIÓN DE SERIES TEMPORALES
+        // =============================================
+
+        // --- Elementos DOM (Series Temporales) ---
+        const tsInput = document.getElementById('ts-input');
+        const tsVisualizeBtn = document.getElementById('ts-visualize-btn');
+        const tsQueryWordsContainer = document.getElementById('ts-query-words');
+        const tsKeyWordsContainer = document.getElementById('ts-key-words');
+        const tsAttentionDetails = document.getElementById('ts-attention-details');
+
+        /**
+         * Crea un vector "falso" de embedding determinista para un paso de tiempo (valor + posición).
+         */
+        function createFakeTimeSeriesEmbedding(value, index, minVal, maxVal, totalLength) {
+            let vector = new Array(EMBEDDING_DIM).fill(0);
+            const range = (maxVal - minVal) === 0 ? 1 : (maxVal - minVal);
+            
+            // 1. Valor Normalizado (escalado a [-1, 1])
+            const normalizedValue = ((value - minVal) / range) * 2 - 1;
+            
+            // 2. Codificación Posicional (lineal, escalada a [-1, 1])
+            const positionalEncoding = totalLength <= 1 ? 0 : (index / (totalLength - 1)) * 2 - 1;
+
+            // 3. Combinaciones no lineales simples para un embedding "falso"
+            vector[0] = normalizedValue;
+            vector[1] = positionalEncoding;
+            vector[2] = Math.sin(normalizedValue * Math.PI);
+            vector[3] = Math.cos(positionalEncoding * Math.PI);
+            
+            return vector;
+        }
+
+        /**
+         * Calcula los pesos de atención para un paso de tiempo de consulta dado.
+         */
+        function calculateTimeSeriesAttention(queryValue, queryIndex, allValues, minVal, maxVal) {
+            const totalLength = allValues.length;
+            const queryVector = createFakeTimeSeriesEmbedding(queryValue, queryIndex, minVal, maxVal, totalLength);
+            
+            const keyVectors = allValues.map((val, idx) => {
+                return createFakeTimeSeriesEmbedding(val, idx, minVal, maxVal, totalLength);
+            });
+            
+            const scores = keyVectors.map(keyVector => {
+                return dotProduct(queryVector, keyVector) / SCALE_FACTOR;
+            });
+
+            return softmax(scores);
+        }
+
+        /**
+         * Actualiza la UI para mostrar los pesos de atención para el paso de tiempo de consulta seleccionado.
+         */
+        function showTimeSeriesAttention(queryElement, allValues, minVal, maxVal) {
+            const queryValue = parseFloat(queryElement.dataset.value);
+            const queryIndex = parseInt(queryElement.dataset.index, 10);
+            
+            document.querySelectorAll('#ts-query-words .query-word').forEach(el => el.classList.remove('active'));
+            queryElement.classList.add('active');
+            
+            const weights = calculateTimeSeriesAttention(queryValue, queryIndex, allValues, minVal, maxVal);
+            
+            const keyWordElements = document.querySelectorAll('#ts-key-words .key-word');
+            // Textos de UI traducidos
+            let detailsHtml = `<p class="mb-2">Atención desde el valor '<strong>${queryValue}</strong>' (en índice ${queryIndex}) a todas las claves:</p><ul class="list-disc list-inside">`;
+            
+            weights.forEach((weight, index) => {
+                const keyElement = keyWordElements[index];
+                if (keyElement) {
+                    const intensity = Math.max(0.1, weight * 2.5);
+                    keyElement.style.backgroundColor = `rgba(59, 130, 246, ${intensity})`;
+                    keyElement.style.borderColor = `rgba(96, 165, 250, ${intensity + 0.2})`;
+                }
+                // Textos de UI traducidos
+                detailsHtml += `<li>Valor '<strong>${allValues[index]}</strong>' (en índice ${index}): ${weight.toFixed(4)}</li>`;
+            });
+            
+            // Textos de UI traducidos
+            detailsHtml += `</ul><p class="text-sm text-gray-500 mt-4"><strong>Nota:</strong> Mayor intensidad = mayor atención. El paso "Consulta" está decidiendo qué pasos "Clave" (pasados o presentes) son más relevantes para él.</p>`;
+            tsAttentionDetails.innerHTML = detailsHtml;
+        }
+
+        /**
+         * Función principal para construir la visualización desde la serie temporal de entrada.
+         */
+        function buildTimeSeriesVisualization() {
+            const text = tsInput.value.trim();
+            if (!text) return;
+            
+            const values = text.split(',')
+                               .map(v => parseFloat(v.trim()))
+                               .filter(v => !isNaN(v));
+
+            if (values.length < 2) return;
+
+            const minVal = Math.min(...values);
+            const maxVal = Math.max(...values);
+            
+            tsQueryWordsContainer.innerHTML = '';
+            tsKeyWordsContainer.innerHTML = '';
+            // Texto de UI traducido
+            tsAttentionDetails.innerHTML = '<p>Haz clic en un paso de tiempo de "Consulta" para comenzar.</p>'; // Reseteo simplificado
+            
+            values.forEach((value, index) => {
+                const querySpan = document.createElement('span');
+                querySpan.textContent = value;
+                querySpan.dataset.value = value;
+                querySpan.dataset.index = index;
+                querySpan.className = "word-span query-word p-2 px-3 bg-gray-700 rounded-lg cursor-pointer border border-transparent hover:border-blue-500";
+                querySpan.onclick = () => showTimeSeriesAttention(querySpan, values, minVal, maxVal);
+                tsQueryWordsContainer.appendChild(querySpan);
+                
+                const keySpan = document.createElement('span');
+                keySpan.textContent = value;
+                keySpan.dataset.index = index;
+                keySpan.className = "word-span key-word p-2 px-3 bg-gray-700 rounded-lg border border-gray-600";
+                tsKeyWordsContainer.appendChild(keySpan);
+            });
+        }
+
+        // --- Event Listeners (Series Temporales) ---
+        tsVisualizeBtn.addEventListener('click', buildTimeSeriesVisualization);
+
+        // --- Carga Inicial (Series Temporales) ---
+        tsInput.value = "10, 20, 15, 30, 25, 40, 35, 50";
+        buildTimeSeriesVisualization();
+        
+    </script>
+</body>
+</html>

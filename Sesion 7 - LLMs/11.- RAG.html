@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Explorador RAG Interactivo</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de PDF.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <script>
+        // Configuración de Tailwind para modo oscuro
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        slate: {
+                            850: '#172033'
+                        }
+                    }
+                },
+            },
+        }
+        // Configurar el worker para PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
+    </script>
+    <!-- Iconos (Lucide) -->
+    <script src="https://unpkg.com/lucide@0.378.0/dist/umd/lucide.min.js"></script>
+    <style>
+        /* Estilos personalizados para la barra de scroll */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b; /* slate-800 */
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569; /* slate-600 */
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* slate-500 */
+        }
+        /* Estilo para el marcador de diagrama */
+        .diagram-placeholder {
+            border: 2px dashed #475569; /* slate-600 */
+            background: #334155; /* slate-700 */
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            text-align: center;
+            font-style: italic;
+            color: #94a3b8; /* slate-400 */
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-slate-850 text-slate-300 font-sans antialiased p-8">
+
+    <div class="max-w-7xl mx-auto flex flex-col items-center">
+        <!-- Título Principal -->
+        <div class="text-center mb-10">
+            <h1 class="text-4xl font-bold text-white mb-2">
+                Explorador Interactivo de RAG
+            </h1>
+            <p class="text-lg text-slate-400">
+                Visualiza cómo funciona Retrieval-Augmented Generation (RAG) con un LLM local.
+            </p>
+        </div>
+
+        <!-- Contenedor Principal de una sola columna -->
+        <div class="grid grid-cols-1 gap-8 w-full">
+
+            <!-- Paneles de Configuración y Explicación -->
+            <div class="flex flex-col gap-6">
+
+                <!-- Panel: ¿Qué es RAG? -->
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700">
+                    <h2 class="text-2xl font-semibold text-cyan-300 mb-3">¿Qué es RAG?</h2>
+                    <p class="text-slate-400 leading-relaxed">
+                        RAG (Retrieval-Augmented Generation) es una técnica que "aumenta" la capacidad de un Modelo de Lenguaje Grande (LLM) conectándolo a una base de conocimientos externa (tus documentos).
+                    </p>
+                    <p class="text-slate-400 leading-relaxed mt-2">
+                        Esto permite que el LLM responda preguntas usando información específica y actualizada que no estaba en sus datos de entrenamiento, reduciendo "alucinaciones" y citando sus fuentes.
+                    </p>
+                </div>
+
+                <!-- Panel: ¿Cómo funciona la "Recuperación"? -->
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700">
+                    <h2 class="text-2xl font-semibold text-cyan-300 mb-3">
+                        <span class="text-3xl mr-2">1.</span> Zoom-in: ¿Cómo funciona la "Recuperación"?
+                    </h2>
+                    <p class="text-slate-400 leading-relaxed">
+                        Este es el proceso de "búsqueda inteligente". En lugar de buscar palabras clave, busca por <em>significado</em>.
+                    </p>
+                    
+                    <h3 class="text-xl font-semibold text-white mt-4 mb-2">Fase A: Indexación (Antes de preguntar)</h3>
+                    <ol class_alias="list-decimal list-inside text-slate-400 space-y-2">
+                        <li><strong>1. División (Chunking):</strong> Tus documentos se dividen en "trozos" (chunks) más pequeños (ej. párrafos).</li>
+                        <li><strong>2. Creación de Embeddings:</strong> Cada "chunk" se convierte en un vector numérico (un "embedding") usando un modelo de IA. Este vector representa su significado.</li>
+                        <li><strong>3. Base de Datos Vectorial:</strong> Estos vectores se almacenan en una base de datos especial que permite buscar por "cercanía" conceptual.</li>
+                    </ol>
+                    <div class="diagram-placeholder">
+                        <div class="font-bold">Diagrama: Indexación</div>
+                        <p>Documento &rarr; Chunks &rarr; Modelo de Embeddings &rarr; Vectores en la Base de Datos</p>
+                    </div>
+
+                    <h3 class="text-xl font-semibold text-white mt-4 mb-2">Fase B: Búsqueda (Cuando preguntas)</h3>
+                    <ol class_alias="list-decimal list-inside text-slate-400 space-y-2">
+                        <li><strong>1. Embedding de la Pregunta:</strong> Tu pregunta también se convierte en un vector usando el <em>mismo</em> modelo de embeddings.</li>
+                        <li><strong>2. Búsqueda Vectorial:</strong> El sistema busca en la base de datos los "chunks" cuyos vectores estén matemáticamente más cerca del vector de tu pregunta (usando "similitud de coseno").</li>
+                        <li><strong>3. Obtención del Contexto:</strong> El texto de los chunks más relevantes (ej. el Top-3) se extrae. Este es el "contexto" que se usará en el siguiente paso.</li>
+                    </ol>
+                    <div class="diagram-placeholder">
+                        <div class="font-bold">Diagrama: Búsqueda</div>
+                        <p>Pregunta &rarr; Vector &rarr; Búsqueda en DB Vectorial &rarr; Chunks Relevantes (Contexto)</p>
+                    </div>
+
+                    <p class="text-slate-500 text-sm mt-4 italic">
+                        (En esta demo, simulamos la búsqueda vectorial con una búsqueda de palabras clave simple para que el proceso sea más fácil de visualizar).
+                    </p>
+                </div>
+
+                <!-- Panel: ¿Cómo funciona la "Aumentación"? -->
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700">
+                    <h2 class="text-2xl font-semibold text-cyan-300 mb-3">
+                        <span class="text-3xl mr-2">2.</span> Zoom-in: ¿Cómo funciona la "Aumentación"?
+                    </h2>
+                    <p class="text-slate-400 leading-relaxed">
+                        Este paso consiste en <em>construir el prompt perfecto</em> para el LLM. Es el núcleo de RAG.
+                    </p>
+                    <p class="text-slate-400 leading-relaxed mt-2">
+                        En lugar de enviar <em>solo</em> la pregunta al LLM, usamos una "Plantilla de Prompt" (Prompt Template) para combinar tu pregunta con el contexto que acabamos de recuperar.
+                    </p>
+                    
+                    <h3 class="text-xl font-semibold text-white mt-4 mb-2">Plantilla de Prompt (Ejemplo)</h3>
+                    <pre class="bg-slate-900 border border-slate-700 rounded-md p-4 text-slate-300 text-sm overflow-x-auto">
+Eres un asistente servicial. Responde la pregunta del usuario basándote <em>únicamente</em> en el siguiente contexto.
+Si la respuesta no está en el contexto, di "No lo sé".
+
+Contexto:
+---
+[... Aquí se inserta el Contexto Recuperado (Paso 1) ...]
+---
+
+Pregunta:
+[... Aquí se inserta la Pregunta Original del Usuario ...]
+
+Respuesta:
+</pre>
+                    
+                    <p class="text-slate-400 leading-relaxed mt-4">
+                        Este prompt "aumentado" fuerza al LLM a basar su respuesta en los datos que le proporcionaste, previniendo que invente información (alucinar) y asegurando que use tu base de conocimientos.
+                    </p>
+                    <div class="diagram-placeholder">
+                        <div class="font-bold">Diagrama: Aumentación</div>
+                        <p>(Contexto + Pregunta) &rarr; Plantilla de Prompt &rarr; Prompt Aumentado Final</p>
+                    </div>
+                </div>
+
+                <!-- Panel: Base de Conocimientos -->
+                <div id="knowledge-base-panel" class="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700">
+                    <h2 class="text-2xl font-semibold text-cyan-300 mb-4">Paso 1: Define tu Base de Conocimientos</h2>
+                    
+                    <!-- Botón de Carga de PDF -->
+                    <div class="mb-4">
+                        <label for="pdf-upload" class="w-full text-center cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg inline-flex items-center justify-center transition duration-200">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                            Subir PDF
+                        </label>
+                        <input id="pdf-upload" type="file" class="hidden" accept=".pdf" onchange="handlePdfUpload(event)">
+                        <p id="pdf-loading-status" class="text-slate-400 text-sm mt-2 hidden"></p>
+                    </div>
+
+                    <textarea id="knowledge-base" class="w-full h-48 bg-slate-900 border border-slate-700 rounded-md p-3 text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Pega aquí tus documentos, artículos, o cualquier texto..."></textarea>
+                    
+                    <button id="index-button" onclick="indexDocuments()" class="w-full mt-4 bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg transition duration-200">
+                        Indexar Documentos
+                    </button>
+                    <p id="index-status" class="text-green-400 text-sm mt-2 hidden">¡Documentos indexados!</p>
+                </div>
+
+                <!-- Panel: Conexión al LLM -->
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg border border-slate-700">
+                    <h2 class="text-2xl font-semibold text-cyan-300 mb-4">Configuración del LLM Local</h2>
+                    
+                    <div class="mb-4">
+                        <label for="llm-url" class="block text-sm font-medium text-slate-300 mb-1">URL del Endpoint (Chat Completions)</label>
+                        <input type="text" id="llm-url" value="http://localhost:1234/v1/chat/completions" class="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    </div>
+
+                    <div>
+                        <label for="llm-model-name" class="block text-sm font-medium text-slate-300 mb-1">Nombre del Modelo (Opcional, ej: "qwen/qwen3-8b")</label>
+                        <input type="text" id="llm-model-name" value="qwen/qwen3-8b" placeholder="Valor de 'model' en la API" class="w-full bg-slate-900 border border-slate-700 rounded-md p-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Panel de Chat Interactivo -->
+            <div class="bg-slate-800 p-6 rounded-lg shadow-xl border border-slate-700 flex flex-col" style="height: 90vh;">
+                <h2 class="text-2xl font-semibold text-cyan-300 mb-4 border-b border-slate-700 pb-3">Paso 2: Haz una Pregunta</h2>
+                
+                <!-- Área de visualización del chat -->
+                <div id="chat-window" class="flex-1 overflow-y-auto mb-4 p-4 bg-slate-850 rounded-lg border border-slate-700 space-y-4">
+                    <!-- Mensaje de bienvenida -->
+                    <div class="flex justify-start">
+                        <div class="bg-slate-700 text-white p-3 rounded-lg max-w-lg">
+                            <p>¡Hola! Primero, añade texto a la "Base de Conocimientos" y presiona "Indexar Documentos". Luego, hazme una pregunta.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Input del usuario -->
+                <div id="chat-input-container" class="mt-4 opacity-50 pointer-events-none">
+                    <!-- Switch RAG -->
+                    <div class="flex items-center justify-end mb-3">
+                        <label for="rag-toggle" class="mr-3 font-medium text-white">Usar RAG</label>
+                        <button id="rag-toggle" role="switch" aria-checked="true" class="relative inline-flex items-center h-6 rounded-full w-11 bg-cyan-500 transition-colors">
+                            <span class="inline-block w-4 h-4 transform translate-x-6 bg-white rounded-full transition-transform"></span>
+                        </button>
+                    </div>
+
+                    <!-- Área de input -->
+                    <div class="flex">
+                        <input type="text" id="user-input" class="flex-1 bg-slate-700 border border-slate-600 rounded-l-lg p-3 text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Escribe tu pregunta aquí..." onkeydown="handleKeydown(event)">
+                        <button id="send-button" onclick="sendMessage()" class="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold p-3 rounded-r-lg transition duration-200">
+                            <svg class_alias="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Inicializar Lucide Icons
+        lucide.createIcons();
+
+        // Estado de la aplicación
+        let isIndexed = false;
+        let knowledgeChunks = [];
+        let isRagEnabled = true;
+
+        const chatWindow = document.getElementById('chat-window');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+        const ragToggle = document.getElementById('rag-toggle');
+        const chatInputContainer = document.getElementById('chat-input-container');
+        const indexStatus = document.getElementById('index-status');
+        const knowledgeBaseEl = document.getElementById('knowledge-base');
+
+        // --- Funcionalidad PDF ---
+        
+        async function handlePdfUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const statusEl = document.getElementById('pdf-loading-status');
+            statusEl.textContent = 'Cargando PDF...';
+            statusEl.classList.remove('hidden');
+            knowledgeBaseEl.value = 'Extrayendo texto del PDF...';
+            knowledgeBaseEl.disabled = true;
+            
+            // Desactivar indexación mientras se carga
+            blockIndexing();
+
+            try {
+                const pdfText = await extractTextFromPdf(file);
+                knowledgeBaseEl.value = pdfText;
+                statusEl.textContent = `¡"${file.name}" cargado! Texto extraído.`;
+                knowledgeBaseEl.disabled = false;
+            } catch (error) {
+                console.error('Error al procesar PDF:', error);
+                knowledgeBaseEl.value = `Error al leer el PDF: ${error.message}`;
+                statusEl.textContent = 'Error al cargar PDF.';
+                knowledgeBaseEl.disabled = false;
+            }
+        }
+
+        async function extractTextFromPdf(file) {
+            const fileReader = new FileReader();
+            
+            return new Promise((resolve, reject) => {
+                fileReader.onload = async () => {
+                    try {
+                        const typedarray = new Uint8Array(fileReader.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let fullText = '';
+                        
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            fullText += textContent.items.map(item => item.str).join(' ') + '\n\n';
+                        }
+                        resolve(fullText);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                fileReader.onerror = (error) => reject(error);
+                fileReader.readAsArrayBuffer(file);
+            });
+        }
+
+        // --- Funcionalidad Principal ---
+
+        function indexDocuments() {
+            const knowledgeBase = document.getElementById('knowledge-base').value;
+            if (!knowledgeBase.trim()) {
+                alert('Por favor, añade texto a la base de conocimientos primero.');
+                return;
+            }
+            
+            // Simulación de "chunking": dividir por saltos de línea dobles (párrafos)
+            knowledgeChunks = knowledgeBase
+                .split(/\n\s*\n/) // Dividir por párrafos (uno o más saltos de línea)
+                .map(chunk => chunk.trim())
+                .filter(chunk => chunk.length > 10); // Filtrar chunks muy pequeños
+                
+            if (knowledgeChunks.length === 0) {
+                 // Si no hay párrafos, dividir por frases
+                knowledgeChunks = knowledgeBase
+                    .split(/[.!?]/)
+                    .map(chunk => chunk.trim())
+                    .filter(chunk => chunk.length > 10);
+            }
+
+            isIndexed = true;
+            
+            // Mostrar estado y habilitar chat
+            indexStatus.classList.remove('hidden');
+            chatInputContainer.classList.remove('opacity-50', 'pointer-events-none');
+            
+            // Ocultar estado después de 2 segundos
+            setTimeout(() => {
+                indexStatus.classList.add('hidden');
+            }, 2000);
+
+            // Resaltar panel de chat
+            document.querySelector('#chat-input-container').parentNode.classList.add('ring-2', 'ring-cyan-500', 'ring-offset-2', 'ring-offset-slate-850');
+        }
+        
+        function blockIndexing() {
+            isIndexed = false;
+            chatInputContainer.classList.add('opacity-50', 'pointer-events-none');
+            indexStatus.classList.add('hidden');
+            document.querySelector('#chat-input-container').parentNode.classList.remove('ring-2', 'ring-cyan-500', 'ring-offset-2', 'ring-offset-slate-850');
+        }
+        
+        // Listener para detectar cambios en el textarea y bloquear indexación
+        knowledgeBaseEl.addEventListener('input', blockIndexing);
+
+        // --- Control del Toggle RAG ---
+        ragToggle.addEventListener('click', () => {
+            isRagEnabled = !isRagEnabled;
+            ragToggle.setAttribute('aria-checked', isRagEnabled);
+            
+            const span = ragToggle.querySelector('span');
+            if (isRagEnabled) {
+                ragToggle.classList.replace('bg-slate-600', 'bg-cyan-500');
+                span.classList.replace('translate-x-1', 'translate-x-6');
+            } else {
+                ragToggle.classList.replace('bg-cyan-500', 'bg-slate-600');
+                span.classList.replace('translate-x-6', 'translate-x-1');
+            }
+        });
+
+        // --- Lógica del Chat ---
+
+        function handleKeydown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+        
+        function escapeHTML(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+
+        function createBubble(content, sender, type = 'text') {
+            const bubble = document.createElement('div');
+            const alignment = sender === 'user' ? 'justify-end' : 'justify-start';
+            const bgColor = sender === 'user' ? 'bg-cyan-600' : 'bg-slate-700';
+            
+            bubble.className = `flex ${alignment} mb-4`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = `${bgColor} text-white p-3 rounded-lg max-w-lg`;
+
+            if (type === 'html') {
+                contentDiv.innerHTML = content; // Usar innerHTML para contenido HTML
+            } else {
+                // Para texto plano, escapar HTML y preservar saltos de línea
+                contentDiv.style.whiteSpace = 'pre-wrap';
+                contentDiv.textContent = content;
+            }
+            
+            bubble.appendChild(contentDiv);
+            chatWindow.appendChild(bubble);
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            return bubble;
+        }
+
+        function sendMessage() {
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            createBubble(query, 'user');
+            userInput.value = '';
+            
+            // Deshabilitar input durante la generación
+            toggleChatInput(false);
+
+            if (isRagEnabled) {
+                runRagPipeline(query);
+            } else {
+                runNoRagPipeline(query);
+            }
+        }
+        
+        function toggleChatInput(enabled) {
+            userInput.disabled = !enabled;
+            sendButton.disabled = !enabled;
+            if (enabled) {
+                userInput.focus();
+                sendButton.classList.remove('opacity-50');
+            } else {
+                sendButton.classList.add('opacity-50');
+            }
+        }
+
+        // --- Simulación de Pipeline RAG ---
+
+        function runRagPipeline(query) {
+            // 1. Retrieval (Recuperación)
+            const loadingBubble = createBubble(
+                '<div class="flex items-center"><div class="dot-loader mr-2"></div>Buscando en la base de conocimientos...</div>',
+                'bot',
+                'html'
+            );
+            
+            setTimeout(() => {
+                // Simulación de búsqueda vectorial (búsqueda de palabras clave)
+                const queryWords = query.toLowerCase().split(/\s+/);
+                const relevantChunks = knowledgeChunks.filter(chunk => 
+                    queryWords.some(word => chunk.toLowerCase().includes(word))
+                );
+                
+                let context = relevantChunks.join('\n\n---\n\n');
+                if (context.length === 0) {
+                    context = "No se encontró información relevante en la base de conocimientos.";
+                }
+
+                updateLoadingMessage(loadingBubble, '¡Contexto encontrado!');
+                
+                // Mostrar el panel de Recuperación
+                createBubble(
+                    `
+                    <h3 class="font-bold text-lg mb-2 text-cyan-300">Paso RAG 1: Recuperación</h3>
+                    <p class="text-sm mb-2">Buscando "chunks" de la Base de Conocimientos que coincidan con la pregunta...</p>
+                    <div class="diagram-placeholder" style="padding: 0.5rem 1rem; text-align: left;">
+                        Pregunta &rarr; Búsqueda &rarr; <strong>Chunks Relevantes</strong>
+                    </div>
+                    <hr class="border-slate-600 my-2">
+                    <p class="text-xs text-slate-400 mb-1">CONTEXTO RECUPERADO:</p>
+                    <div class="text-sm bg-slate-800 border border-slate-600 p-2 rounded max-h-40 overflow-y-auto">
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${escapeHTML(context)}</pre>
+                    </div>
+                    `,
+                    'bot',
+                    'html'
+                );
+                
+                // 2. Augmentation (Aumentación)
+                runAugmentationStep(query, context);
+            }, 1000); // Simular retraso de búsqueda
+        }
+
+        function runAugmentationStep(query, context) {
+            const loadingBubble = createBubble(
+                '<div class="flex items-center"><div class="dot-loader mr-2"></div>Aumentando el prompt...</div>',
+                'bot',
+                'html'
+            );
+
+            setTimeout(() => {
+                const systemPrompt = `Eres un asistente servicial. Responde la pregunta del usuario basándote únicamente en el siguiente contexto. Si la respuesta no está en el contexto, di "No lo sé".`;
+                
+                const augmentedPrompt = `Contexto:\n---\n${context}\n---\n\nPregunta: ${query}\n\nRespuesta:`;
+                
+                updateLoadingMessage(loadingBubble, '¡Prompt listo!');
+                
+                // Mostrar el panel de Aumentación
+                createBubble(
+                    `
+                    <h3 class="font-bold text-lg mb-2 text-cyan-300">Paso RAG 2: Aumentación</h3>
+                    <p class="text-sm mb-2">Combinando el contexto y la pregunta en una "Plantilla de Prompt" para el LLM.</p>
+                    <div class="diagram-placeholder" style="padding: 0.5rem 1rem; text-align: left;">
+                        (Contexto + Pregunta) &rarr; Plantilla &rarr; <strong>Prompt Final</strong>
+                    </div>
+                    <hr class="border-slate-600 my-2">
+                    <p class="text-xs text-slate-400 mb-1">PROMPT FINAL (lo que ve el LLM):</p>
+                    <div class="text-sm bg-slate-800 border border-slate-600 p-2 rounded max-h-60 overflow-y-auto">
+                        <p class="text-xs text-slate-400 italic">[INICIO DEL SYSTEM PROMPT]</p>
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${escapeHTML(systemPrompt)}</pre>
+                        <p class="text-xs text-slate-400 italic mt-2">[FIN DEL SYSTEM PROMPT]</p>
+                        <hr class="border-slate-600 my-1">
+                        <p class="text-xs text-slate-400 italic">[INICIO DEL USER PROMPT]</p>
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${escapeHTML(augmentedPrompt)}</pre>
+                        <p class="text-xs text-slate-400 italic mt-2">[FIN DEL USER PROMPT]</p>
+                    </div>
+                    `,
+                    'bot',
+                    'html'
+                );
+
+                // 3. Generation (Generación)
+                callLLM(systemPrompt, augmentedPrompt, true);
+            }, 1000); // Simular retraso de aumentación
+        }
+
+        // --- Pipeline sin RAG ---
+        
+        function runNoRagPipeline(query) {
+            const loadingBubble = createBubble(
+                '<div class="flex items-center"><div class="dot-loader mr-2"></div>Enviando prompt (Sin RAG)...</div>',
+                'bot',
+                'html'
+            );
+            
+            setTimeout(() => {
+                const systemPrompt = "Eres un asistente servicial. Responde la pregunta del usuario.";
+                const userPrompt = query;
+
+                updateLoadingMessage(loadingBubble, '¡Prompt enviado!');
+                
+                // Mostrar el panel "Sin RAG"
+                createBubble(
+                    `
+                    <h3 class="font-bold text-lg mb-2 text-red-400">Ejecución SIN RAG</h3>
+                    <p class="text-sm mb-2">Enviando la pregunta <em>directamente</em> al LLM, sin contexto de la base de conocimientos.</p>
+                    <div class="diagram-placeholder" style="padding: 0.5rem 1rem; text-align: left;">
+                        Pregunta &rarr; <strong>LLM</strong>
+                    </div>
+                    <hr class="border-slate-600 my-2">
+                    <p class="text-xs text-slate-400 mb-1">PROMPT FINAL (lo que ve el LLM):</p>
+                    <div class="text-sm bg-slate-800 border border-slate-600 p-2 rounded max-h-60 overflow-y-auto">
+                        <p class="text-xs text-slate-400 italic">[INICIO DEL SYSTEM PROMPT]</p>
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${escapeHTML(systemPrompt)}</pre>
+                        <p class="text-xs text-slate-400 italic mt-2">[FIN DEL SYSTEM PROMPT]</p>
+                        <hr class="border-slate-600 my-1">
+                        <p class="text-xs text-slate-400 italic">[INICIO DEL USER PROMPT]</p>
+                        <pre style="white-space: pre-wrap; font-family: inherit;">${escapeHTML(userPrompt)}</pre>
+                        <p class="text-xs text-slate-400 italic mt-2">[FIN DEL USER PROMPT]</p>
+                    </div>
+                    `,
+                    'bot',
+                    'html'
+                );
+                
+                // 3. Generation (Generación)
+                callLLM(systemPrompt, userPrompt, false);
+            }, 500);
+        }
+
+        // --- Llamada al LLM Local ---
+        
+        async function callLLM(systemPrompt, userPrompt, isRag) {
+            const llmUrl = document.getElementById('llm-url').value;
+            const modelName = document.getElementById('llm-model-name').value;
+            
+            const loadingTitle = isRag ? "Paso RAG 3: Generación" : "Generación (Sin RAG)";
+            const loadingColor = isRag ? "text-cyan-300" : "text-red-400";
+            
+            const loadingBubble = createBubble(
+                `
+                <h3 class="font-bold text-lg mb-2 ${loadingColor}">${loadingTitle}</h3>
+                <p class="text-sm mb-2">Llamando al LLM en <em>${escapeHTML(llmUrl)}</em>...</p>
+                <div class="flex items-center"><div class="dot-loader mr-2"></div>Esperando respuesta del modelo...</div>
+                `,
+                'bot',
+                'html'
+            );
+
+            try {
+                const messages = [
+                    { "role": "system", "content": systemPrompt },
+                    { "role": "user", "content": userPrompt }
+                ];
+                
+                const body = {
+                    "messages": messages,
+                    "temperature": 0.7,
+                    "max_tokens": 1024,
+                    "stream": false
+                };
+
+                // Añadir el nombre del modelo si se proporcionó
+                if (modelName.trim()) {
+                    body.model = modelName.trim();
+                }
+
+                const response = await fetch(llmUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`Error del servidor (HTTP ${response.status}): ${errorText}`);
+                }
+
+                const data = await response.json();
+                
+                if (!data.choices || !data.choices[0] || !data.choices[0].message || !data.choices[0].message.content) {
+                    throw new Error("Respuesta inesperada de la API. No se encontró 'choices[0].message.content'.");
+                }
+                
+                const llmResponse = data.choices[0].message.content;
+
+                // Actualizar burbuja de carga con la respuesta final
+                loadingBubble.querySelector('.flex').parentElement.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 ${loadingColor}">${loadingTitle} (Completado)</h3>
+                    <p class="text-sm mb-2">Respuesta recibida del LLM.</p>
+                    <hr class="border-slate-600 my-2">
+                    <div style="white-space: pre-wrap;">${escapeHTML(llmResponse)}</div>
+                `;
+
+            } catch (error) {
+                console.error('Error al llamar al LLM:', error);
+                
+                // Mostrar error en la burbuja de carga
+                loadingBubble.querySelector('.flex').parentElement.innerHTML = `
+                    <h3 class="font-bold text-lg mb-2 text-red-500">Error de Conexión</h3>
+                    <p class="text-sm mb-2">No se pudo conectar al LLM en <em>${escapeHTML(llmUrl)}</em>.</p>
+                    <hr class="border-slate-600 my-2">
+                    <p class="text-xs text-red-400">Detalles: ${escapeHTML(error.message)}</p>
+                    <p class="text-xs mt-2">Asegúrate de que el servidor LLM (como LM Studio, Jan, etc.) esté en ejecución y que la URL sea correcta. Si usas un servidor local, puede que necesites habilitar CORS.</p>
+                `;
+            } finally {
+                // Reactivar input
+                toggleChatInput(true);
+            }
+        }
+        
+        function updateLoadingMessage(bubble, newText) {
+            const contentDiv = bubble.querySelector('div > div'); // Busca el div del contenido
+            if (contentDiv) {
+                contentDiv.innerHTML = newText;
+            }
+        }
+
+    </script>
+
+    <!-- Estilos para el indicador de carga -->
+    <style>
+        .dot-loader {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+        }
+        .dot-loader::before,
+        .dot-loader::after {
+            content: '';
+            display: block;
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background-color: #fff;
+            animation: dot-loader-anim 1s infinite linear;
+        }
+        .dot-loader::after {
+            animation-delay: 0.2s;
+        }
+        @keyframes dot-loader-anim {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(0.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+
+</body>
+</html>

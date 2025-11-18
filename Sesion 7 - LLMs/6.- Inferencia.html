@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizador de Inferencia LLM</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Estilo personalizado para la fuente Inter */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Transición de altura para las barras */
+        .bar {
+            transition: height 0.5s ease-out;
+        }
+        /* Estilo para los 'tokens' de texto */
+        .token {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem; /* rounded-md */
+            border: 1px solid #D1D5DB; /* border-gray-300 */
+            background-color: white;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); /* shadow-sm */
+            font-family: monospace;
+            font-size: 1.125rem; /* text-lg */
+            color: #1F2937; /* text-gray-800 */
+        }
+        .token-new {
+            border-color: #34D399; /* border-green-400 */
+            background-color: #D1FAE5; /* bg-green-100 */
+            color: #065F46; /* text-green-800 */
+            animation: fadeIn 0.5s ease-out;
+        }
+        
+        /* Estilo para los 'token IDs' (Nuevo) */
+        .token-id {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem;
+            border: 1px solid #D1D5DB; /* border-gray-300 */
+            background-color: white;
+            border-radius: 0.375rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            min-width: 50px;
+        }
+        .token-id .id {
+            font-family: monospace;
+            font-size: 1.125rem; /* text-lg */
+            font-weight: bold;
+            color: #3B82F6; /* text-blue-600 */
+        }
+        .token-id .text {
+            font-size: 0.875rem; /* text-sm */
+            color: #4B5563; /* text-gray-600 */
+        }
+
+        /* Estilo para el diagrama de proceso (Nuevo) */
+        .id-box {
+            font-family: monospace;
+            padding: 0.25rem 0.5rem;
+            background-color: #E0E7FF; /* indigo-100 */
+            border: 1px solid #A5B4FC; /* indigo-300 */
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            color: #3730A3; /* indigo-800 */
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4 py-8">
+
+    <div class="bg-white p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-5xl">
+
+        <header class="text-center mb-8">
+            <h1 class="text-3xl font-bold text-gray-800">Visualizador de Inferencia de LLM</h1>
+            <p class="text-lg text-gray-600 mt-2">De Tokens a Probabilidades y Predicciones</p>
+        </header>
+
+        <!-- Controles Principales -->
+        <div class="flex justify-center gap-4 mb-8">
+            <button id="generateButton" class="bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-blue-700 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+                Generar Siguiente Token
+            </button>
+            <button id="resetButton" class="bg-gray-500 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-gray-600 transition duration-300">
+                Reiniciar
+            </button>
+        </div>
+
+        <!-- Sección de Pasos -->
+        <div class="space-y-8">
+            
+            <!-- PASO 1: Contexto de Entrada -->
+            <div>
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 1</span> Contexto de Tokens (Entrada)
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    El modelo recibe la secuencia actual de tokens como entrada.
+                </p>
+                <div id="contextDisplay" class="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[50px]">
+                    <!-- Los tokens de entrada se renderizarán aquí -->
+                </div>
+            </div>
+
+            <!-- PASO 2: Tokenización (NUEVO) -->
+            <div id="step2Tokenization" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 2</span> Tokenización (IDs Numéricos)
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Cada token de texto se mapea a un ID numérico único del vocabulario.
+                </p>
+                <div id="tokenIDDisplay" class="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[50px]">
+                    <!-- Los IDs de token se renderizarán aquí -->
+                </div>
+            </div>
+
+            <!-- PASO 3: Proceso del Modelo (NUEVO) -->
+            <div id="step3Process" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 3</span> Proceso del Modelo (Generación de Logits)
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Los IDs entran al <strong>Transformer</strong> (la arquitectura completa). En su interior, los <strong>mecanismos de atención</strong> sopesan la importancia de los tokens y, junto con otras capas, generan una puntuación (Logit) para cada token del vocabulario.
+                </p>
+                <div class="flex flex-col sm:flex-row items-center justify-center p-4 bg-gray-50 rounded-lg border border-gray-200 min-h-[120px]">
+                    <div id="processInputIDs" class="flex flex-row flex-wrap sm:flex-col gap-1">
+                        <!-- JS llenará esto, ej: <span class="id-box">100</span> -->
+                    </div>
+                    <div class="text-4xl my-2 sm:my-0 sm:mx-4 text-gray-400 transform rotate-90 sm:rotate-0">➡️</div>
+                    <div class="p-6 sm:p-8 bg-blue-100 border-2 border-blue-300 rounded-lg shadow-md text-center">
+                        <span class="text-xl font-bold text-blue-800">Transformer<br/>(LLM Core)</span>
+                    </div>
+                    <div class="text-4xl my-2 sm:my-0 sm:mx-4 text-gray-400 transform rotate-90 sm:rotate-0">➡️</div>
+                    <div class="flex flex-col gap-1 text-gray-700 bg-white p-3 rounded border">
+                        <span class="font-mono text-sm">Logit (para 'El'): 2.1</span>
+                        <span class="font-mono text-sm">Logit (para 'gato'): 3.5</span>
+                        <span class="font-mono text-sm">Logit (para 'la'): 4.2</span>
+                        <span class="font-mono text-sm">... (etc. para todo el vocabulario)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PASO 4: Logits y Probabilidades (Antes 3) -->
+            <div id="step4Logits" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 4</span> Logits (Simulados) y Probabilidades (Softmax)
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Usamos la función <strong class="font-medium">Softmax</strong> para convertir estas puntuaciones en probabilidades que suman 1.
+                </p>
+                <div id="chartContainer" class="w-full h-80 bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-end justify-center gap-2 sm:gap-3 overflow-x-auto">
+                    <!-- El gráfico de barras se generará aquí -->
+                </div>
+            </div>
+
+            <!-- PASO 5: Predicción (Antes 4) -->
+            <div id="step5Prediction" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 5</span> Predicción (Muestreo Argmax)
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    Para esta demostración, usamos "Argmax": simplemente elegimos el token con la probabilidad más alta.
+                </p>
+                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 flex items-center">
+                    <span class="text-gray-700 text-lg">Token Predicho:</span>
+                    <strong id="predictionDisplay" class="text-2xl font-bold text-green-600 ml-3">...</strong>
+                </div>
+            </div>
+
+            <!-- PASO 6: Nuevo Contexto (Antes 5) -->
+            <div id="step6NewContext" style="display: none;">
+                <h2 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">
+                    <span class="bg-blue-100 text-blue-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Paso 6</span> Actualización del Contexto
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    El token predicho se añade al final de la secuencia. Este nuevo contexto se usará para generar el siguiente token.
+                </p>
+                <div id="newContextDisplay" class="flex flex-wrap gap-2 p-4 bg-green-50 rounded-lg border border-green-200 min-h-[50px]">
+                    <!-- El nuevo contexto se renderizará aquí -->
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // --- Estado de la Aplicación ---
+        
+        // Vocabulario simplificado. En un LLM real, esto sería de 50k+ tokens.
+        const VOCABULARY = [
+            'El', 'gato', 'salta', 'en', 'la', 'con', 'corre', 
+            'casa', 'perro', 'feliz', 'triste', 'muy', 'parque', 'luna', 'sol'
+        ];
+        
+        // Mapeo de token a ID (NUEVO)
+        const TOKEN_IDS = new Map(VOCABULARY.map((token, i) => [token, 100 + i]));
+
+        const INITIAL_CONTEXT = ['El', 'gato', 'salta', 'en'];
+        let currentContext = [...INITIAL_CONTEXT];
+
+        // --- Referencias al DOM ---
+        const contextDisplay = document.getElementById('contextDisplay');
+        const generateButton = document.getElementById('generateButton');
+        const resetButton = document.getElementById('resetButton');
+        const chartContainer = document.getElementById('chartContainer');
+        const predictionDisplay = document.getElementById('predictionDisplay');
+        const newContextDisplay = document.getElementById('newContextDisplay');
+        const tokenIDDisplay = document.getElementById('tokenIDDisplay'); // Nuevo
+        const processInputIDs = document.getElementById('processInputIDs'); // Nuevo
+        
+        const step2Tokenization = document.getElementById('step2Tokenization'); // Nuevo
+        const step3Process = document.getElementById('step3Process'); // Nuevo
+        const step4Logits = document.getElementById('step4Logits'); // Renombrado
+        const step5Prediction = document.getElementById('step5Prediction'); // Renombrado
+        const step6NewContext = document.getElementById('step6NewContext'); // Renombrado
+
+        // --- Funciones de Lógica ---
+
+        /**
+         * Calcula el Softmax de un array de logits.
+         */
+        function softmax(logits) {
+            const maxLogit = Math.max(...logits);
+            const exps = logits.map(logit => Math.exp(logit - maxLogit));
+            const sumExps = exps.reduce((a, b) => a + b, 0);
+            return exps.map(exp => exp / sumExps);
+        }
+
+        /**
+         * Renderiza una lista de tokens de TEXTO en un contenedor.
+         */
+        function renderContext(tokens, container, highlightedToken = null) {
+            container.innerHTML = ''; // Limpiar contenedor
+            tokens.forEach(token => {
+                const tokenElement = document.createElement('span');
+                tokenElement.className = 'token';
+                if (token === highlightedToken) {
+                    tokenElement.classList.add('token-new');
+                }
+                tokenElement.textContent = token;
+                container.appendChild(tokenElement);
+            });
+        }
+        
+        /**
+         * Renderiza los IDs de los tokens (NUEVO)
+         */
+        function renderTokenIDs(tokens, container) {
+            container.innerHTML = '';
+            tokens.forEach(token => {
+                const id = TOKEN_IDS.get(token) || '???'; // Obtener ID del mapa
+                const idElement = document.createElement('div');
+                idElement.className = 'token-id';
+                idElement.innerHTML = `
+                    <span class="id">${id}</span>
+                    <span class="text">${token}</span>
+                `;
+                container.appendChild(idElement);
+            });
+        }
+
+        /**
+         * Renderiza el diagrama de proceso (NUEVO)
+         */
+        function renderProcessDiagram(tokens, container) {
+            container.innerHTML = '';
+            tokens.forEach(token => {
+                const id = TOKEN_IDS.get(token) || '???';
+                const idBox = document.createElement('span');
+                idBox.className = 'id-box';
+                idBox.textContent = id;
+                container.appendChild(idBox);
+            });
+        }
+
+        /**
+         * Muestra los pasos de resultados.
+         */
+        function showResultSteps() {
+            step2Tokenization.style.display = 'block';
+            step3Process.style.display = 'block';
+            step4Logits.style.display = 'block';
+            step5Prediction.style.display = 'block';
+            step6NewContext.style.display = 'block';
+        }
+
+        /**
+         * Oculta los pasos de resultados.
+         */
+        function hideResultSteps() {
+            step2Tokenization.style.display = 'none';
+            step3Process.style.display = 'none';
+            step4Logits.style.display = 'none';
+            step5Prediction.style.display = 'none';
+            step6NewContext.style.display = 'none';
+        }
+
+        /**
+         * Simula la generación del siguiente token.
+         */
+        function generateNextToken() {
+            // Mostrar pasos de resultados si están ocultos
+            showResultSteps();
+
+            // Renderizar el contexto de *entrada* (Paso 1)
+            renderContext(currentContext, contextDisplay);
+
+            // Renderizar IDs (Paso 2 - NUEVO)
+            renderTokenIDs(currentContext, tokenIDDisplay);
+
+            // Renderizar diagrama de proceso (Paso 3 - NUEVO)
+            renderProcessDiagram(currentContext, processInputIDs);
+
+            // 1. Simular Logits
+            const logits = VOCABULARY.map(() => Math.random() * 5);
+
+            // 2. Calcular Probabilidades
+            const probabilities = softmax(logits);
+
+            // 3. Encontrar la Predicción (Argmax)
+            let maxProb = -1;
+            let predictedIndex = -1;
+            probabilities.forEach((prob, index) => {
+                if (prob > maxProb) {
+                    maxProb = prob;
+                    predictedIndex = index;
+                }
+            });
+            
+            const predictedToken = VOCABULARY[predictedIndex];
+
+            // 4. Actualizar la UI
+            // Paso 4: Renderizar gráfico
+            renderChart(logits, probabilities, predictedIndex);
+            
+            // Paso 5: Mostrar predicción
+            predictionDisplay.textContent = predictedToken;
+
+            // 5. Actualizar el estado del contexto
+            updateContext(predictedToken);
+
+            // Paso 6: Renderizar el *nuevo* contexto
+            renderContext(currentContext, newContextDisplay, predictedToken);
+        }
+
+        /**
+         * Renderiza el gráfico de barras de probabilidades (Paso 4).
+         */
+        function renderChart(logits, probabilities, predictedIndex) {
+            chartContainer.innerHTML = ''; // Limpiar el gráfico anterior
+            
+            VOCABULARY.forEach((token, index) => {
+                const prob = probabilities[index];
+                const logit = logits[index];
+                const isPredicted = (index === predictedIndex);
+
+                const barHeight = prob * 100 * 2.5; // Escalar altura (250px max)
+                const barColor = isPredicted ? 'bg-green-500' : 'bg-blue-500';
+
+                const barElement = document.createElement('div');
+                barElement.className = 'flex flex-col items-center w-14';
+                barElement.innerHTML = `
+                    <div class="text-xs font-medium text-gray-700 mb-1">${(prob * 100).toFixed(1)}%</div>
+                    <div 
+                        class="bar w-full rounded-t-lg shadow-md ${barColor}" 
+                        style="height: ${barHeight}px;"
+                        title="Token: ${token}\nLogit: ${logit.toFixed(2)}\nProb: ${(prob * 100).toFixed(1)}%">
+                    </div>
+                    <div class="text-xs font-semibold text-gray-800 mt-2 text-center">${token}</div>
+                    <div class="text-xs text-gray-500">(Logit: ${logit.toFixed(2)})</div>
+                `;
+                chartContainer.appendChild(barElement);
+            });
+        }
+
+        /**
+         * Añade el token predicho al array de contexto.
+         */
+        function updateContext(token) {
+            currentContext.push(token);
+        }
+
+        /**
+         * Resetea la simulación a su estado inicial.
+         */
+        function resetSimulation() {
+            currentContext = [...INITIAL_CONTEXT];
+            
+            // Renderizar contexto inicial (Paso 1)
+            renderContext(currentContext, contextDisplay);
+            
+            // Ocultar pasos de resultados
+            hideResultSteps();
+            
+            // Limpiar contenedores de resultados
+            tokenIDDisplay.innerHTML = ''; // Nuevo
+            processInputIDs.innerHTML = ''; // Nuevo
+            chartContainer.innerHTML = '<p class="text-gray-400">Presiona "Generar" para empezar...</p>';
+            predictionDisplay.textContent = '...';
+            newContextDisplay.innerHTML = '';
+        }
+
+        // --- Event Listeners ---
+        generateButton.addEventListener('click', generateNextToken);
+        resetButton.addEventListener('click', resetSimulation);
+
+        // --- Inicialización ---
+        document.addEventListener('DOMContentLoaded', resetSimulation);
+
+    </script>
+</body>
+</html>

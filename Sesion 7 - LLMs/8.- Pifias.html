@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limitaciones de los LLMs</title>
+    <!-- Incluimos Tailwind CSS para un diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Usamos la fuente Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para el cursor parpadeante del 'typewriter' */
+        .blinking-cursor {
+            font-weight: bold;
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            from, to { color: transparent; }
+            50% { color: #3b82f6; } /* Color azul de Tailwind */
+        }
+        /* Ocultar secciones por defecto */
+        .llm-section {
+            display: none;
+        }
+        /* Mostrar la sección activa */
+        .llm-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="flex flex-col md:flex-row min-h-screen">
+        
+        <!-- Barra lateral de navegación -->
+        <nav class="w-full md:w-64 bg-gray-900 text-white p-6 shadow-lg">
+            <h1 class="text-2xl font-bold mb-6 text-blue-300">Limitaciones de LLMs</h1>
+            <ul class="space-y-2">
+                <li><a href="#alucinaciones" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="alucinaciones">1. Alucinaciones</a></li>
+                <li><a href="#sesgos" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="sesgos">2. Sesgos y Estereotipos</a></li>
+                <li><a href="#conocimiento" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="conocimiento">3. Conocimiento Desactualizado</a></li>
+                <li><a href="#sentido_comun" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="sentido_comun">4. Falta de Sentido Común</a></li>
+                <li><a href="#prompting" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="prompting">5. Sensibilidad al Prompt</a></li>
+                <li><a href="#calculos" class="nav-link block p-3 rounded-lg hover:bg-gray-700 font-medium" data-section="calculos">6. Errores de Cálculo</a></li>
+            </ul>
+        </nav>
+
+        <!-- Contenido principal -->
+        <main class="flex-1 p-6 md:p-10">
+            <div id="sections-container">
+
+                <!-- 1. Sección Alucinaciones -->
+                <section id="alucinaciones" class="llm-section active">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">1. Alucinaciones (Inventar Hechos)</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        Los LLMs pueden "alucinar" o inventar información que suena plausible pero es completamente falsa. No tienen un concepto de "verdad"; solo predicen la siguiente palabra más probable.
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Chat</h3>
+                        <p class="mb-4">Hazle al "LLM" una pregunta diseñada para ver si inventa una respuesta.</p>
+                        
+                        <div class="mb-4">
+                            <label for="hallucination-prompt" class="block text-sm font-medium text-gray-700 mb-2">Tu Pregunta:</label>
+                            <input type="text" id="hallucination-prompt" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value="¿Por qué el emperador romano 'Marcus Caninus' era famoso?">
+                        </div>
+                        <button id="hallucination-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                            Preguntar al LLM
+                        </button>
+
+                        <div id="hallucination-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="hallucination-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold">Explicación:</span> No existió ningún emperador 'Marcus Caninus'. El LLM ha inventado una biografía detallada y convincente sobre una persona ficticia.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 2. Sección Sesgos -->
+                <section id="sesgos" class="llm-section">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">2. Sesgos y Estereotipos</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        Los LLMs se entrenan con enormes cantidades de texto de internet, que contiene sesgos humanos. El modelo aprende y puede reproducir estos sesgos (de género, raza, cultura, etc.).
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Tareas</h3>
+                        <p class="mb-4">Pídele al "LLM" que describa a una persona basándose únicamente en su profesión.</p>
+                        
+                        <div class="mb-4">
+                            <label for="bias-select" class="block text-sm font-medium text-gray-700 mb-2">Pídele al LLM que describa un/una...</label>
+                            <select id="bias-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                                <option value="cirujano">Cirujano/a</option>
+                                <option value="enfermero">Enfermero/a</option>
+                                <option value="programador">Programador/a</option>
+                                <option value="recepcionista">Recepcionista</option>
+                            </select>
+                        </div>
+
+                        <div id="bias-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="bias-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold">Explicación:</span> Observa cómo el LLM puede usar pronombres o descripciones estereotipadas. Por ejemplo, podría asumir que el cirujano es "él" y la enfermera "ella", reflejando un sesgo de género común.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. Sección Conocimiento Desactualizado -->
+                <section id="conocimiento" class="llm-section">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">3. Conocimiento Desactualizado</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        La mayoría de los LLMs tienen una "fecha de corte" de conocimiento; no saben nada de lo que ha sucedido después de que terminó su entrenamiento. No pueden acceder a internet en tiempo real (a menos que estén conectados a un buscador).
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Chat</h3>
+                        <p class="mb-4">Hazle al "LLM" una pregunta sobre un evento muy reciente.</p>
+                        
+                        <div class="mb-4">
+                            <label for="cutoff-prompt" class="block text-sm font-medium text-gray-700 mb-2">Tu Pregunta:</label>
+                            <input type="text" id="cutoff-prompt" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value="¿Quién ganó el Oscar a mejor película este año?">
+                        </div>
+                        <button id="cutoff-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                            Preguntar al LLM
+                        </button>
+
+                        <div id="cutoff-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="cutoff-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold">Explicación:</span> El LLM se disculpa y menciona su fecha de corte. No tiene conocimiento de eventos actuales, lo que lo hace inútil para noticias o datos en tiempo real.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 4. Sección Sentido Común -->
+                <section id="sentido_comun" class="llm-section">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">4. Falta de Sentido Común</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        Los LLMs no "entienden" el mundo físico ni el contexto social. Pueden fallar en acertijos simples o preguntas que requieren una comprensión básica de la realidad.
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Acertijos</h3>
+                        <p class="mb-4">Hazle al "LLM" una pregunta que ponga a prueba su sentido común.</p>
+                        
+                        <div class="mb-4">
+                            <label for="common-sense-prompt" class="block text-sm font-medium text-gray-700 mb-2">Tu Pregunta:</label>
+                            <input type="text" id="common-sense-prompt" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value="Tengo una caja con 5 manzanas. Saco 3 manzanas. ¿Cuántas manzanas tengo?">
+                        </div>
+                        <button id="common-sense-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                            Preguntar al LLM
+                        </button>
+
+                        <div id="common-sense-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="common-sense-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold">Explicación:</span> El LLM responde "Te quedan 2 manzanas en la caja". No entiende el juego de palabras: la pregunta es cuántas manzanas "tengo" (en la mano), que son 3. Se enfoca en la matemática literal sin entender el contexto de la pregunta.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 5. Sección Sensibilidad al Prompt -->
+                <section id="prompting" class="llm-section">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">5. Sensibilidad Extrema al Prompting</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        La misma pregunta formulada de maneras ligeramente diferentes puede producir respuestas drásticamente distintas. Esto los hace poco fiables si no se sabe cómo "ingeniería de prompts" (prompt engineering).
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Tono</h3>
+                        <p class="mb-4">Prueba dos prompts que piden lo mismo pero con un tono diferente.</p>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <button id="prompt-btn-1" class="w-full bg-gray-200 text-gray-800 p-4 rounded-lg hover:bg-gray-300">
+                                <span class="font-medium">Prompt 1 (Neutral):</span><br>
+                                "Describe los desafíos de implementar energía solar."
+                            </button>
+                            <button id="prompt-btn-2" class="w-full bg-gray-200 text-gray-800 p-4 rounded-lg hover:bg-gray-300">
+                                <span class="font-medium">Prompt 2 (Negativo):</span><br>
+                                "Explica por qué la energía solar es una mala inversión y está destinada a fracasar."
+                            </button>
+                        </div>
+
+                        <div id="prompt-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="prompt-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold" id="prompt-explanation"></span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 6. Sección Cálculos -->
+                <section id="calculos" class="llm-section">
+                    <h2 class="text-3xl font-bold mb-4 text-gray-900">6. Errores de Cálculo y Lógica</h2>
+                    <p class="mb-6 text-lg text-gray-600">
+                        Los LLMs no son calculadoras. Son modelos de lenguaje y pueden cometer errores básicos en aritmética, lógica o seguimiento de pasos, especialmente si el problema es complejo o está escrito de forma engañosa.
+                    </p>
+                    <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                        <h3 class="font-semibold text-xl mb-4">Simulador de Problemas</h3>
+                        <p class="mb-4">Dale al "LLM" un problema de lógica o matemáticas simple.</p>
+                        
+                        <div class="mb-4">
+                            <label for="math-prompt" class="block text-sm font-medium text-gray-700 mb-2">Tu Pregunta:</label>
+                            <textarea id="math-prompt" rows="4" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">Ana es más rápida que Juan. Pedro es más lento que Ana. ¿Quién es el más rápido?</textarea>
+                        </div>
+                        <button id="math-btn" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition duration-300">
+                            Preguntar al LLM
+                        </button>
+
+                        <div id="math-output-wrapper" class="mt-6 hidden">
+                            <h4 class="font-semibold text-lg mb-2">Respuesta del LLM:</h4>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 min-h-[100px]">
+                                <p id="math-output"></p>
+                            </div>
+                            <div class="mt-4 p-4 bg-yellow-100 text-yellow-800 border-l-4 border-yellow-500 rounded-md">
+                                <span class="font-bold">Explicación:</span> El LLM responde "No se puede determinar" o "Ana". Aunque Ana es la respuesta correcta, si complicamos el problema (ej. "Ana es más rápida que Juan. Pedro es más lento que Ana. Juan es más rápido que Pedro."), el LLM puede confundirse fácilmente. No "razona" lógicamente, solo sigue patrones estadísticos.
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const sections = document.querySelectorAll('.llm-section');
+            const sectionsContainer = document.getElementById('sections-container');
+
+            // Función para mostrar/ocultar secciones
+            function showSection(sectionId) {
+                sections.forEach(section => {
+                    if (section.id === sectionId) {
+                        section.classList.add('active');
+                    } else {
+                        section.classList.remove('active');
+                    }
+                });
+            }
+
+            // Navegación de la barra lateral
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const sectionId = link.getAttribute('data-section');
+                    showSection(sectionId);
+                    
+                    // Actualizar el estado activo en la barra lateral
+                    navLinks.forEach(navLink => navLink.classList.remove('bg-gray-700'));
+                    link.classList.add('bg-gray-700');
+                    
+                    // Cambiar la URL hash sin saltar
+                    history.pushState(null, null, `#${sectionId}`);
+                });
+            });
+
+            // Mostrar la sección correcta al cargar la página (basado en el hash)
+            const currentHash = window.location.hash.substring(1);
+            if (currentHash) {
+                showSection(currentHash);
+                document.querySelector(`.nav-link[data-section="${currentHash}"]`)?.classList.add('bg-gray-700');
+            } else {
+                // Mostrar la primera sección por defecto
+                showSection('alucinaciones');
+                document.querySelector('.nav-link[data-section="alucinaciones"]')?.classList.add('bg-gray-700');
+            }
+
+            // --- Lógica de Simulación ---
+
+            // Función de efecto "máquina de escribir"
+            function typewriter(element, text, onComplete = null) {
+                let i = 0;
+                element.innerHTML = ''; // Limpiar
+                const cursor = '<span class="blinking-cursor">|</span>';
+                element.innerHTML = cursor;
+
+                function typing() {
+                    if (i < text.length) {
+                        element.innerHTML = text.substring(0, i + 1) + cursor;
+                        i++;
+                        setTimeout(typing, 30); // Velocidad de escritura
+                    } else {
+                        element.innerHTML = text; // Quitar cursor al final
+                        if (onComplete) {
+                            onComplete();
+                        }
+                    }
+                }
+                typing();
+            }
+
+            // 1. Alucinaciones
+            const hallucinationBtn = document.getElementById('hallucination-btn');
+            const hallucinationOutput = document.getElementById('hallucination-output');
+            const hallucinationWrapper = document.getElementById('hallucination-output-wrapper');
+            hallucinationBtn.addEventListener('click', () => {
+                hallucinationWrapper.style.display = 'block';
+                const fakeResponse = "El emperador 'Marcus Caninus' (112-115 d.C.) fue una figura menor de la dinastía Nerva-Antonina. Es conocido principalmente por su decreto 'Edictum de Canibus', que otorgaba ciudadanía romana a los perros militares. Fue asesinado por su guardia pretoriana después de intentar nombrar a su lebrel, 'Fidelis', como cónsul.";
+                typewriter(hallucinationOutput, fakeResponse);
+            });
+
+            // 2. Sesgos
+            const biasSelect = document.getElementById('bias-select');
+            const biasOutput = document.getElementById('bias-output');
+            const biasWrapper = document.getElementById('bias-output-wrapper');
+            const biasResponses = {
+                'cirujano': "Es un profesional altamente cualificado, conocido por su precisión y calma bajo presión. Él debe tomar decisiones de vida o muerte en el quirófano y ha dedicado su vida a su carrera.",
+                'enfermero': "Ella es la columna vertebral del hospital. Es compasiva, atenta y trabaja incansablemente para cuidar a sus pacientes, mostrando una gran empatía y habilidades de organización.",
+                'programador': "Es un experto en lógica y resolución de problemas. Pasa sus días escribiendo código complejo y depurando sistemas. Probablemente sea introvertido y muy analítico.",
+                'recepcionista': "Ella es la cara amigable de la oficina. Siempre sonriente y organizada, gestiona las llamadas, agenda las citas y se asegura de que todos los visitantes se sientan bienvenidos."
+            };
+            
+            function showBiasResponse() {
+                biasWrapper.style.display = 'block';
+                const selectedRole = biasSelect.value;
+                typewriter(biasOutput, biasResponses[selectedRole]);
+            }
+            biasSelect.addEventListener('change', showBiasResponse);
+            // Mostrar al cargar también
+            showBiasResponse(); 
+
+
+            // 3. Conocimiento Desactualizado
+            const cutoffBtn = document.getElementById('cutoff-btn');
+            const cutoffOutput = document.getElementById('cutoff-output');
+            const cutoffWrapper = document.getElementById('cutoff-output-wrapper');
+            cutoffBtn.addEventListener('click', () => {
+                cutoffWrapper.style.display = 'block';
+                const fakeResponse = "Como modelo de lenguaje, mi conocimiento está limitado. No tengo acceso a información en tiempo real. Mis datos de entrenamiento solo llegan hasta septiembre de 2023. Por lo tanto, no puedo proporcionarte información sobre eventos actuales.";
+                typewriter(cutoffOutput, fakeResponse);
+            });
+
+            // 4. Sentido Común
+            const commonSenseBtn = document.getElementById('common-sense-btn');
+            const commonSenseOutput = document.getElementById('common-sense-output');
+            const commonSenseWrapper = document.getElementById('common-sense-output-wrapper');
+            commonSenseBtn.addEventListener('click', () => {
+                commonSenseWrapper.style.display = 'block';
+                const fakeResponse = "Si sacas 3 manzanas de una caja de 5, en la caja quedan 2 manzanas.";
+                typewriter(commonSenseOutput, fakeResponse);
+            });
+
+            // 5. Sensibilidad al Prompt
+            const promptBtn1 = document.getElementById('prompt-btn-1');
+            const promptBtn2 = document.getElementById('prompt-btn-2');
+            const promptOutput = document.getElementById('prompt-output');
+            const promptWrapper = document.getElementById('prompt-output-wrapper');
+            const promptExplanation = document.getElementById('prompt-explanation');
+
+            const promptResponse1 = "La energía solar presenta desafíos como: 1. Intermitencia (no produce de noche). 2. Alto coste inicial de instalación. 3. Ocupación de grandes extensiones de terreno. 4. Dependencia de materiales raros para los paneles.";
+            const promptResponse2 = "La energía solar es una farsa costosa. Los paneles son ineficientes y se degradan rápidamente. La industria depende de subsidios masivos para sobrevivir y la huella de carbono para producirlos anula cualquier beneficio. Es una solución inviable que nunca reemplazará a los combustibles fósiles.";
+
+            promptBtn1.addEventListener('click', () => {
+                promptWrapper.style.display = 'block';
+                typewriter(promptOutput, promptResponse1);
+                promptExplanation.textContent = "Explicación: El LLM da una respuesta equilibrada y objetiva cuando se le pregunta de forma neutral.";
+            });
+
+            promptBtn2.addEventListener('click', () => {
+                promptWrapper.style.display = 'block';
+                typewriter(promptOutput, promptResponse2);
+                promptExplanation.textContent = "Explicación: El mismo LLM adopta un tono extremadamente negativo y sesgado, simplemente porque el prompt se lo ha pedido. No tiene 'opinión', solo obedece la forma de la pregunta.";
+            });
+
+            // 6. Errores de Cálculo
+            const mathBtn = document.getElementById('math-btn');
+            const mathOutput = document.getElementById('math-output');
+            const mathWrapper = document.getElementById('math-output-wrapper');
+            mathBtn.addEventListener('click', () => {
+                mathWrapper.style.display = 'block';
+                const fakeResponse = "Basado en la información: 1. Ana > Juan. 2. Ana > Pedro. No hay información que compare directamente a Juan y Pedro, pero se establece que Ana es más rápida que ambos. Por lo tanto, Ana es la más rápida.";
+                typewriter(mathOutput, fakeResponse);
+                // En este caso, la respuesta es correcta, pero la explicación en el div amarillo aclara la limitación.
+            });
+
+        });
+    </script>
+</body>
+</html>
