@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Principios de Visual Encodings</title>
+    <!-- Carga de Tailwind CSS para el estilo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Estilos personalizados para el contenedor de la visualización */
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            margin-top: 2rem;
+            background: #f7f7f7;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            padding: 1rem; 
+        }
+        /* Estilos para los botones */
+        .encoding-btn {
+            transition: all 0.2s ease;
+        }
+        .encoding-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Estilos específicos para el diagrama de Mackinlay */
+        .mackinlay-diagram {
+            position: relative;
+            width: 100%;
+            height: 550px; /* Altura ajustada para el diagrama */
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .mackinlay-column {
+            width: 33.33%;
+            padding: 0 5px;
+        }
+        .mackinlay-item {
+            /* Altura de línea fija para calcular las coordenadas SVG */
+            height: 30px; 
+            line-height: 30px;
+            white-space: nowrap;
+            /* MODIFICACIÓN: Reducir ancho y centrar */
+            width: 80%; 
+            margin: 4px auto; /* 4px vertical, auto horizontal para centrar */
+            display: block;
+            text-align: center;
+            font-weight: 500;
+            /* Estilo visual mejorado */
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        /* Definiciones de color para las tarjetas */
+        .q-item { background-color: #bfdbfe; color: #1e40af; border: 1px solid #93c5fd; } /* Blue 200/600 */
+        .o-item { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; } /* Green 100/700 */
+        .n-item { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; } /* Yellow 100/800 }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans p-6 md:p-10">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Título y Descripción -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-extrabold text-blue-800 mb-2">Canales de Codificación Visual</h1>
+        </header>
+
+        <!-- Panel de Canales de Codificación (Mackinlay's Ranking) -->
+        <div class="mb-8 p-6 bg-indigo-50 border-l-4 border-indigo-400 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-indigo-700 mb-4 border-b pb-2 border-indigo-200">Canales de Codificación Visual Clave y la Jerarquía de Mackinlay</h2>
+            
+            <!-- Reseña Histórica -->
+            <h3 class="text-xl font-semibold text-indigo-600 mb-2">Reseña Histórica: La Ideación de Mackinlay</h3>
+            <p class="text-gray-700 mb-4 text-sm">
+                La jerarquía de canales visuales fue popularizada por <strong>Jock Mackinlay</strong> en su tesis doctoral de 1986, "Automating the Design of Graphical Presentations of Relational Information". 
+                Basándose en estudios perceptuales previos (como los de Cleveland & McGill), Mackinlay formalizó las clasificaciones de los canales visuales (e.g., posición, longitud, color) 
+                en función de su efectividad para codificar diferentes tipos de datos (Nominal, Ordinal, Cuantitativo). Este trabajo es la base de los sistemas automáticos de diseño de visualizaciones de datos.
+            </p>
+
+            <!-- Nueva sección: Tipos de Datos -->
+            <h3 class="text-xl font-semibold text-indigo-600 mb-2 mt-4">Tipos de Datos y su Diferenciación</h3>
+            <ul class="list-disc list-inside text-gray-700 mb-4 text-sm space-y-1 ml-4">
+                <li><strong>Cuantitativo (Q):</strong> Valores numéricos que permiten operaciones aritméticas (suma, resta). Representan magnitudes (ej: edad, temperatura, ingresos).</li>
+                <li><strong>Ordinal (O):</strong> Valores que tienen un orden intrínseco o jerarquía, pero la distancia entre ellos no es constante o conocida (ej: calificaciones de 1 a 5, nivel de satisfacción).</li>
+                <li><strong>Nominal (N):</strong> Valores categóricos sin orden. Solo sirven para diferenciar un elemento de otro (ej: países, género, tipos de fruta).</li>
+            </ul>
+            <!-- Fin de la nueva sección -->
+
+            <!-- Diagrama de Mackinlay (Replicado de la imagen adjunta en español y con estilo) -->
+            <h3 class="text-xl font-semibold text-indigo-600 mb-3">Ranking de Efectividad Perceptual por Tipo de Datos (Diagrama de Mackinlay)</h3>
+            
+            <div class="mackinlay-diagram">
+                
+                <!-- SVG para dibujar las flechas/líneas de conexión -->
+                <svg id="mackinlay-svg" class="absolute top-0 left-0" width="100%" height="100%">
+                    <!-- Las líneas se dibujarán con JavaScript -->
+                </svg>
+
+                <div class="flex justify-between w-full h-full absolute top-0 left-0 text-sm">
+                    
+                    <!-- Columna Cuantitativa -->
+                    <div class="mackinlay-column">
+                        <div class="text-center font-bold mb-2 text-lg text-blue-700">Cuantitativo</div>
+                        <div class="border-b-2 border-blue-700 w-1/2 mx-auto mb-2"></div>
+                        <div id="q-list">
+                            <div class="mackinlay-item q-item" data-index="0">Posición</div>
+                            <div class="mackinlay-item q-item" data-index="1">Longitud</div>
+                            <div class="mackinlay-item q-item" data-index="2">Ángulo</div>
+                            <div class="mackinlay-item q-item" data-index="3">Pendiente</div>
+                            <div class="mackinlay-item q-item" data-index="4">Área</div>
+                            <div class="mackinlay-item q-item" data-index="5">Volumen</div>
+                            <div class="mackinlay-item q-item" data-index="6">Densidad</div>
+                            <div class="mackinlay-item q-item" data-index="7">Saturación de Color</div>
+                            <div class="mackinlay-item q-item" data-index="8">Tono de Color</div>
+                            <!-- Los siguientes elementos ahora son tarjetas individuales -->
+                            <div class="mackinlay-item q-item" data-index="9">Textura</div>
+                            <div class="mackinlay-item q-item" data-index="10">Conexión</div>
+                            <div class="mackinlay-item q-item" data-index="11">Contención</div>
+                            <div class="mackinlay-item q-item" data-index="12">Forma</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Columna Ordinal -->
+                    <div class="mackinlay-column">
+                        <div class="text-center font-bold mb-2 text-lg text-teal-700">Ordinal</div>
+                        <div class="border-b-2 border-teal-700 w-1/2 mx-auto mb-2"></div>
+                        <div id="o-list">
+                            <div class="mackinlay-item o-item" data-index="0">Posición</div>
+                            <div class="mackinlay-item o-item" data-index="1">Densidad</div>
+                            <div class="mackinlay-item o-item" data-index="2">Saturación de Color</div>
+                            <div class="mackinlay-item o-item" data-index="3">Tono de Color</div>
+                            <div class="mackinlay-item o-item" data-index="4">Textura</div>
+                            <div class="mackinlay-item o-item" data-index="5">Conexión</div>
+                            <div class="mackinlay-item o-item" data-index="6">Contención</div>
+                            <div class="mackinlay-item o-item" data-index="7">Longitud</div>
+                            <div class="mackinlay-item o-item" data-index="8">Ángulo</div>
+                            <div class="mackinlay-item o-item" data-index="9">Pendiente</div>
+                            <div class="mackinlay-item o-item" data-index="10">Área</div>
+                            <div class="mackinlay-item o-item" data-index="11">Volumen</div>
+                            <!-- El siguiente elemento ahora es una tarjeta individual -->
+                            <div class="mackinlay-item o-item" data-index="12">Forma</div>
+                        </div>
+                    </div>
+
+                    <!-- Columna Nominal -->
+                    <div class="mackinlay-column">
+                        <div class="text-center font-bold mb-2 text-lg text-amber-700">Nominal</div>
+                        <div class="border-b-2 border-amber-700 w-1/2 mx-auto mb-2"></div>
+                        <div id="n-list">
+                            <div class="mackinlay-item n-item" data-index="0">Posición</div>
+                            <div class="mackinlay-item n-item" data-index="1">Tono de Color</div>
+                            <div class="mackinlay-item n-item" data-index="2">Textura</div>
+                            <div class="mackinlay-item n-item" data-index="3">Conexión</div>
+                            <div class="mackinlay-item n-item" data-index="4">Contención</div>
+                            <div class="mackinlay-item n-item" data-index="5">Densidad</div>
+                            <div class="mackinlay-item n-item" data-index="6">Saturación de Color</div>
+                            <div class="mackinlay-item n-item" data-index="7">Forma</div>
+                            <div class="mackinlay-item n-item" data-index="8">Longitud</div>
+                            <div class="mackinlay-item n-item" data-index="9">Ángulo</div>
+                            <div class="mackinlay-item n-item" data-index="10">Pendiente</div>
+                            <div class="mackinlay-item n-item" data-index="11">Volumen</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <p class="mt-4 text-gray-700 text-sm italic">
+                <em class="italic">*Esta visualización demuestra el contraste entre el canal superior (Posición) y el canal inferior (Saturación/Tono de Color) en la jerarquía cuantitativa.</em>
+            </p>
+        </div>
+        <!-- Fin del Panel 1: Mackinlay's Ranking -->
+
+
+        <!-- Panel 2: Ejemplo Cuantitativo (Posición vs. Color) -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-2">Posición vs. Color (Luminosidad) en la Percepción de Magnitud</h2>
+
+            <!-- Introducción al Principio -->
+            <p class="mb-4 text-gray-700">
+                El mismo conjunto de datos se puede representar utilizando diferentes canales de codificación visual. La <strong>Posición</strong> (longitud en un gráfico de barras) es el canal más preciso para juzgar diferencias de magnitud. El <strong>Color</strong> (luminosidad o saturación) es mucho menos preciso para este propósito.
+                <br>
+                Utiliza el botón para alternar el modo de codificación y compara qué tan fácil es juzgar la magnitud de cada valor.
+            </p>
+
+            <!-- Controles -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <button id="posicion-btn" class="encoding-btn bg-blue-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300">
+                    Codificación por Posición (Barras)
+                </button>
+                <button id="color-btn" class="encoding-btn bg-purple-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-purple-700 active:bg-purple-800 focus:outline-none focus:ring-4 focus:ring-purple-300">
+                    Codificación por Color (Luminosidad)
+                </button>
+            </div>
+
+            <!-- Contenedor del Gráfico. Vega-Embed renderizará aquí. -->
+            <div id="chart" class="chart-container">
+                <div id="visualization-container" class="w-full"></div>
+            </div>
+
+            <!-- Leyenda y Conclusión -->
+            <div class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-lg" id="legend-text">
+                <p><strong>Modo Actual:</strong> Posición (Gráfico de Barras).</p>
+                <p>Es fácil comparar las longitudes de las barras para determinar qué valor es el doble o la mitad que otro.</p>
+            </div>
+        </div>
+        <!-- Fin del Panel 2: Ejemplo Cuantitativo -->
+        
+        
+        <!-- Panel 3: Nuevo Ejemplo Ordinal (Saturación vs. Área) -->
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mt-8">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6 text-center border-b pb-2">Saturación (o Densidad) vs. Área para Datos Ordinales</h2>
+
+            <!-- Introducción al Principio -->
+            <p class="mb-4 text-gray-700">
+                Para datos <strong>Ordinales</strong> (donde solo importa el orden, no la magnitud precisa, como los niveles de calidad), los canales más efectivos son la Posición y la Densidad/Saturación. El <strong>Área/Tamaño</strong> sigue siendo un canal de baja efectividad para discriminar niveles sutiles.
+                <br>
+                Compara qué tan fácil es identificar el orden y la diferencia entre los cinco niveles de "Calidad de Servicio" en ambos modos de codificación.
+            </p>
+
+            <!-- Controles -->
+            <div class="flex flex-wrap justify-center gap-4 mb-8">
+                <button id="saturation-btn-ordinal" class="encoding-btn bg-teal-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-teal-700 active:bg-teal-800 focus:outline-none focus:ring-4 focus:ring-teal-300">
+                    Codificación por Saturación (Densidad)
+                </button>
+                <button id="area-btn-ordinal" class="encoding-btn bg-orange-600 text-white font-semibold py-2 px-6 rounded-full shadow-md hover:bg-orange-700 active:bg-orange-800 focus:outline-none focus:ring-4 focus:ring-orange-300">
+                    Codificación por Área (Tamaño del Círculo)
+                </button>
+            </div>
+
+            <!-- Contenedor del Gráfico -->
+            <div id="ordinal-chart" class="chart-container">
+                <div id="ordinal-visualization-container" class="w-full"></div>
+            </div>
+
+            <!-- Leyenda y Conclusión -->
+            <div class="mt-6 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-lg" id="ordinal-legend-text">
+                <p><strong>Modo Actual:</strong> Saturación.</p>
+                <p>Es relativamente fácil percibir el orden de los niveles mediante la intensidad de color.</p>
+            </div>
+        </div>
+        <!-- Fin del Panel 3: Ejemplo Ordinal -->
+
+    </div>
+
+    <!-- Carga de las librerías Vega y Vega-Lite -->
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+
+    <script type="text/javascript">
+        // Usamos window.addEventListener('load', ...) para garantizar que las librerías estén completamente cargadas y definidas.
+        window.addEventListener('load', () => { 
+            // Envuelve todo el script en un IIFE para crear un ámbito local.
+            (function() {
+                
+                // --- LÓGICA DE DIBUJO DEL DIAGRAMA (NO INTERACTIVA) ---
+
+                // Mapeo de las conexiones exactas del diagrama de Mackinlay (Índices basados en 0)
+                const connections = [
+                    // De Cuantitativo a Ordinal (Q -> O)
+                    ['q', 1, 'o', 7], // Longitud -> Longitud
+                    ['q', 2, 'o', 8], // Ángulo -> Ángulo
+                    ['q', 3, 'o', 9], // Pendiente -> Pendiente
+                    ['q', 4, 'o', 10], // Área -> Área
+                    ['q', 5, 'o', 11], // Volumen -> Volumen
+                    ['q', 6, 'o', 1], // Densidad -> Densidad
+                    ['q', 7, 'o', 2], // Saturación de Color -> Saturación de Color
+                    ['q', 8, 'o', 3], // Tono de Color -> Tono de Color
+                    ['q', 9, 'o', 4],  // Textura -> Textura
+                    ['q', 10, 'o', 5], // Conexión -> Conexión
+                    ['q', 11, 'o', 6], // Contención -> Contención
+                    
+                    // De Ordinal a Nominal (O -> N)
+                    ['o', 1, 'n', 5], // Densidad -> Densidad
+                    ['o', 2, 'n', 6], // Saturación de Color -> Saturación de Color
+                    ['o', 3, 'n', 1], // Tono de Color -> Tono de Color
+                    ['o', 4, 'n', 2], // Textura -> Textura
+                    ['o', 5, 'n', 3], // Conexión -> Conexión
+                    ['o', 6, 'n', 4], // Contención -> Contención
+                    ['o', 7, 'n', 8], // Longitud -> Longitud
+                    ['o', 8, 'n', 9], // Ángulo -> Ángulo
+                    ['o', 9, 'n', 10], // Pendiente -> Pendiente
+                    ['o', 10, 'n', 7], // Área -> Forma 
+                    ['o', 11, 'n', 11], // Volumen -> Volumen
+                    ['o', 12, 'n', 7], // Forma -> Forma (Nota: Área y Forma en O se conectan a Forma en N)
+                ];
+
+                /**
+                 * Obtiene las coordenadas del centro Y y del borde X (left/right) de un elemento de tarjeta.
+                 * @param {string} sourceList - Prefijo de la lista ('q', 'o', 'n').
+                 * @param {number} sourceIndex - Índice del elemento en la lista.
+                 * @param {string} edge - Borde a usar ('left' o 'right').
+                 * @returns {{x: number, y: number} | null} Coordenadas relativas al SVG.
+                 */
+                function getCoordinates(sourceList, sourceIndex, edge, offsetX, offsetY) {
+                    const listId = sourceList.startsWith('q') ? 'q-list' : sourceList.startsWith('o') ? 'o-list' : 'n-list';
+                    const list = document.getElementById(listId);
+                    
+                    if (!list) return null;
+
+                    // Filtra solo los elementos que deben estar en el diagrama
+                    const items = Array.from(list.children).filter(child => child.classList.contains('mackinlay-item'));
+                    const element = items[sourceIndex];
+                    if (element) {
+                        const itemRect = element.getBoundingClientRect();
+                        const y = itemRect.top + itemRect.height / 2;
+                        
+                        let x;
+                        if (edge === 'right') { 
+                            x = itemRect.right; 
+                        } else { // 'left'
+                            x = itemRect.left; 
+                        }
+
+                        // Calcular coordenadas relativas al SVG
+                        return { x: x - offsetX, y: y - offsetY };
+                    }
+                    return null;
+                }
+
+                function drawMackinlayDiagram() {
+                    const svg = document.getElementById('mackinlay-svg');
+                    
+                    // CLÁUSULA DE GUARDIA: Asegurar que el elemento SVG existe
+                    if (!svg) {
+                        console.error("SVG element with ID 'mackinlay-svg' not found.");
+                        return;
+                    }
+
+                    const svgRect = svg.getBoundingClientRect();
+                    // Offsets de la esquina superior izquierda del SVG.
+                    const offsetX = svgRect.left;
+                    const offsetY = svgRect.top;
+
+
+                    // Limpiar SVG
+                    svg.innerHTML = '';
+
+                    // Dibujar el resto de las conexiones
+                    connections.forEach(([sourceList, sourceIndex, targetList, targetIndex]) => {
+                        // El punto de inicio siempre es el borde derecho del origen
+                        const start = getCoordinates(sourceList, sourceIndex, 'right', offsetX, offsetY); 
+                        // El punto final siempre es el borde izquierdo del destino
+                        const end = getCoordinates(targetList, targetIndex, 'left', offsetX, offsetY);
+                        
+                        if (start && end) {
+                            const line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+                            line.setAttribute('x1', start.x);
+                            line.setAttribute('y1', start.y);
+                            line.setAttribute('x2', end.x);
+                            line.setAttribute('y2', end.y);
+                            line.setAttribute('stroke', '#4b5563'); // Gris oscuro
+                            line.setAttribute('stroke-width', '2'); // Línea más gruesa
+                            svg.appendChild(line);
+                        }
+                    });
+
+                    // Dibujar la línea de Posición (arriba, destacada en verde)
+                    // Q Posición (source): Borde derecho
+                    const qPos = getCoordinates('q', 0, 'right', offsetX, offsetY);
+                    // O Posición (target): Borde izquierdo
+                    const oPosStart = getCoordinates('o', 0, 'left', offsetX, offsetY);
+                    // O Posición (source): Borde derecho
+                    const oPosEnd = getCoordinates('o', 0, 'right', offsetX, offsetY);
+                    // N Posición (target): Borde izquierdo
+                    const nPos = getCoordinates('n', 0, 'left', offsetX, offsetY);
+                    
+                    if (qPos && oPosStart && oPosEnd && nPos) {
+                        // Q -> O
+                        let line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+                        line.setAttribute('x1', qPos.x);
+                        line.setAttribute('y1', qPos.y);
+                        line.setAttribute('x2', oPosStart.x); 
+                        line.setAttribute('y2', oPosStart.y);
+                        line.setAttribute('stroke', '#10b981'); // Verde para destacar
+                        line.setAttribute('stroke-width', '3');
+                        svg.appendChild(line);
+
+                        // O -> N
+                        line = document.createElementNS("http://www.w3.org/2000/svg", 'line');
+                        line.setAttribute('x1', oPosEnd.x); 
+                        line.setAttribute('y1', oPosEnd.y);
+                        line.setAttribute('x2', nPos.x);
+                        line.setAttribute('y2', nPos.y);
+                        line.setAttribute('stroke', '#10b981'); // Verde para destacar
+                        line.setAttribute('stroke-width', '3');
+                        svg.appendChild(line);
+                    }
+                }
+
+
+                // Ejecutar el dibujo al cargar y al redimensionar
+                // Usamos un pequeño timeout para asegurar que el DOM ha calculado las dimensiones
+                setTimeout(() => {
+                    drawMackinlayDiagram();
+                }, 100); 
+                window.addEventListener('resize', () => {
+                    setTimeout(drawMackinlayDiagram, 100);
+                });
+
+                // --- LÓGICA DE VISUALIZACIÓN CUANTITATIVA Y CONTROL (Vega-Lite) ---
+
+                // Generación de Datos de ejemplo: 10 categorías con valores aleatorios entre 10 y 100
+                const initialData = [
+                    { category: 'A', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'B', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'C', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'D', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'E', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'F', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'G', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'H', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'I', value: Math.floor(Math.random() * 90) + 10 },
+                    { category: 'J', value: Math.floor(Math.random() * 90) + 10 },
+                ];
+
+                // --- ESPECIFICACIONES DE VEGA-LITE CUANTITATIVO ---
+
+                // 1. Especificación para Codificación por Posición (Gráfico de Barras)
+                const specPosicion = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "description": "Codificación por Posición (Gráfico de Barras)",
+                    "width": "container",
+                    "height": 300,
+                    "data": { "values": initialData },
+                    "mark": {"type": "bar", "tooltip": true},
+                    "encoding": {
+                        "x": {"field": "category", "type": "nominal", "axis": {"title": null}},
+                        "y": {"field": "value", "type": "quantitative", "axis": {"title": "Valor Cuantitativo"}},
+                        "color": {"value": "#3b82f6"} // Color azul fijo
+                    },
+                    "config": {
+                        "view": {"stroke": "transparent"}
+                    }
+                };
+
+                // 2. Especificación para Codificación por Color (Rectángulos de color fijo en altura)
+                const specColor = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "description": "Codificación por Color (Luminosidad)",
+                    "width": "container",
+                    "height": 300,
+                    "data": { "values": initialData },
+                    "mark": {"type": "rect", "tooltip": true}, 
+                    "encoding": {
+                        "x": {"field": "category", "type": "nominal", "axis": {"title": null}},
+                        "y": {"value": 0, "axis": null}, // Y con valor fijo, ignoramos la codificación de posición
+                        "color": {
+                            "field": "value", 
+                            "type": "quantitative",
+                            "scale": {"range": "heatmap"}, // Escala de calor para luminosidad
+                            "legend": {"title": "Valor (Luminosidad)"}
+                        }
+                    },
+                    "config": {
+                        "view": {"stroke": "transparent"}
+                    }
+                };
+
+                // --- LÓGICA DE VISUALIZACIÓN CUANTITATIVA Y CONTROL ---
+
+                const targetDiv = "#visualization-container";
+                const legendText = document.getElementById('legend-text');
+                const embedOptions = {
+                    actions: false, // Deshabilita los enlaces de exportación y edición de Vega-Embed
+                    config: {
+                         // Configuración global para que se adapte al ancho del contenedor
+                        autosize: { type: 'fit', contains: 'padding' } 
+                    }
+                };
+
+                /**
+                 * Dibuja la visualización cuantitativa.
+                 * @param {string} encodingType - 'posicion' o 'color'.
+                 */
+                function drawVisualization(encodingType) {
+                    const spec = encodingType === 'posicion' ? specPosicion : specColor;
+
+                    // 1. Renderizar el gráfico
+                    vegaEmbed(targetDiv, spec, embedOptions)
+                        .then(() => {
+                            // 2. Actualizar el estado de los botones y la leyenda después de renderizar
+
+                            // Actualizar el estado de los botones
+                            document.querySelectorAll('#chart button').forEach(btn => {
+                                btn.classList.remove('active', 'bg-blue-800', 'bg-purple-800');
+                                if (btn.id === `${encodingType}-btn`) {
+                                    btn.classList.add('active', encodingType === 'posicion' ? 'bg-blue-800' : 'bg-purple-800');
+                                    btn.classList.remove(encodingType === 'posicion' ? 'bg-blue-600' : 'bg-purple-600');
+                                } else {
+                                     btn.classList.add(btn.id === 'posicion-btn' ? 'bg-blue-600' : 'bg-purple-600');
+                                }
+                            });
+
+                            // Actualizar la leyenda
+                            if (encodingType === 'posicion') {
+                                legendText.classList.remove('bg-yellow-50', 'border-yellow-400', 'bg-purple-50', 'border-purple-400', 'text-purple-800');
+                                legendText.classList.add('bg-blue-50', 'border-blue-400', 'text-blue-800');
+                                legendText.innerHTML = `
+                                    <p><strong>Modo Actual:</strong> Posición (Longitud).</p>
+                                    <p><strong>Efectividad:</strong> ALTA. La comparación de longitudes a lo largo de un eje común es muy precisa para juzgar magnitudes.</p>
+                                `;
+                            } else {
+                                legendText.classList.remove('bg-yellow-50', 'border-yellow-400', 'bg-blue-50', 'border-blue-400', 'text-blue-800');
+                                legendText.classList.add('bg-purple-50', 'border-purple-400', 'text-purple-800');
+                                legendText.innerHTML = `
+                                    <p><strong>Modo Actual:</strong> Color (Luminosidad).</p>
+                                    <p><strong>Efectividad:</strong> BAJA para magnitud. Es difícil juzgar con precisión si 'B' es el doble que 'G', aunque es fácil identificar la categoría más alta/baja.</p>
+                                `;
+                            }
+
+                        })
+                        .catch(console.error);
+                }
+
+                // 3. Inicialización Cuantitativa
+
+                // Asignar eventos a los botones
+                document.getElementById('posicion-btn').addEventListener('click', () => drawVisualization('posicion'));
+                document.getElementById('color-btn').addEventListener('click', () => drawVisualization('color'));
+
+                // Dibuja el modo inicial al cargar
+                drawVisualization('posicion'); 
+                
+                // --- LÓGICA DE VISUALIZACIÓN ORDINAL Y CONTROL (Vega-Lite) ---
+
+                // Generación de Datos de ejemplo Ordinales: 5 niveles de calidad de servicio
+                const ordinalData = [
+                    { category: 'Nivel 1', level: 1, description: 'Muy bajo' },
+                    { category: 'Nivel 2', level: 2, description: 'Bajo' },
+                    { category: 'Nivel 3', level: 3, description: 'Medio' },
+                    { category: 'Nivel 4', level: 4, description: 'Alto' },
+                    { category: 'Nivel 5', level: 5, description: 'Muy alto' },
+                ];
+
+                // --- ESPECIFICACIONES DE VEGA-LITE ORDINAL ---
+
+                // 1. Especificación para Codificación por Saturación de Color (Media/Alta)
+                const specSaturationOrdinal = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "description": "Codificación Ordinal por Saturación",
+                    "width": "container",
+                    "height": 150,
+                    "data": { "values": ordinalData },
+                    "mark": {"type": "rect", "tooltip": true},
+                    "encoding": {
+                        // Usamos 'description' para las etiquetas del eje
+                        "x": {"field": "description", "type": "nominal", "axis": {"title": "Calidad de Servicio"}},
+                        // Usamos 'level' (cuantitativo) para mapear la intensidad de color
+                        "color": {
+                            "field": "level",
+                            "type": "quantitative",
+                            // FIX: Se usa una matriz explícita para el rango de colores azules para asegurar la compatibilidad y evitar el error "Unrecognized scale range value".
+                            "scale": {"range": ["#eff6ff", "#93c5fd", "#4b5563", "#1e40af", "#1d4ed8"]}, 
+                            "legend": {"title": "Nivel Ordinal (Saturación)"}
+                        },
+                        "y": {"value": 0, "axis": null}, // Fijo
+                        "tooltip": [
+                            {"field": "description", "title": "Nivel"}
+                        ]
+                    },
+                    "config": {
+                        "view": {"stroke": "transparent"},
+                        "axis": {"labelFontSize": 14}
+                    }
+                };
+
+                // 2. Especificación para Codificación por Área (Tamaño) (Baja)
+                const specAreaOrdinal = {
+                    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+                    "description": "Codificación Ordinal por Área (Tamaño)",
+                    "width": "container",
+                    "height": 150,
+                    "data": { "values": ordinalData },
+                    "mark": {"type": "point", "tooltip": true, "filled": true, "color": "#f97316"}, // Naranja fijo
+                    "encoding": {
+                        "x": {"field": "description", "type": "nominal", "axis": {"title": "Calidad de Servicio"}},
+                        "size": {
+                            "field": "level",
+                            "type": "quantitative",
+                            "range": [200, 3000], // Rango de tamaños de punto (área)
+                            "legend": {"title": "Nivel Ordinal (Área)"}
+                        },
+                        "y": {"value": 75, "axis": null}, // Centrar los puntos verticalmente
+                        "tooltip": [
+                            {"field": "description", "title": "Nivel"}
+                        ]
+                    },
+                    "config": {
+                        "view": {"stroke": "transparent"},
+                        "axis": {"labelFontSize": 14}
+                    }
+                };
+
+                // --- LÓGICA DE VISUALIZACIÓN ORDINAL Y CONTROL ---
+
+                const ordinalTargetDiv = "#ordinal-visualization-container";
+                const ordinalLegendText = document.getElementById('ordinal-legend-text');
+
+                /**
+                 * Dibuja la visualización ordinal.
+                 * @param {string} encodingType - 'saturation' o 'area'.
+                 */
+                function drawOrdinalVisualization(encodingType) {
+                    const spec = encodingType === 'saturation' ? specSaturationOrdinal : specAreaOrdinal;
+
+                    vegaEmbed(ordinalTargetDiv, spec, embedOptions)
+                        .then(() => {
+                            // 2. Actualizar el estado de los botones (Ordinal)
+                            document.querySelectorAll('#ordinal-chart button').forEach(btn => {
+                                btn.classList.remove('active', 'bg-teal-800', 'bg-orange-800');
+                                if (btn.id === `${encodingType}-btn-ordinal`) {
+                                    btn.classList.add('active', encodingType === 'saturation' ? 'bg-teal-800' : 'bg-orange-800');
+                                    btn.classList.remove(encodingType === 'saturation' ? 'bg-teal-600' : 'bg-orange-600');
+                                } else {
+                                     btn.classList.add(btn.id === 'saturation-btn-ordinal' ? 'bg-teal-600' : 'bg-orange-600');
+                                }
+                            });
+
+                            // 3. Actualizar la leyenda (Ordinal)
+                            if (encodingType === 'saturation') {
+                                ordinalLegendText.classList.remove('bg-yellow-50', 'border-yellow-400', 'bg-orange-50', 'border-orange-400', 'text-orange-800');
+                                ordinalLegendText.classList.add('bg-teal-50', 'border-teal-400', 'text-teal-800');
+                                ordinalLegendText.innerHTML = `
+                                    <p><strong>Modo Actual:</strong> Saturación (Intensidad de Color).</p>
+                                    <p><strong>Efectividad:</strong> MEDIA/ALTA. Es fácil percibir la progresión de los niveles ordenados.</p>
+                                `;
+                            } else {
+                                ordinalLegendText.classList.remove('bg-yellow-50', 'border-yellow-400', 'bg-teal-50', 'border-teal-400', 'text-teal-800');
+                                ordinalLegendText.classList.add('bg-orange-50', 'border-orange-400', 'text-orange-800');
+                                ordinalLegendText.innerHTML = `
+                                    <p><strong>Modo Actual:</strong> Área (Tamaño del Círculo).</p>
+                                    <p><strong>Efectividad:</strong> BAJA. La percepción del área no es lineal; es difícil juzgar con precisión los niveles intermedios de forma consistente. La discriminación es pobre.</p>
+                                `;
+                            }
+
+                        })
+                        .catch(console.error);
+                }
+
+                // 4. Inicialización (Ordinal)
+                document.getElementById('saturation-btn-ordinal').addEventListener('click', () => drawOrdinalVisualization('saturation'));
+                document.getElementById('area-btn-ordinal').addEventListener('click', () => drawOrdinalVisualization('area'));
+
+                // Dibuja el modo inicial ordinal al cargar
+                drawOrdinalVisualization('saturation'); 
+                
+            })(); 
+        });
+    </script>
+    <!-- Carga de las librerías Vega y Vega-Lite -->
+    <script src="https://cdn.jsdelivr.net/npm/vega@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6"></script>
+</body>
+</html>

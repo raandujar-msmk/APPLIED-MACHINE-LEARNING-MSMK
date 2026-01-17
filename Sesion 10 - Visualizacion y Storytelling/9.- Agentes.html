@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis 4 Fases de Agentes AI</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de iconos Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        /* Configuración personalizada de Tailwind */
+        :root {
+            --primary-color: #10b981; /* Emerald */
+            --secondary-color: #3b82f6; /* Blue */
+        }
+        .text-gradient {
+            background-image: linear-gradient(to right, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .active-tab {
+            background-color: #1f2937;
+            border-left-color: var(--primary-color);
+        }
+        .bar-fill-emerald { background-color: var(--primary-color); }
+        .bar-fill-red { background-color: #ef4444; }
+        .bar-fill-yellow { background-color: #f59e0b; }
+        .bar-fill-purple { background-color: #a78bfa; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen p-4 sm:p-8">
+
+    <div class="max-w-7xl mx-auto bg-gray-800 rounded-xl shadow-2xl overflow-hidden">
+        
+        <!-- Header -->
+        <header class="p-6 sm:p-8 border-b border-gray-700 bg-gray-850">
+            <h1 class="text-4xl sm:text-5xl font-extrabold text-white leading-tight">
+                Análisis de Agentes de IA 
+                <span class="text-gradient">2026</span>
+            </h1>
+            <p class="mt-2 text-gray-400 text-lg">Las 4 Fases del Análisis: Descriptivo, Diagnóstico, Predictivo y Prescriptivo.</p>
+        </header>
+
+        <!-- Main Content Layout (Sidebar for Navigation & Content Area) -->
+        <div class="flex flex-col lg:flex-row">
+            
+            <!-- Navigation (Tabs) -->
+            <nav id="phase-tabs" class="lg:w-64 p-4 lg:p-6 bg-gray-800 lg:border-r border-gray-700">
+                <button data-phase="descriptivo" class="tab-button active-tab w-full flex items-center p-3 my-1 rounded-lg text-left font-medium text-lg transition duration-200 border-l-4 border-transparent hover:bg-gray-700/50" onclick="showPhase('descriptivo')">
+                    <i class="fas fa-chart-bar w-5 mr-3 text-emerald-400"></i> Descriptivo
+                </button>
+                <button data-phase="diagnostico" class="tab-button w-full flex items-center p-3 my-1 rounded-lg text-left font-medium text-lg transition duration-200 border-l-4 border-transparent hover:bg-gray-700/50" onclick="showPhase('diagnostico')">
+                    <i class="fas fa-search-dollar w-5 mr-3 text-blue-400"></i> Diagnóstico
+                </button>
+                <button data-phase="predictivo" class="tab-button w-full flex items-center p-3 my-1 rounded-lg text-left font-medium text-lg transition duration-200 border-l-4 border-transparent hover:bg-gray-700/50" onclick="showPhase('predictivo')">
+                    <i class="fas fa-clock w-5 mr-3 text-purple-400"></i> Predictivo
+                </button>
+                <button data-phase="prescriptivo" class="tab-button w-full flex items-center p-3 my-1 rounded-lg text-left font-medium text-lg transition duration-200 border-l-4 border-transparent hover:bg-gray-700/50" onclick="showPhase('prescriptivo')">
+                    <i class="fas fa-compass w-5 mr-3 text-yellow-400"></i> Prescriptivo
+                </button>
+            </nav>
+
+            <!-- Content Area -->
+            <main id="phase-content" class="flex-1 p-6 sm:p-10">
+
+                <!-- 1. Contenido Descriptivo -->
+                <div id="content-descriptivo" class="phase-content">
+                    <h2 class="text-3xl font-bold mb-6 text-emerald-400"><i class="fas fa-chart-bar mr-2"></i> Análisis Descriptivo: ¿Qué ha pasado?</h2>
+                    <p class="mb-8 text-gray-400">Esta fase resume la realidad actual de la adopción y el impacto de los Agentes de IA en las empresas.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <!-- Card: ROI -->
+                        <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-t-4 border-emerald-500">
+                            <div class="text-5xl font-extrabold text-emerald-400 mb-1">80%</div>
+                            <h3 class="text-xl font-semibold text-white">ROI Comprobado</h3>
+                            <p class="text-gray-400 text-sm mt-1">De las organizaciones reportan un retorno de inversión (ROI) medible.</p>
+                        </div>
+                        <!-- Card: Flujos Multi-etapa -->
+                        <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-t-4 border-blue-500">
+                            <div class="text-5xl font-extrabold text-blue-400 mb-1">57%</div>
+                            <h3 class="text-xl font-semibold text-white">Flujos Multi-etapa</h3>
+                            <p class="text-gray-400 text-sm mt-1">Implementan agentes para flujos de trabajo de múltiples etapas (no solo tareas básicas).</p>
+                        </div>
+                    </div>
+
+                    <h4 class="text-2xl font-semibold mb-4 text-white">Ahorro de Tiempo en Desarrollo (59%)</h4>
+                    <p class="text-sm text-gray-400 mb-4">Reducción promedio de tiempo en el ciclo de desarrollo (Generación de Código, Documentación y Pruebas).</p>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Generación de Código</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-emerald h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 59%;">59%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Documentación</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-emerald h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 59%;">59%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Revisión y Pruebas</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-emerald h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 59%;">59%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 border-l-4 border-emerald-500 pl-4 italic text-gray-400">
+                        <strong>Conclusión:</strong> Los agentes han superado la etapa de experimentación, demostrando valor económico tangible y alta integración en flujos de trabajo complejos.
+                    </p>
+                </div>
+
+                <!-- 2. Contenido Diagnóstico -->
+                <div id="content-diagnostico" class="phase-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-blue-400"><i class="fas fa-search-dollar mr-2"></i> Análisis Diagnóstico: ¿Por qué ha pasado?</h2>
+                    <p class="mb-8 text-gray-400">Esta fase identifica los desafíos y drivers que explican el estado actual de la adopción y la escalabilidad.</p>
+
+                    <h3 class="text-2xl font-semibold mb-4 text-white">Top 3 Desafíos para Escalar la IA</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Integración Técnica</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-red h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 46%;">46%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Calidad de Datos</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-yellow h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 42%;">42%</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="w-32 text-right mr-4 text-sm sm:text-base">Gestión del Cambio</span>
+                            <div class="flex-1 bg-gray-600 rounded-full h-8 overflow-hidden">
+                                <div class="bar-fill-purple h-8 text-right pr-2 text-sm font-bold flex items-center justify-end" style="width: 39%;">39%</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h3 class="text-2xl font-semibold mt-8 mb-4 text-white">Driver Clave</h3>
+                    <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                        <p class="text-white font-medium">Migración de Enfoque Laboral</p>
+                        <p class="text-gray-400 text-sm mt-1">Nueve de cada 10 líderes reportan que los empleados ahora dedican más tiempo a <strong>actividades estratégicas</strong> y menos a la ejecución rutinaria.</p>
+                    </div>
+
+                    <p class="mt-6 border-l-4 border-blue-500 pl-4 italic text-gray-400">
+                        <strong>Conclusión:</strong> El alto ROI es impulsado por la liberación del tiempo de los empleados, pero la <strong>integración técnica</strong> y la <strong>calidad de datos</strong> son los principales cuellos de botella para una adopción masiva.
+                    </p>
+                </div>
+
+                <!-- 3. Contenido Predictivo -->
+                <div id="content-predictivo" class="phase-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-purple-400"><i class="fas fa-clock mr-2"></i> Análisis Predictivo: ¿Qué pasará?</h2>
+                    <p class="mb-8 text-gray-400">Proyecciones a corto plazo que indican la dirección de la evolución de la IA en 2026.</p>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 text-center">
+                        <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-b-4 border-purple-500">
+                            <div class="text-6xl font-extrabold text-purple-400">81%</div>
+                            <p class="mt-2 font-semibold">Planifican Mayor Complejidad</p>
+                            <p class="text-gray-400 text-xs">Abordarán casos de uso más complejos en el próximo año.</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-b-4 border-purple-500">
+                            <div class="text-6xl font-extrabold text-purple-400">39%</div>
+                            <p class="mt-2 font-semibold">Procesos Multi-etapa</p>
+                            <p class="text-gray-400 text-xs">Específicamente para el desarrollo de agentes para procesos multi-etapa.</p>
+                        </div>
+                        <div class="bg-gray-700/50 p-6 rounded-xl shadow-lg border-b-4 border-purple-500">
+                            <div class="text-6xl font-extrabold text-purple-400">56%</div>
+                            <p class="mt-2 font-semibold">Crecimiento en Investigación</p>
+                            <p class="text-gray-400 text-xs">Implementarán agentes para investigación y reportes en el próximo año.</p>
+                        </div>
+                    </div>
+
+                    <blockquote class="p-4 bg-gray-700 rounded-lg text-center border-l-4 border-purple-500 italic">
+                        <p class="text-xl text-white">"La pregunta para los líderes en 2026 ya no es si adoptar, sino cómo escalar estratégicamente."</p>
+                    </blockquote>
+
+                    <p class="mt-6 border-l-4 border-purple-500 pl-4 italic text-gray-400">
+                        <strong>Conclusión:</strong> La mayoría de las organizaciones se enfocarán en la <strong>industrialización</strong> de agentes complejos, haciendo que la resolución de problemas técnicos sea el factor diferenciador.
+                    </p>
+                </div>
+
+                <!-- 4. Contenido Prescriptivo -->
+                <div id="content-prescriptivo" class="phase-content hidden">
+                    <h2 class="text-3xl font-bold mb-6 text-yellow-400"><i class="fas fa-compass mr-2"></i> Análisis Prescriptivo: ¿Qué debemos hacer?</h2>
+                    <p class="mb-8 text-gray-400">Recomendaciones estratégicas basadas en el análisis para optimizar el éxito futuro y escalar la inversión.</p>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Recomendación 1: Integración -->
+                        <div class="bg-gray-700 p-5 rounded-xl border-t-4 border-emerald-500">
+                            <i class="fas fa-network-wired text-3xl text-emerald-400 mb-3"></i>
+                            <h3 class="text-xl font-semibold mb-2 text-white">1. Priorizar la Integración</h3>
+                            <p class="text-gray-400 text-sm">Desarrollar frameworks robustos para conectar agentes con sistemas legacy y API, abordando el 46% de los desafíos.</p>
+                        </div>
+                        <!-- Recomendación 2: Datos -->
+                        <div class="bg-gray-700 p-5 rounded-xl border-t-4 border-blue-500">
+                            <i class="fas fa-database text-3xl text-blue-400 mb-3"></i>
+                            <h3 class="text-xl font-semibold mb-2 text-white">2. Gobierno de Datos</h3>
+                            <p class="text-gray-400 text-sm">Invertir en limpieza, estructuración y calidad de datos, lo cual es crítico para el 42% de los desafíos de fiabilidad.</p>
+                        </div>
+                        <!-- Recomendación 3: Cambio -->
+                        <div class="bg-gray-700 p-5 rounded-xl border-t-4 border-purple-500">
+                            <i class="fas fa-users-gear text-3xl text-purple-400 mb-3"></i>
+                            <h3 class="text-xl font-semibold mb-2 text-white">3. Re-Skilling Estratégico</h3>
+                            <p class="text-gray-400 text-sm">Gestionar activamente el cambio, re-entrenando a los equipos para aprovechar el tiempo libre en tareas de alto valor.</p>
+                        </div>
+                    </div>
+
+                    <p class="mt-6 border-l-4 border-yellow-500 pl-4 italic text-gray-400">
+                        <strong>Conclusión:</strong> La hoja de ruta exitosa se enfoca en la <strong>industrialización</strong> superando los cuellos de botella técnicos y adaptando la fuerza laboral.
+                    </p>
+                </div>
+                
+                <!-- Source Attribution -->
+                <footer class="mt-12 pt-6 border-t border-gray-700 text-center text-sm text-gray-500">
+                    <p>Fuente de Datos: **The 2026 State of AI Agents Report**</p>
+                    <p class="text-xs mt-1">Todos los porcentajes y hallazgos cuantitativos provienen directamente de este informe. (Referencia clave 59% en la Página 10).</p>
+                </footer>
+
+            </main>
+        </div>
+    </div>
+
+    <script>
+        // Función para manejar el cambio de pestañas
+        function showPhase(phaseId) {
+            // 1. Ocultar todos los contenidos de fase
+            document.querySelectorAll('.phase-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            // 2. Desactivar todos los botones de pestaña
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active-tab');
+                button.classList.remove('border-emerald-500');
+                button.classList.remove('border-blue-500');
+                button.classList.remove('border-purple-500');
+                button.classList.remove('border-yellow-500');
+                button.classList.add('border-transparent');
+            });
+
+            // 3. Mostrar el contenido seleccionado
+            const contentToShow = document.getElementById('content-' + phaseId);
+            if (contentToShow) {
+                contentToShow.classList.remove('hidden');
+            }
+
+            // 4. Activar el botón de pestaña seleccionado y aplicar borde de color
+            const activeButton = document.querySelector(`.tab-button[data-phase="${phaseId}"]`);
+            if (activeButton) {
+                activeButton.classList.add('active-tab');
+                // Determinar el color del borde basado en la fase
+                let borderColor = 'border-emerald-500';
+                if (phaseId === 'diagnostico') borderColor = 'border-blue-500';
+                else if (phaseId === 'predictivo') borderColor = 'border-purple-500';
+                else if (phaseId === 'prescriptivo') borderColor = 'border-yellow-500';
+
+                activeButton.classList.remove('border-transparent');
+                activeButton.classList.add(borderColor);
+            }
+        }
+
+        // Inicializar la vista mostrando la fase descriptiva al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            showPhase('descriptivo');
+        });
+    </script>
+</body>
+</html>

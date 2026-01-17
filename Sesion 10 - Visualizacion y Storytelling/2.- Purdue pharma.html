@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Purdue Pharma y el Engaño de OxyContin</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Carga de Chart.js para los gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <!-- Carga del plugin de anotaciones de Chart.js (opcional, para las líneas) -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@1.4.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        /* Estilos personalizados para la tipografía */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght=100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc; /* Color de fondo claro */
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8 bg-gray-50 text-gray-800">
+
+    <div class="max-w-4xl mx-auto bg-white shadow-xl rounded-xl overflow-hidden">
+        
+        <!-- Encabezado de la Introducción -->
+        <header class="p-6 bg-red-800 text-white">
+            <h1 class="text-3xl font-extrabold mb-1">El Engaño de OxyContin y la Crisis de Opioides</h1>
+            <p class="text-red-200">Análisis del gráfico manipulado de Purdue Pharma sobre el potencial adictivo.</p>
+        </header>
+
+        <!-- Contenido principal y explicación -->
+        <div class="p-6 space-y-6">
+
+            <!-- Sección de Explicación -->
+            <section class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h2 class="text-2xl font-bold text-red-700 mb-3">La Promesa vs. La Realidad</h2>
+                <p class="text-gray-600 mb-4">Purdue Pharma comercializó OxyContin (oxicodona de liberación prolongada) basándose en la promesa de que proporcionaba un alivio constante del dolor durante 12 horas, lo que supuestamente lo hacía menos adictivo que los analgésicos de liberación inmediata.</p>
+                <p class="text-gray-600">Para sustentar esta afirmación, los representantes de ventas utilizaban un gráfico de la concentración plasmática (en sangre) que, visualmente, parecía "plano" y estable. Sin embargo, este gráfico clave utilizaba una <strong>escala logarítmica</strong> en el eje vertical (Concentración), un truco de visualización que minimizaba drásticamente la caída de la concentración del fármaco a mitad del ciclo de dosificación (antes de las 12 horas).</p>
+                <p class="mt-4 font-semibold text-red-700">Utilice el selector de escala a continuación para alternar entre la versión engañosa y la versión real del gráfico de OxyContin.</p>
+            </section>
+
+            <!-- Gráfico Oficial de Purdue (Placeholder) -->
+            <section class="p-4 rounded-lg bg-gray-100 border border-green-400">
+                <h3 class="text-xl font-bold text-green-700 mb-3">El Gráfico Presentado a los Reguladores (Versión Engañosa)</h3>
+                <p class="text-sm text-gray-600 mb-4">Esta imagen representa el tipo de visualización que Purdue Pharma usó en su promoción, con el objetivo de demostrar falsamente la "consistencia" de la dosis de 12 horas.</p>
+                <img 
+	                src="Purdue-chart-1249183768.png"
+                >
+            </section>
+
+            <!-- Sección de Control de Gráfico de OxyContin -->
+            <div class="flex flex-col md:flex-row items-center justify-between p-4 bg-gray-100 rounded-lg">
+                <p id="graph-title" class="text-xl font-semibold text-gray-700 mb-4 md:mb-0">Concentración Plasmática de OxyContin (Logarítmica)</p>
+                <div class="flex items-center space-x-3">
+                    <label for="scale-toggle" class="text-sm font-medium text-gray-700">Alternar Escala:</label>
+                    <button id="scale-toggle" class="px-4 py-2 text-sm font-bold rounded-full transition duration-300 shadow-md bg-red-600 text-white hover:bg-red-700">
+                        Ver Realidad (Lineal)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Contenedor del Gráfico de OxyContin -->
+            <div class="bg-white p-4 border border-red-200 rounded-lg">
+                <canvas id="oxyContinChart" width="400" height="200"></canvas>
+            </div>
+            
+            <!-- Leyenda y Conclusiones del Gráfico de OxyContin -->
+            <div class="mt-6 space-y-4">
+                <h3 class="text-xl font-bold text-gray-700">Interpretación</h3>
+                <p id="interpretation-text" class="text-gray-600">La <strong>Escala Logarítmica</strong> comprime visualmente el rango de datos, haciendo que la caída entre las 8 y 12 horas parezca insignificante. Esto fue utilizado por Purdue para convencer a los médicos de que el medicamento duraba 12 horas.</p>
+                <div class="bg-red-100 p-4 rounded-lg border-l-4 border-red-500">
+                    <p class="font-bold text-red-700">El Resultado del Engaño:</p>
+                    <p class="text-red-700">Cuando el efecto del fármaco disminuía a las 8-10 horas (el "bajón"), muchos pacientes experimentaban síntomas de abstinencia, lo que falsamente interpretaban como la necesidad de una dosis más fuerte, no más frecuente. Esto llevó a la escalada de dosis, aumentando drásticamente el riesgo de adicción y sobredosis, y contribuyendo directamente a la crisis de opiáceos.</p>
+                </div>
+            </div>
+            
+            <!-- Gráfico Interactivo de la Crisis de Opioides (Tres Olas) -->
+            <section class="p-4 mt-8 rounded-lg bg-gray-100 border border-blue-400">
+                <h3 class="text-xl font-bold text-blue-700 mb-3">Impacto General: Las Cuatro Olas de Muertes por Opioides en EE. UU.</h3>
+                <p class="text-sm text-gray-600 mb-4">Este gráfico muestra la evolución de la crisis de opioides dividida en cuatro fases, según el tipo de droga predominante en las sobredosis. Las zonas sombreadas indican el período de predominio de cada ola.</p>
+                <div class="bg-white p-4 rounded-lg border border-blue-200">
+                    <canvas id="opioidCrisisChart" width="400" height="200"></canvas>
+                </div>
+            </section>
+
+            <!-- Explicación de las Cuatro Olas (BLOQUE CORREGIDO) -->
+            <section class="mt-6 p-6 bg-blue-50 rounded-lg border border-blue-300">
+                <h3 class="text-2xl font-bold text-blue-800 mb-4">Detalle de las Cuatro Olas de la Crisis de Opioides</h3>
+                
+                <div class="space-y-4">
+                    <div class="p-3 bg-cyan-100 rounded-lg border-l-4 border-cyan-600 shadow-sm">
+                        <h4 class="font-bold text-lg text-cyan-800 mb-1">🌊 Ola 1: Opioides Recetados (Aprox. 1996 - 2010)</h4>
+                        <p class="text-gray-700">Comenzó con la intensa comercialización de medicamentos como OxyContin (oxicodona), presentando el riesgo de adicción como insignificante. Los profesionales de la salud aumentaron drásticamente las recetas de opioides para el dolor crónico. Esta ola fue impulsada por el abuso de medicamentos legítimamente recetados, estableciendo la base para la crisis posterior.</p>
+                    </div>
+
+                    <div class="p-3 bg-blue-100 rounded-lg border-l-4 border-blue-600 shadow-sm">
+                        <h4 class="font-bold text-lg text-blue-800 mb-1">🌊 Ola 2: Heroína (Aprox. 2010 - 2013)</h4>
+                        <p class="text-gray-700">Esta fase surgió como respuesta directa a los esfuerzos para frenar la Ola 1. Cuando las regulaciones se hicieron más estrictas (por ejemplo, la reformulación de OxyContin en 2010 para hacerlo difícil de aplastar y snifar) y el acceso a los opioides recetados se limitó, los usuarios desarrollaron una adicción y recurrieron a alternativas más baratas y disponibles ilegalmente, principalmente la heroína.</p>
+                    </div>
+                    
+                    <div class="p-3 bg-purple-100 rounded-lg border-l-4 border-purple-600 shadow-sm">
+                        <h4 class="font-bold text-lg text-purple-800 mb-1">🌊 Ola 3: Opioides Sintéticos (Fentanilo) (Aprox. 2013 - 2019)</h4>
+                        <p class="text-gray-700">Marcada por el rápido aumento de las muertes por sobredosis relacionadas con opioides sintéticos como el fentanilo. El fentanilo es hasta 100 veces más potente que la morfina, y su bajo costo y facilidad de contrabando llevaron a que se mezclara con otras drogas ilícitas (heroína, píldoras falsificadas), causando un pico masivo e histórico en las muertes por sobredosis.</p>
+                    </div>
+
+                    <div class="p-3 bg-yellow-100 rounded-lg border-l-4 border-yellow-600 shadow-sm">
+                        <h4 class="font-bold text-lg text-yellow-800 mb-1">🌊 Ola 4: Fentanilo y Polidrogas (Aprox. 2019 - Presente)</h4>
+                        <p class="text-gray-700">Esta fase se caracteriza por el abuso de <strong>polidrogas</strong>, específicamente la combinación letal de opioides sintéticos (fentanilo) con potentes psicoestimulantes como la metanfetamina y la cocaína. Esta mezcla ha provocado un aumento récord en las muertes por sobredosis y representa el desafío actual más significativo, afectando a nuevas poblaciones y acelerando la crisis.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Pie de página - Contexto Legal -->
+        <footer class="p-6 bg-gray-200 text-sm text-gray-600 border-t border-gray-300">
+            <p>El esquema de marketing engañoso de Purdue Pharma, incluyendo el uso de datos y gráficos manipulados, fue una causa fundamental de la crisis de opioides en Estados Unidos. La compañía se declaró culpable de cargos penales y la familia Sackler, propietaria de la empresa, enfrentó miles de demandas.</p>
+        </footer>
+    </div>
+
+    <script>
+        // --- 1. DATOS Y LÓGICA DEL GRÁFICO DE OXYCONTIN (ESCALA LOGARÍTMICA/LINEAL) ---
+        
+        // Datos Simulados de Concentración Plasmática (representando un descenso antes de las 12h)
+        const hours = [0, 1, 2, 4, 6, 8, 10, 12];
+        const concentrationData = [0, 50, 85, 95, 80, 50, 20, 0];
+
+        // Definición del Gráfico de OxyContin
+        const ctxOxy = document.getElementById('oxyContinChart').getContext('2d');
+        let isLogScale = true; // Estado inicial
+
+        const oxyChartConfig = {
+            type: 'line',
+            data: {
+                labels: hours.map(h => `${h} h`),
+                datasets: [{
+                    label: 'Concentración Plasmática (Nivel Sanguíneo)',
+                    data: concentrationData,
+                    borderColor: 'rgb(220, 38, 38)', // Red-600
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    pointRadius: 6,
+                    pointBackgroundColor: 'rgb(220, 38, 38)',
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: 'index', intersect: false },
+                    annotation: {
+                        annotations: {
+                            // Línea de las 12 horas (momento de la siguiente dosis)
+                            doseTime: {
+                                type: 'line',
+                                xMin: '12 h',
+                                xMax: '12 h',
+                                borderColor: 'rgb(107, 114, 128)', // Gray
+                                borderWidth: 2,
+                                borderDash: [6, 6],
+                                label: {
+                                    content: 'Siguiente Dosis (12h)',
+                                    enabled: true,
+                                    position: 'end',
+                                    font: { weight: 'bold' }
+                                }
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Tiempo después de la dosis (Horas)',
+                            font: { size: 16 }
+                        },
+                        grid: { display: false }
+                    },
+                    y: {
+                        // Configuración inicial de escala (Logarítmica por defecto)
+                        type: 'logarithmic',
+                        title: {
+                            display: true,
+                            text: 'Concentración Plasmática (escala logarítmica)',
+                            font: { size: 16 }
+                        },
+                        min: 1, // Mínimo para escala logarítmica
+                        max: 100,
+                        ticks: {
+                            callback: function(value, index, values) {
+                                // Formatea etiquetas para escala logarítmica
+                                if (value === 1 || value === 10 || value === 100) {
+                                    return value;
+                                }
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        const oxyContinChart = new Chart(ctxOxy, oxyChartConfig);
+        
+        // Lógica de Alternancia
+        const toggleButton = document.getElementById('scale-toggle');
+        const graphTitle = document.getElementById('graph-title');
+        const interpretationText = document.getElementById('interpretation-text');
+
+        function updateChartScale() {
+            if (isLogScale) {
+                // Cambiar a escala LINEAL (la realidad)
+                oxyContinChart.options.scales.y.type = 'linear';
+                oxyContinChart.options.scales.y.min = 0;
+                oxyContinChart.options.scales.y.max = 110;
+                // Al cambiar a lineal, eliminamos el callback de ticks para usar el comportamiento predeterminado.
+                oxyContinChart.options.scales.y.ticks.callback = undefined; 
+                oxyContinChart.options.scales.y.title.text = 'Concentración Plasmática (escala lineal)';
+
+                graphTitle.textContent = 'Concentración Plasmática de OxyContin (Lineal - La Realidad)';
+                toggleButton.textContent = 'Ver Engaño (Logarítmica)';
+                toggleButton.classList.replace('bg-red-600', 'bg-blue-600');
+                toggleButton.classList.replace('hover:bg-red-700', 'hover:bg-blue-700');
+                interpretationText.innerHTML = 'La <strong>Escala Lineal</strong> revela el verdadero problema: la concentración cae a un nivel bajo ("bajón") alrededor de las 10 horas. Esta disminución provoca síntomas de abstinencia, impulsando al paciente a buscar más fármaco y aumentando el riesgo de adicción.';
+
+            } else {
+                // Cambiar a escala LOGARÍTMICA (el engaño de Purdue)
+                oxyContinChart.options.scales.y.type = 'logarithmic';
+                oxyContinChart.options.scales.y.min = 1;
+                oxyContinChart.options.scales.y.max = 100;
+                oxyContinChart.options.scales.y.ticks.callback = function(value, index, values) {
+                    if (value === 1 || value === 10 || value === 100) {
+                        return value;
+                    }
+                    return null;
+                };
+                oxyContinChart.options.scales.y.title.text = 'Concentración Plasmática (escala logarítmica)';
+
+                graphTitle.textContent = 'Concentración Plasmática de OxyContin (Logarítmica - El Engaño)';
+                toggleButton.textContent = 'Ver Realidad (Lineal)';
+                toggleButton.classList.replace('bg-blue-600', 'bg-red-600');
+                toggleButton.classList.replace('hover:bg-blue-700', 'hover:bg-red-700');
+                interpretationText.innerHTML = 'La <strong>Escala Logarítmica</strong> comprime visualmente el rango de datos, haciendo que la caída entre las 8 y 12 horas parezca insignificante. Esto fue utilizado por Purdue para convencer a los médicos de que el medicamento duraba 12 horas.';
+
+            }
+            isLogScale = !isLogScale;
+            oxyContinChart.update();
+        }
+
+        toggleButton.addEventListener('click', updateChartScale);
+
+
+        // --- 2. DATOS Y LÓGICA DEL GRÁFICO DE LA CRISIS DE OPIOIDES (CUATRO OLAS) ---
+        
+        const startYear = 1995;
+        // Extendemos el año final a 2024 para mostrar la tendencia de la Ola 4
+        const endYear = 2024; 
+        const totalYears = endYear - startYear + 1; 
+        const paddingYears = 1999 - startYear; // 4 años (1995, 1996, 1997, 1998)
+
+        // Datos originales (1999 a 2021 - 23 entradas)
+        const originalAnyOpioidData = [2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5, 7.0, 7.0, 7.5, 8.0, 9.5, 12.0, 14.5, 15.0, 15.5, 18.0, 20.0, 22.0, 24.0, 26.0];
+        const originalPrescribedData = [1.8, 2.0, 2.3, 2.6, 2.8, 3.0, 3.3, 3.5, 3.8, 4.0, 4.0, 3.8, 3.5, 3.2, 3.0, 3.0, 4.0, 4.5, 5.0, 4.5, 4.0, 3.8, 3.5]; 
+        const originalHeroinData = [0.5, 0.5, 0.6, 0.7, 0.8, 1.0, 1.2, 1.5, 1.8, 2.2, 2.8, 3.5, 4.0, 4.5, 5.0, 4.5, 4.0, 3.5, 3.0, 2.5, 2.0, 1.8, 1.5];
+        const originalSyntheticData = [0.2, 0.2, 0.3, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.5, 2.0, 3.0, 4.5, 7.0, 10.0, 12.0, 14.0, 16.0, 18.0, 20.0, 22.0, 24.0]; 
+
+        // Extensión de datos simulados para 2022, 2023, 2024 (reflecting Wave 4 acceleration)
+        const newAnyOpioid = [28.0, 31.0, 34.0];
+        const newPrescribed = [3.0, 2.8, 2.5];
+        const newHeroin = [1.2, 1.0, 0.8];
+        const newSynthetic = [28.0, 32.0, 36.0];
+
+        originalAnyOpioidData.push(...newAnyOpioid);
+        originalPrescribedData.push(...newPrescribed);
+        originalHeroinData.push(...newHeroin);
+        originalSyntheticData.push(...newSynthetic);
+        // Fin de la extensión de datos
+
+        // Función para rellenar los datos iniciales (1995-1998) con valores bajos
+        const padData = (originalData, initialValue) => {
+            const padding = Array(paddingYears).fill(initialValue);
+            return [...padding, ...originalData];
+        };
+
+        const crisisYears = Array.from({ length: totalYears }, (_, i) => startYear + i);
+
+        // Aplicar el relleno para que los datos empiecen en 1995
+        const anyOpioidData = padData(originalAnyOpioidData, 1.0);
+        const prescribedData = padData(originalPrescribedData, 1.5);
+        const heroinData = padData(originalHeroinData, 0.2);
+        const syntheticData = padData(originalSyntheticData, 0.05);
+
+
+        const ctxCrisis = document.getElementById('opioidCrisisChart').getContext('2d');
+
+        const crisisChartConfig = {
+            type: 'line',
+            data: {
+                labels: crisisYears,
+                datasets: [
+                    {
+                        label: 'Opioides Recetados Comúnmente',
+                        data: prescribedData,
+                        borderColor: 'rgb(6, 182, 212)', // Cian
+                        backgroundColor: 'rgba(6, 182, 212, 0.1)',
+                        tension: 0.3,
+                        pointRadius: 3,
+                    },
+                    {
+                        label: 'Heroína',
+                        data: heroinData,
+                        borderColor: 'rgb(59, 130, 246)', // Azul
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3,
+                        pointRadius: 3,
+                    },
+                    {
+                        label: 'Otros Opioides Sintéticos (e.g., Fentanilo)',
+                        data: syntheticData,
+                        borderColor: 'rgb(168, 85, 247)', // Violeta
+                        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+                        tension: 0.3,
+                        pointRadius: 3,
+                    },
+                    {
+                        label: 'Cualquier Opioide (Total)',
+                        data: anyOpioidData,
+                        borderColor: 'rgb(17, 24, 39)', // Gris Oscuro
+                        backgroundColor: 'rgba(17, 24, 39, 0.1)',
+                        tension: 0.3,
+                        pointRadius: 4,
+                        borderWidth: 3,
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: { mode: 'index', intersect: false },
+                    annotation: {
+                        annotations: {
+                            // --- EVENTOS CLAVE (Líneas Discontinuas) ---
+                            oxycontinLaunch: {
+                                type: 'line',
+                                xMin: 1996,
+                                xMax: 1996,
+                                borderColor: 'rgb(245, 158, 11)', // Ámbar
+                                borderWidth: 3,
+                                borderDash: [2, 4],
+                                label: {
+                                    content: '1996: Lanzamiento OxyContin (Aumento Prescripciones)',
+                                    enabled: true,
+                                    position: 'start',
+                                    yAdjust: 10,
+                                    backgroundColor: 'rgba(245, 158, 11, 0.9)',
+                                    color: 'white',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            },
+                            oxycontinReformulation: {
+                                type: 'line',
+                                xMin: 2010,
+                                xMax: 2010,
+                                borderColor: 'rgb(101, 163, 13)', // Verde Olivo
+                                borderWidth: 3,
+                                borderDash: [2, 4],
+                                label: {
+                                    content: '2010: Reformulación (Aumento Heroína)',
+                                    enabled: true,
+                                    position: 'end',
+                                    yAdjust: 10,
+                                    backgroundColor: 'rgba(101, 163, 13, 0.9)',
+                                    color: 'white',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            },
+                            fentanylRise: {
+                                type: 'line',
+                                xMin: 2013,
+                                xMax: 2013,
+                                borderColor: 'rgb(168, 85, 247)', // Mismo color que la línea sintética
+                                borderWidth: 3,
+                                borderDash: [2, 4],
+                                label: {
+                                    content: '2013: Aumento Fentanilo (Sintéticos)',
+                                    enabled: true,
+                                    position: 'start',
+                                    yAdjust: -10,
+                                    backgroundColor: 'rgba(168, 85, 247, 0.9)',
+                                    color: 'white',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            },
+                            // --- INICIO DE LA CUARTA OLA (Nueva Anotación) ---
+                            wave4Shift: {
+                                type: 'line',
+                                xMin: 2019,
+                                xMax: 2019,
+                                borderColor: 'rgb(234, 179, 8)', // Amarillo oscuro (Amber-500)
+                                borderWidth: 3,
+                                borderDash: [6, 2],
+                                label: {
+                                    content: '2019: Ola 4 (Fentanilo + Estimulantes)',
+                                    enabled: true,
+                                    position: 'end',
+                                    yAdjust: -20,
+                                    backgroundColor: 'rgba(234, 179, 8, 0.9)',
+                                    color: 'white',
+                                    font: { size: 10, weight: 'bold' }
+                                }
+                            },
+
+                            // --- ZONAS DE OLA (Cajas Sombreadas en el fondo con MAYOR OPACIDAD) ---
+                            wave1Box: {
+                                type: 'box',
+                                xMin: 1995, // Cubre desde el inicio del gráfico
+                                xMax: 2010, 
+                                backgroundColor: 'rgba(6, 182, 212, 0.5)', 
+                                borderColor: 'rgba(6, 182, 212, 0.5)',
+                                borderWidth: 1,
+                                label: {
+                                    content: 'Ola 1: Opioides Recetados (1996-2010)',
+                                    enabled: true,
+                                    position: 'start',
+                                    color: 'rgb(6, 182, 212)',
+                                    font: { size: 14, weight: 'bold' }
+                                }
+                            },
+                            wave2Box: {
+                                type: 'box',
+                                xMin: 2010, 
+                                xMax: 2013, 
+                                backgroundColor: 'rgba(59, 130, 246, 0.5)', 
+                                borderColor: 'rgba(59, 130, 246, 0.5)',
+                                borderWidth: 1,
+                                label: {
+                                    content: 'Ola 2: Heroína (2010-2013)',
+                                    enabled: true,
+                                    position: 'center',
+                                    color: 'rgb(59, 130, 246)',
+                                    font: { size: 14, weight: 'bold' }
+                                }
+                            },
+                            wave3Box: {
+                                type: 'box',
+                                xMin: 2013, 
+                                xMax: 2024, // Actualizado al nuevo año final
+                                backgroundColor: 'rgba(168, 85, 247, 0.5)', 
+                                borderColor: 'rgba(168, 85, 247, 0.5)',
+                                borderWidth: 1,
+                                label: {
+                                    content: 'Ola 3/4: Fentanilo y Polidrogas (2013-Presente)',
+                                    enabled: true,
+                                    position: 'end',
+                                    color: 'rgb(168, 85, 247)',
+                                    font: { size: 14, weight: 'bold' }
+                                }
+                            },
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Año',
+                            font: { size: 14 }
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Muertes por 100,000 personas',
+                            font: { size: 14 }
+                        },
+                        min: 0,
+                        max: 40 // Aumentado el máximo para las nuevas cifras de la Ola 4
+                    }
+                }
+            }
+        };
+        
+        // Llamada inicial
+        window.onload = function() {
+            updateChartScale(); // Inicializa el gráfico de OxyContin
+            new Chart(ctxCrisis, crisisChartConfig); // Inicializa el gráfico de la crisis (Cuatro Olas)
+        };
+
+    </script>
+
+</body>
+</html>

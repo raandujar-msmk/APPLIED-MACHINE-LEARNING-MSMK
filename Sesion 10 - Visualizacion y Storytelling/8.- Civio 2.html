@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Crítico: Concentración Inmobiliaria en Madrid</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: default;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .success-bg {
+            background-color: #ecfdf5; /* green-50 */
+            border-left: 5px solid #10b981; /* green-500 */
+        }
+        .opportunity-bg {
+            background-color: #fffbeb; /* amber-50 */
+            border-left: 5px solid #f59e0b; /* amber-500 */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-10">
+        <!-- Título Principal -->
+        <header class="text-center pt-4 pb-6">
+            <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">
+                Análisis Crítico: Visualización de la Concentración Inmobiliaria en Madrid
+            </h1>
+            <p class="mt-3 text-lg text-gray-600">
+                Evaluación de las visualizaciones en "Diez empresas concentran el 12% de los inmuebles alquilados en la Comunidad de Madrid" (Civio).
+            </p>
+            <!-- Enlace al Artículo de Civio -->
+            <a href="https://civio.es/poder/2023/06/21/diez-empresas-concentran-el-12-percent-de-los-inmuebles-alquilados-en-la-comunidad-de-madrid/" target="_blank" class="mt-2 inline-block text-blue-600 hover:text-blue-800 font-medium transition duration-150 ease-in-out">
+                Artículo original de Civio: Diez empresas concentran el 12% de los inmuebles...
+            </a>
+        </header>
+
+        <!-- Contenedor Flex para las dos secciones -->
+        <div class="grid lg:grid-cols-2 gap-8">
+
+            <!-- Columna de ACIERTOS (Éxito) -->
+            <section class="space-y-6">
+                <h2 class="text-3xl font-bold text-green-700 border-b-2 border-green-300 pb-2 flex items-center">
+                    <span class="mr-3 text-4xl">✅</span> Aciertos Clave de Visualización
+                </h2>
+                
+                <!-- Card 1: Visualización de la Asimetría -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">1. Demostración de la Asimetría (Principio de Pareto)</h3>
+                    <p class="text-gray-700">El objetivo principal es demostrar la desproporción: que un grupo muy pequeño de propietarios controla una parte significativa del mercado. La visualización se centra exitosamente en este <strong>desequilibrio</strong>.</p>
+                    <div class="mt-4 p-3 bg-green-200 rounded-lg text-sm font-medium text-green-900 flex items-center">
+                        <span class="mr-2 text-xl">⚖️</span> Principio Aplicado: <strong>Comparación de Magnitudes</strong> (10 empresas vs. el resto).
+                    </div>
+                </div>
+
+                <!-- Card 2: Contraste de Escalas -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">2. Uso Efectivo del Contraste Top-10 vs. Cola</h3>
+                    <p class="text-gray-700">La representación (posiblemente un gráfico de barras ordenado o un gráfico de Pareto) aísla visualmente a las 10 grandes empresas y muestra cómo su contribución domina la gráfica, mientras que el resto de propietarios (la "Gran Cola") apenas se distingue, enfatizando la concentración.</p>
+                    <ul class="mt-3 space-y-2 text-gray-700">
+                        <li class="flex items-center">
+                            <span class="text-red-600 mr-2 text-lg">📈</span>
+                            <strong>Jerarquía Visual:</strong> Barras de gran altura para los mayores concentradores.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Card 3: Integridad del Dato Específico (Fianzas AVS) -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">3. Integridad y Uso de Datos Únicos (Fianzas AVS)</h3>
+                    <p class="text-gray-700">El uso de un conjunto de datos único y oficial (fianzas depositadas en la Agencia de Vivienda Social de Madrid) como fuente primaria otorga una base de <strong>alta credibilidad</strong>. La investigación se basa en un dato administrativo concreto y no en encuestas o estimaciones.</p>
+                </div>
+            </section>
+
+            <!-- Columna de OPORTUNIDADES DE MEJORA -->
+            <section class="space-y-6">
+                <h2 class="text-3xl font-bold text-amber-700 border-b-2 border-amber-300 pb-2 flex items-center">
+                    <span class="mr-3 text-4xl">💡</span> Oportunidades de Mejora
+                </h2>
+
+                <!-- Card 1: Interactividad Geográfica Local -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">1. Omisión y Necesidad de Interactividad Geográfica</h3>
+                    <p class="text-gray-700">El análisis carece de una visualización geográfica granular e interactiva, lo que impide al lector responder a la pregunta crucial: ¿cómo me afecta esto a mí a nivel local? La oportunidad reside en mapear el dato.</p>
+                    <ul class="mt-3 space-y-2 text-gray-700">
+                        <li class="flex items-center">
+                            <span class="text-amber-600 mr-2 text-lg">🔍</span>
+                            <strong>Zoom y Detalle:</strong> Permitir filtrar por municipio, barrio o distrito.
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-amber-600 mr-2 text-lg">🗺️</span>
+                            <strong>Índice Local:</strong> Mapear el índice de concentración <em>dentro</em> de cada zona (e.g., ¿qué porcentaje de pisos de Lavapiés es de X empresas?).
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Card 2: Desglose por Tipología de Inmueble -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">2. Desglose de la Concentración por Uso de Suelo</h3>
+                    <p class="text-gray-700">El impacto social es muy diferente si los inmuebles son residenciales que si son oficinas o naves industriales. Se requiere un gráfico de <strong>segmentación</strong> para añadir contexto.</p>
+                    <div class="mt-4 p-3 bg-amber-200 rounded-lg text-sm font-medium text-amber-900">
+                        <p class="font-bold">Sugerencia:</p>
+                        <p>Gráfico de Tarta o barras apiladas que muestre la proporción de concentración en "Residencial", "Comercial", y "Otros".</p>
+                    </div>
+                </div>
+
+                <!-- Card 3: Evolución Histórica de la Concentración -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">3. Perspectiva Temporal: La Evolución de la Concentración</h3>
+                    <p class="text-gray-700">El dato en sí mismo es una fotografía estática. La historia se completa al mostrar si esta concentración es una tendencia reciente (y acelerada) o un fenómeno estable.</p>
+                    <div class="mt-4 p-3 bg-amber-200 rounded-lg text-sm font-medium text-amber-900 flex items-center">
+                        <span class="mr-2 text-xl">⏳</span> Aplicación: Mostrar una <strong>Serie Temporal</strong> (gráfico de líneas) del porcentaje de inmuebles controlados por el Top 10 a lo largo de los últimos 5 o 10 años.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Conclusión -->
+        <footer class="mt-10 pt-6 border-t border-gray-300 text-center">
+            <h3 class="text-2xl font-bold text-gray-800">Conclusión General</h3>
+            <p class="mt-2 text-gray-600 max-w-3xl mx-auto">
+                El reportaje utiliza la visualización de datos de manera efectiva para demostrar la <strong>asimetría</strong> de la propiedad, un concepto difícil de comunicar solo con números. Las mejoras se centran en añadir capas de <strong>interactividad</strong> que permitan al lector contextualizar el fenómeno a nivel local y entender su composición (tipo de inmueble).
+            </p>
+        </footer>
+    </div>
+
+</body>
+</html>

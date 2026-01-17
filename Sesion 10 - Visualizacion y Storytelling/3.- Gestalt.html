@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Gestalt y Percepción Visual</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Animaciones suaves */
+        .transition-all-300 { transition: all 0.3s ease-in-out; }
+        
+        /* Estilos para el efecto Figura/Fondo */
+        .vase-container {
+            width: 300px;
+            height: 300px;
+            position: relative;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 8px;
+        }
+        
+        .face-left, .face-right {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 40%; /* ANCHO REDUCIDO: Separa las caras para ensanchar el jarrón central */
+            transition: background-color 0.5s ease;
+            z-index: 10;
+        }
+        
+        /* NUEVOS PERFILES AJUSTADOS 
+           1. Se ha modificado el inicio del path (H60 en vez de H100) para recortar la frente y abrir la boca del jarrón.
+           2. Se mantiene el detalle de nariz, labios y barbilla.
+        */
+        .face-left { 
+            left: 0; 
+            mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 H60 C 60,20 50,40 70,60 C 75,65 90,70 100,80 L 85,95 Q 95,100 100,105 L 90,112 Q 100,120 90,135 Q 80,145 70,150 Q 55,170 100,190 V200 H0 Z" fill="black"/></svg>'); 
+            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><path d="M0,0 H60 C 60,20 50,40 70,60 C 75,65 90,70 100,80 L 85,95 Q 95,100 100,105 L 90,112 Q 100,120 90,135 Q 80,145 70,150 Q 55,170 100,190 V200 H0 Z" fill="black"/></svg>'); 
+            mask-size: 100% 100%; 
+            -webkit-mask-size: 100% 100%; 
+        }
+        
+        .face-right { 
+            right: 0; 
+            mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><path d="M100,0 H40 C 40,20 50,40 30,60 C 25,65 10,70 0,80 L 15,95 Q 5,100 0,105 L 10,112 Q 0,120 10,135 Q 20,145 30,150 Q 45,170 0,190 V200 H100 Z" fill="black"/></svg>'); 
+            -webkit-mask-image: url('data:image/svg+xml;utf8,<svg viewBox="0 0 100 200" xmlns="http://www.w3.org/2000/svg"><path d="M100,0 H40 C 40,20 50,40 30,60 C 25,65 10,70 0,80 L 15,95 Q 5,100 0,105 L 10,112 Q 0,120 10,135 Q 20,145 30,150 Q 45,170 0,190 V200 H100 Z" fill="black"/></svg>'); 
+            mask-size: 100% 100%; 
+            -webkit-mask-size: 100% 100%; 
+        }
+
+        .bg-vase {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 1;
+            transition: background-color 0.5s ease;
+        }
+
+        /* Pacman Triangle for Closure */
+        .pacman {
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        /* CLASE ESPECIAL PARA PACMAN DE 60 GRADOS */
+        .pacman-60 {
+            clip-path: polygon(50% 50%, 21% 100%, 0% 100%, 0% 0%, 100% 0%, 100% 100%, 79% 100%);
+        }
+
+        input[type=range] {
+            -webkit-appearance: none; 
+            width: 100%; 
+            background: transparent; 
+        }
+        
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #4F46E5;
+            cursor: pointer;
+            margin-top: -8px; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+        
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #E5E7EB;
+            border-radius: 2px;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Sidebar Navigation -->
+    <aside class="w-full md:w-64 bg-white border-r border-slate-200 flex-shrink-0 flex flex-col z-20 shadow-sm">
+        <div class="p-6 border-b border-slate-100">
+            <h1 class="text-2xl font-bold text-indigo-600 tracking-tight">Percepción <span class="text-slate-900">Visual</span></h1>
+            <p class="text-xs text-slate-500 mt-1">Principios de la Gestalt</p>
+        </div>
+        
+        <nav class="flex-1 overflow-y-auto p-4 space-y-2">
+            <button onclick="showTab('intro')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors bg-indigo-50 text-indigo-700 hover:bg-indigo-100" data-target="intro">
+                👋 Introducción
+            </button>
+            <button onclick="showTab('proximity')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-target="proximity">
+                1. Ley de Proximidad
+            </button>
+            <button onclick="showTab('similarity')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-target="similarity">
+                2. Ley de Semejanza
+            </button>
+            <button onclick="showTab('closure')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-target="closure">
+                3. Ley de Cierre
+            </button>
+            <button onclick="showTab('figure')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-target="figure">
+                4. Figura y Fondo
+            </button>
+            <button onclick="showTab('continuity')" class="nav-btn w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors" data-target="continuity">
+                5. Ley de Continuidad
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-slate-100 text-xs text-slate-400 text-center">
+            Explorador Interactivo v1.0
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 overflow-y-auto relative bg-slate-50">
+        
+        <!-- Intro Section -->
+        <section id="intro" class="tab-content absolute inset-0 p-8 flex flex-col justify-center items-center text-center max-w-3xl mx-auto">
+            <div class="bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
+                <div class="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6 text-3xl">
+                    👁️
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800 mb-4">La Psicología de la Gestalt</h2>
+                <p class="text-lg text-slate-600 leading-relaxed mb-8">
+                    "El todo es diferente a la suma de sus partes."
+                </p>
+                <p class="text-slate-500 mb-8 text-left">
+                    Nuestro cerebro no percibe los elementos visuales de forma aislada, sino que busca organizarlos activamente en patrones coherentes y significativos. Esta herramienta interactiva te permitirá experimentar cómo funcionan estos principios fundamentales ajustando las variables tú mismo.
+                </p>
+                <button onclick="showTab('proximity')" class="bg-indigo-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200">
+                    Comenzar Experiencia
+                </button>
+            </div>
+        </section>
+
+        <!-- Proximity Section -->
+        <section id="proximity" class="tab-content hidden absolute inset-0 p-4 md:p-10 flex flex-col">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Ley de Proximidad</h2>
+                <p class="text-slate-500 mt-2">Los elementos que están más cerca entre sí tienden a percibirse como un grupo o unidad.</p>
+            </header>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-8">
+                <!-- Visual Canvas -->
+                <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center p-8 overflow-hidden relative">
+                    <div id="proximity-grid" class="grid grid-cols-4 transition-all-300" style="gap: 20px;">
+                        <!-- Generated by JS -->
+                    </div>
+                    <div class="absolute bottom-4 right-4 text-xs text-slate-300 font-mono">GRID: 4x4</div>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Separación Horizontal (Columnas)</label>
+                        <input type="range" id="prox-gap-x" min="4" max="80" value="20" class="w-full">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Separación Vertical (Filas)</label>
+                        <input type="range" id="prox-gap-y" min="4" max="80" value="20" class="w-full">
+                    </div>
+                    
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
+                        <p class="text-sm text-indigo-800">
+                            <strong>Experimento:</strong> <br>
+                            Mueve el slider horizontal al máximo y deja el vertical al mínimo. ¿Ves 4 columnas verticales o 4 filas horizontales? El cerebro agrupa lo que está más cerca.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Similarity Section -->
+        <section id="similarity" class="tab-content hidden absolute inset-0 p-4 md:p-10 flex flex-col">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Ley de Semejanza</h2>
+                <p class="text-slate-500 mt-2">Tendemos a agrupar elementos que comparten características visuales similares (color, forma, tamaño).</p>
+            </header>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-8">
+                <!-- Visual Canvas -->
+                <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center p-8">
+                    <div id="similarity-grid" class="grid grid-cols-6 gap-4">
+                        <!-- Generated by JS -->
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-3">Patrón de Agrupación</label>
+                        <div class="space-y-2">
+                            <button onclick="setSimilarityMode('none')" class="w-full py-2 px-4 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 text-left active-mode" id="btn-sim-none">Sin patrón (Caos)</button>
+                            <button onclick="setSimilarityMode('rows')" class="w-full py-2 px-4 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 text-left" id="btn-sim-rows">Filas (Color)</button>
+                            <button onclick="setSimilarityMode('cols')" class="w-full py-2 px-4 rounded border border-slate-200 text-slate-600 hover:bg-slate-50 text-left" id="btn-sim-cols">Columnas (Forma)</button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
+                        <p class="text-sm text-indigo-800">
+                            <strong>Observación:</strong> <br>
+                            Incluso si la distancia es igual entre todos los puntos, si coloreamos una fila de rojo, automáticamente la percibimos como un grupo separado del resto.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Closure Section -->
+        <section id="closure" class="tab-content hidden absolute inset-0 p-4 md:p-10 flex flex-col">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Ley de Cierre</h2>
+                <p class="text-slate-500 mt-2">El cerebro tiende a completar figuras incompletas para crear una imagen coherente (Triángulo de Kanizsa).</p>
+            </header>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-8">
+                <!-- Visual Canvas -->
+                <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center relative overflow-hidden">
+                    
+                    <!-- Kanizsa Triangle Elements -->
+                    <div class="relative w-64 h-64">
+                        <!-- Top (Posicionado al 13% para formar triangulo equilatero) -->
+                        <div id="pacman-1" class="pacman pacman-60 absolute left-1/2 -translate-x-1/2 w-16 h-16 bg-slate-900 rounded-full" 
+                             style="top: 13%; transform: translate(-50%, 0) rotate(0deg);"></div>
+                        
+                        <!-- Bottom Left -->
+                        <div id="pacman-2" class="pacman pacman-60 absolute bottom-0 left-0 w-16 h-16 bg-slate-900 rounded-full" 
+                             style="transform: rotate(-120deg);"></div>
+                        
+                        <!-- Bottom Right -->
+                        <div id="pacman-3" class="pacman pacman-60 absolute bottom-0 right-0 w-16 h-16 bg-slate-900 rounded-full" 
+                             style="transform: rotate(120deg);"></div>
+
+                        <!-- Phantom Triangle (Optional hint) -->
+                        <div id="phantom-triangle" class="absolute inset-0 z-10 opacity-0 transition-opacity duration-500 pointer-events-none"
+                             style="background: transparent;">
+                             <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                                 <!-- Updated points for equilateral proportions -->
+                                 <polygon points="50,13 0,100 100,100" fill="white" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4"/>
+                             </svg>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Alineación de Figuras</label>
+                        <input type="range" id="closure-rotation" min="0" max="180" value="180" class="w-full">
+                        <div class="flex justify-between text-xs text-slate-400 mt-1">
+                            <span>Caos</span>
+                            <span>Alineado</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-6 flex items-center justify-between">
+                         <span class="text-sm font-semibold text-slate-700">Mostrar "Triángulo Fantasma"</span>
+                         <button id="toggle-phantom" class="bg-slate-200 w-12 h-6 rounded-full relative transition-colors focus:outline-none">
+                             <span class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform transform"></span>
+                         </button>
+                    </div>
+                    
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
+                        <p class="text-sm text-indigo-800">
+                            <strong>¿Qué ves?</strong> <br>
+                            Cuando las formas negras se alinean (desliza a la derecha), tu cerebro "inventa" un triángulo blanco en el centro que en realidad no existe. Es una ilusión de contorno subjetivo.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Figure/Ground Section -->
+        <section id="figure" class="tab-content hidden absolute inset-0 p-4 md:p-10 flex flex-col">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Figura y Fondo</h2>
+                <p class="text-slate-500 mt-2">La percepción se organiza distinguiendo una figura principal sobre un fondo. No podemos percibir ambos simultáneamente.</p>
+            </header>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-8">
+                <!-- Visual Canvas -->
+                <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center p-8">
+                    
+                    <div class="vase-container shadow-lg border border-slate-300">
+                        <div id="vase-bg" class="bg-vase bg-white"></div>
+                        <div id="face-left" class="face-left bg-black"></div>
+                        <div id="face-right" class="face-right bg-black"></div>
+                    </div>
+
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Contraste</label>
+                        <button onclick="invertColors()" class="w-full py-2 border border-slate-300 rounded text-slate-600 hover:bg-slate-50">
+                            Invertir Colores (B/N)
+                        </button>
+                    </div>
+
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
+                        <p class="text-sm text-indigo-800">
+                            <strong>Copa de Rubin:</strong> <br>
+                            Si enfocas el área negra, ves dos rostros mirándose. Si enfocas el área blanca, ves una copa. El cerebro necesita decidir qué es "figura" y qué es "fondo".
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Continuity Section -->
+        <section id="continuity" class="tab-content hidden absolute inset-0 p-4 md:p-10 flex flex-col">
+            <header class="mb-8">
+                <h2 class="text-3xl font-bold text-slate-800">Ley de Continuidad</h2>
+                <p class="text-slate-500 mt-2">El ojo prefiere seguir líneas o curvas continuas y suaves en lugar de cambios bruscos de dirección.</p>
+            </header>
+
+            <div class="flex-1 flex flex-col lg:flex-row gap-8">
+                <!-- Visual Canvas -->
+                <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex items-center justify-center p-8 relative">
+                   <canvas id="continuityCanvas" width="500" height="300" class="max-w-full"></canvas>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full lg:w-80 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Destacar Trayectorias</label>
+                        <input type="checkbox" id="highlight-paths" class="w-5 h-5 text-indigo-600 rounded focus:ring-indigo-500 border-gray-300">
+                        <span class="ml-2 text-slate-600 text-sm">Colorear y aislar líneas</span>
+                    </div>
+
+                     <div class="mb-6">
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">Nivel de Ruido (Distracción)</label>
+                        <input type="range" id="continuity-complex" min="0" max="15" value="8" class="w-full">
+                    </div>
+
+                    <div class="bg-indigo-50 p-4 rounded-lg mt-4">
+                        <p class="text-sm text-indigo-800">
+                            <strong>Análisis:</strong> <br>
+                            Nuestra mente agrupa los puntos A con B (curva suave) y C con D (línea recta), ignorando los cruces y el ruido de fondo. Al activar el "Destacar", eliminamos el ruido para revelar la estructura pura.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- Navigation Logic ---
+        function showTab(tabId) {
+            // Hide all sections
+            document.querySelectorAll('.tab-content').forEach(el => {
+                el.classList.add('hidden');
+            });
+            // Show target
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            // Update buttons state
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.target === tabId) {
+                    btn.classList.remove('text-slate-600', 'hover:bg-slate-50');
+                    btn.classList.add('bg-indigo-50', 'text-indigo-700', 'hover:bg-indigo-100');
+                } else {
+                    btn.classList.add('text-slate-600', 'hover:bg-slate-50');
+                    btn.classList.remove('bg-indigo-50', 'text-indigo-700', 'hover:bg-indigo-100');
+                }
+            });
+
+            // Trigger canvas redraw if continuity tab is opened
+            if(tabId === 'continuity') {
+                // Ensure canvas size is correct before drawing
+                const canvas = document.getElementById('continuityCanvas');
+                canvas.width = canvas.offsetWidth;
+                canvas.height = 300; 
+                if(noiseDots.length === 0) generateNoise(); // Generate initial noise if empty
+                drawContinuity();
+            }
+        }
+
+        // --- Proximity Logic ---
+        const proxGrid = document.getElementById('proximity-grid');
+        const gapX = document.getElementById('prox-gap-x');
+        const gapY = document.getElementById('prox-gap-y');
+
+        function initProximity() {
+            proxGrid.innerHTML = '';
+            for(let i=0; i<16; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'w-8 h-8 bg-slate-800 rounded-full shadow-sm';
+                proxGrid.appendChild(dot);
+            }
+        }
+        
+        function updateProximity() {
+            proxGrid.style.columnGap = gapX.value + 'px';
+            proxGrid.style.rowGap = gapY.value + 'px';
+        }
+
+        gapX.addEventListener('input', updateProximity);
+        gapY.addEventListener('input', updateProximity);
+        initProximity();
+
+
+        // --- Similarity Logic ---
+        const simGrid = document.getElementById('similarity-grid');
+        let simMode = 'none';
+
+        function initSimilarity() {
+            simGrid.innerHTML = '';
+            // 6 cols x 5 rows = 30 items
+            for(let i=0; i<30; i++) {
+                const item = document.createElement('div');
+                item.className = 'w-8 h-8 bg-slate-300 rounded-md transition-all duration-500';
+                item.dataset.index = i;
+                simGrid.appendChild(item);
+            }
+        }
+
+        function setSimilarityMode(mode) {
+            simMode = mode;
+            const items = simGrid.children;
+            
+            // Update Buttons
+            document.getElementById('btn-sim-none').classList.toggle('bg-indigo-50', mode === 'none');
+            document.getElementById('btn-sim-none').classList.toggle('text-indigo-700', mode === 'none');
+            document.getElementById('btn-sim-rows').classList.toggle('bg-indigo-50', mode === 'rows');
+            document.getElementById('btn-sim-rows').classList.toggle('text-indigo-700', mode === 'rows');
+            document.getElementById('btn-sim-cols').classList.toggle('bg-indigo-50', mode === 'cols');
+            document.getElementById('btn-sim-cols').classList.toggle('text-indigo-700', mode === 'cols');
+
+            for(let i=0; i<items.length; i++) {
+                const item = items[i];
+                const row = Math.floor(i / 6);
+                const col = i % 6;
+
+                // Reset base
+                item.className = 'w-8 h-8 rounded-md transition-all duration-500 shadow-sm';
+
+                if(mode === 'none') {
+                    // Random-ish appearance but uniform
+                    item.classList.add('bg-slate-400', 'rounded-md');
+                } 
+                else if (mode === 'rows') {
+                    // Alternate row colors
+                    if(row % 2 === 0) {
+                        item.classList.add('bg-indigo-600');
+                    } else {
+                        item.classList.add('bg-slate-300');
+                    }
+                } 
+                else if (mode === 'cols') {
+                    // Alternate col shapes/colors
+                    if(col % 2 === 0) {
+                        item.classList.add('bg-emerald-500', 'rounded-full');
+                    } else {
+                        item.classList.add('bg-slate-400', 'rounded-none'); // Squares
+                    }
+                }
+            }
+        }
+        initSimilarity();
+
+
+        // --- Closure Logic ---
+        const closureSlider = document.getElementById('closure-rotation');
+        const pacman1 = document.getElementById('pacman-1');
+        const pacman2 = document.getElementById('pacman-2');
+        const pacman3 = document.getElementById('pacman-3');
+        const togglePhantom = document.getElementById('toggle-phantom');
+        const phantomTriangle = document.getElementById('phantom-triangle');
+        let phantomVisible = false;
+
+        closureSlider.addEventListener('input', (e) => {
+            const val = parseInt(e.target.value); // 0 to 180 (180 = aligned)
+            
+            // Logic: 
+            // When val = 180 (aligned): P1=0deg, P2=-120deg, P3=120deg
+            // When val = 0 (chaos): P1=120, P2=0, P3=240 (random misalignment)
+            
+            // Normalized progress (0 to 1) where 1 is aligned
+            const p = val / 180;
+            
+            // Chaos offset calculation
+            // If p=1 (aligned), offset=0. If p=0, offset=120.
+            const offset = (1 - p) * 120; 
+
+            // Target angles for Equilateral Triangle (mouths 60deg)
+            // P1 (Top): 0 deg (mouth down)
+            // P2 (BL): -120 deg (mouth up-right 30deg)
+            // P3 (BR): 120 deg (mouth up-left 150deg)
+
+            // FIX: Add translate(-50%, 0) to keep horizontal centering relative to left: 50%
+            pacman1.style.transform = `translate(-50%, 0) rotate(${0 + offset}deg)`;
+            pacman2.style.transform = `rotate(${-120 - offset}deg)`; // Rotate away from center
+            pacman3.style.transform = `rotate(${120 + offset}deg)`;
+        });
+        
+        // Initial force update to set correct rotation on load
+        const initClosure = () => {
+             const val = parseInt(closureSlider.value);
+             const p = val / 180;
+             const offset = (1 - p) * 120; 
+             // FIX: Add translate(-50%, 0) to keep horizontal centering relative to left: 50%
+             pacman1.style.transform = `translate(-50%, 0) rotate(${0 + offset}deg)`;
+             pacman2.style.transform = `rotate(${-120 - offset}deg)`;
+             pacman3.style.transform = `rotate(${120 + offset}deg)`;
+        };
+        initClosure();
+
+        togglePhantom.addEventListener('click', () => {
+            phantomVisible = !phantomVisible;
+            const knob = togglePhantom.querySelector('span');
+            
+            if(phantomVisible) {
+                togglePhantom.classList.remove('bg-slate-200');
+                togglePhantom.classList.add('bg-indigo-500');
+                knob.classList.add('translate-x-6');
+                phantomTriangle.classList.remove('opacity-0');
+            } else {
+                togglePhantom.classList.add('bg-slate-200');
+                togglePhantom.classList.remove('bg-indigo-500');
+                knob.classList.remove('translate-x-6');
+                phantomTriangle.classList.add('opacity-0');
+            }
+        });
+
+        // --- Figure/Ground Logic ---
+        let figureInverted = false;
+        
+        function setFigure(focus) {
+            const left = document.getElementById('face-left');
+            const right = document.getElementById('face-right');
+            const bg = document.getElementById('vase-bg');
+            
+            // This is subtle, purely guiding perception via highlight, 
+            // the main effect is psychological.
+            // We can slightly dim the "background" part.
+
+            const fgColor = figureInverted ? 'white' : 'black';
+            const bgColor = figureInverted ? 'black' : 'white';
+
+            if(focus === 'faces') {
+                // Dim vase
+               bg.style.opacity = '0.3';
+               left.style.opacity = '1';
+               right.style.opacity = '1';
+            } else {
+                // Dim faces
+               bg.style.opacity = '1';
+               left.style.opacity = '0.3';
+               right.style.opacity = '0.3';
+            }
+        }
+
+        function invertColors() {
+            figureInverted = !figureInverted;
+            const left = document.getElementById('face-left');
+            const right = document.getElementById('face-right');
+            const bg = document.getElementById('vase-bg');
+            
+            if(figureInverted) {
+                left.classList.remove('bg-black'); left.classList.add('bg-white');
+                right.classList.remove('bg-black'); right.classList.add('bg-white');
+                bg.classList.remove('bg-white'); bg.classList.add('bg-black');
+            } else {
+                left.classList.add('bg-black'); left.classList.remove('bg-white');
+                right.classList.add('bg-black'); right.classList.remove('bg-white');
+                bg.classList.add('bg-white'); bg.classList.remove('bg-black');
+            }
+        }
+
+
+        // --- Continuity Logic (Canvas) ---
+        const canvas = document.getElementById('continuityCanvas');
+        const ctx = canvas.getContext('2d');
+        const checkHighlight = document.getElementById('highlight-paths');
+        const rangeComplex = document.getElementById('continuity-complex');
+        
+        // Store random noise dots to prevent dancing
+        let noiseDots = [];
+
+        function generateNoise() {
+            const w = canvas.width || 500;
+            const h = canvas.height || 300;
+            const maxComplex = 15; // Max slider value
+            noiseDots = [];
+            for(let i=0; i<maxComplex*5; i++) {
+                noiseDots.push({
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    r: Math.random() * 4 + 2
+                });
+            }
+        }
+
+        function drawContinuity() {
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+            
+            const highlight = checkHighlight.checked;
+            const complexity = parseInt(rangeComplex.value);
+            
+            // Visual Styles based on Highlight
+            const opacityNoise = highlight ? 0.1 : 1;
+            
+            ctx.lineCap = 'round';
+
+            // 1. Draw Noise (Background)
+            if(complexity > 0) {
+                ctx.fillStyle = `rgba(203, 213, 225, ${opacityNoise})`; // Slate-300 fading
+                const dotsCount = complexity * 4;
+                for(let i=0; i<Math.min(dotsCount, noiseDots.length); i++) {
+                    const d = noiseDots[i];
+                    ctx.beginPath();
+                    ctx.arc(d.x, d.y, d.r, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+
+            if (highlight) {
+                // --- HIGHLIGHTED MODE: SOLID LINES ---
+                
+                // Path A-B (Sine Wave)
+                ctx.beginPath();
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = '#4F46E5'; 
+                for(let x = 0; x <= w; x+=5) {
+                    const y = h/2 + Math.sin(x * 0.02) * 60;
+                    if(x===0) ctx.moveTo(x, y);
+                    else ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Path C-D (Diagonal Line)
+                ctx.beginPath();
+                ctx.lineWidth = 8;
+                ctx.strokeStyle = '#F43F5E'; 
+                ctx.moveTo(w*0.2, h - 40);
+                ctx.lineTo(w*0.8, 40);
+                ctx.stroke();
+                
+            } else {
+                // --- NORMAL MODE: DOTS ---
+                // Ahora usamos el MISMO color que el ruido de fondo para forzar la ley de continuidad pura
+                
+                ctx.fillStyle = '#CBD5E1'; // Slate-300 (Mismo que el ruido)
+
+                // Path A-B (Sine Wave) - Dots
+                // Espaciado aumentado (30px) para menos densidad
+                for(let x = 0; x <= w; x+=30) { 
+                    const y = h/2 + Math.sin(x * 0.02) * 60;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, Math.PI*2); 
+                    ctx.fill();
+                }
+
+                // Path C-D (Diagonal Line) - Dots
+                const startX = w*0.2;
+                const startY = h - 40;
+                const endX = w*0.8;
+                const endY = 40;
+                const steps = 15; // Reducido de 30 a 15 pasos para menos densidad
+                
+                for(let i=0; i<=steps; i++) {
+                    const t = i/steps;
+                    const cx = startX + (endX - startX) * t;
+                    const cy = startY + (endY - startY) * t;
+                    ctx.beginPath();
+                    ctx.arc(cx, cy, 4, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+            
+            // 4. Labels
+            ctx.fillStyle = '#1E293B'; // Slate-800
+            ctx.font = 'bold 16px Inter';
+            if(highlight) ctx.fillStyle = '#4F46E5';
+            ctx.fillText("A", 10, h/2);
+            ctx.fillText("B", w-20, h/2);
+            
+            if(highlight) ctx.fillStyle = '#F43F5E';
+            else ctx.fillStyle = '#1E293B';
+            ctx.fillText("C", w*0.2 - 15, h - 35);
+            ctx.fillText("D", w*0.8 + 10, 45);
+        }
+
+        checkHighlight.addEventListener('change', drawContinuity);
+        rangeComplex.addEventListener('input', () => {
+             // Only regenerate if needed or just draw subset? 
+             // Drawing subset is stable. Just redraw.
+             drawContinuity();
+        });
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+             if(!document.getElementById('continuity').classList.contains('hidden')) {
+                 const canvas = document.getElementById('continuityCanvas');
+                 canvas.width = canvas.offsetWidth;
+                 generateNoise(); // Regenerate for new size
+                 drawContinuity();
+             }
+        });
+        
+        // Initial setup calls
+        setSimilarityMode('none');
+        updateProximity();
+
+    </script>
+</body>
+</html>

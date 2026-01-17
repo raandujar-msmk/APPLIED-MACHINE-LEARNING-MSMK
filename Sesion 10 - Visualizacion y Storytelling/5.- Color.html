@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teoría del Color Interactiva (Cilindro 3D)</title>
+    <!-- Carga de Tailwind CSS y Three.js para 3D -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-hue: 0;
+            --primary-saturation: 70%;
+            --primary-lightness: 50%;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        /* Estilos base para los sliders */
+        input[type=range] {
+            height: 8px;
+            border-radius: 9999px;
+            -webkit-appearance: none;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        /* Estilos del Thumb (circulito que se arrastra) */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px; /* Mayor tamaño para toque */
+            height: 24px;
+            border-radius: 50%;
+            border: 3px solid white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(0, 0, 0, 0.1);
+            transition: all 0.1s ease-in-out;
+            background: hsl(var(--primary-hue), var(--primary-saturation), var(--primary-lightness));
+        }
+
+        /* Slider de Tono (H) */
+        input[type=range].hue-slider {
+            background: linear-gradient(to right,
+                hsl(0, 100%, 50%), hsl(60, 100%, 50%), hsl(120, 100%, 50%),
+                hsl(180, 100%, 50%), hsl(240, 100%, 50%), hsl(300, 100%, 50%), hsl(360, 100%, 50%));
+        }
+
+        /* Slider de Saturación (S) - Se ajusta dinámicamente en JS */
+        input[type=range].sat-slider {
+            background: linear-gradient(to right,
+                hsl(var(--primary-hue), 0%, var(--primary-lightness)),
+                hsl(var(--primary-hue), 100%, var(--primary-lightness)));
+        }
+
+        /* Slider de Luminosidad (L) - Se ajusta dinámicamente en JS */
+        input[type=range].light-slider {
+            background: linear-gradient(to right,
+                hsl(var(--primary-hue), var(--primary-saturation), 0%),
+                hsl(var(--primary-hue), var(--primary-saturation), 50%),
+                hsl(var(--primary-hue), var(--primary-saturation), 100%));
+        }
+
+        /* Contenedor del Canvas 3D */
+        #container3D {
+            width: 100%;
+            height: 450px;
+            background-color: #f0f4f8; /* Fondo suave para destacar el cilindro */
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+
+        /* Estilos específicos para la visualización de paletas */
+        .color-palette-bar {
+            height: 30px;
+            width: 100%;
+            border-radius: 0.25rem;
+            margin-top: 0.5rem;
+            background-size: 100% 100%;
+        }
+
+        /* Gradientes fijos para Viridis e Inferno (representativos) */
+        .viridis-bar {
+            background-image: linear-gradient(to right, #440154, #414487, #2a8a8f, #7ad151, #fde725);
+        }
+        .inferno-bar {
+            background-image: linear-gradient(to right, #000004, #420a68, #932667, #e34e2c, #fcc809);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto bg-white shadow-2xl rounded-xl p-6 md:p-10">
+        <h1 class="text-3xl md:text-4xl font-extrabold text-gray-800 mb-2">
+            Explorador de Armonías de Color HSL
+        </h1>
+        <p class="text-gray-500 mb-8">
+            Interactúa con los deslizadores y el modelo 3D para comprender el espacio de color HSL.
+        </p>
+
+        <!-- SECCIÓN: Contexto Histórico y Modelos de Color -->
+        <div class="mb-10 p-6 bg-gray-100 rounded-lg border border-gray-300">
+            <h2 class="text-2xl font-bold mb-4 text-gray-800">Contexto Histórico y Modelos de Color</h2>
+            
+            <div class="grid md:grid-cols-2 gap-8 text-base text-gray-600">
+                <div>
+                    <h3 class="text-xl font-bold text-gray-700 mb-3">Modelos Orientados a la Percepción Humana (HSL/HSV)</h3>
+                    <p class="mb-4">
+                        Mientras que el modelo <strong>RGB (Rojo, Verde, Azul)</strong> describe cómo se combinan los colores primarios aditivos para la visualización digital (orientado a la máquina), los modelos <strong>HSL (Tono, Saturación, Luminosidad)</strong> y <strong>HSV (Tono, Saturación, Valor/Brillo)</strong> fueron creados para asemejarse más a la forma en que los humanos percibimos el color.
+                    </p>
+                    <p>
+                        Fueron desarrollados a finales de los años 70 para facilitar a diseñadores y artistas la selección de colores, ya que permiten ajustar la "identidad" del color (Tono) independientemente de su "brillo" (Luminosidad) o "pureza" (Saturación), algo casi imposible de hacer con RGB.
+                    </p>
+                </div>
+                <div>
+                    <h3 class="text-xl font-bold text-gray-700 mb-3">HSL vs. RGB y CMYK</h3>
+                    <ul class="list-disc pl-6 space-y-3">
+                        <li><strong>RGB:</strong> Aditivo. Usado en pantallas. Combina luz.
+                            <span class="block text-xs italic text-gray-500 mt-1">Ejemplo: (255, 0, 0) es rojo puro.</span></li>
+                        <li><strong>CMYK:</strong> Sustractivo. Usado en impresión. Absorbe luz.
+                            <span class="block text-xs italic text-gray-500 mt-1">Ejemplo: C=100, M=0, Y=0, K=0 es cian puro.</span></li>
+                        <li><strong>HSL:</strong> Perceptivo. Usado en diseño y herramientas de color. Describe la apariencia.
+                            <span class="block text-xs italic text-gray-500 mt-1">Ejemplo: Tono 0°, Saturación 100%, Luminosidad 50% es rojo puro.</span></li>
+                    </ul>
+                    <p class="mt-6 text-sm">
+                        Para más detalles sobre las diferencias técnicas y el contexto de estos modelos, consulta la siguiente referencia:
+                        <a href="https://en.wikipedia.org/wiki/HSL_and_HSV" target="_blank" class="text-indigo-600 hover:text-indigo-800 font-bold underline transition duration-150">
+                            Wikipedia: HSL and HSV
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Sección de Cilindro de Color (3D) -->
+        <div class="mb-10 p-6 bg-blue-50 rounded-lg border border-blue-200">
+            <h2 class="text-xl font-bold mb-4 text-blue-700">Visualización 3D del Cilindro de Color HSL</h2>
+            <div class="flex flex-col md:flex-row gap-6">
+                
+                <!-- Contenedor del Canvas 3D -->
+                <div class="w-full md:w-3/5">
+                    <div id="container3D"></div>
+                    <p class="mt-2 text-xs text-gray-600 text-center">
+                        Usa el ratón (clic y arrastrar) para rotar el cilindro y ver el color seleccionado en 3D.
+                    </p>
+                </div>
+
+                <!-- Explicación HSL en el Contexto 3D -->
+                <div class="w-full md:w-2/5 text-gray-600 text-sm">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Ejes del Modelo HSL</h3>
+                    <ul class="list-disc pl-5 space-y-2">
+                        <li><strong>Tono (H):</strong> La circunferencia del cilindro (ángulo). 0° (Rojo), 120° (Verde), 240° (Azul).</li>
+                        <li><strong>Luminosidad (L):</strong> El eje vertical (Altura). 0% (Negro) en la base, 100% (Blanco) en la cima.</li>
+                        <li><strong>Saturación (S):</strong> El radio del cilindro. 0% (Gris) en el centro, 100% (Color puro) en el borde.</li>
+                    </ul>
+                    <div class="mt-4 p-3 border border-blue-300 rounded-lg bg-blue-100">
+                        <p class="font-bold text-gray-800">Tu Color Base (Esfera 3D):</p>
+                        <p class="mt-1">
+                            La pequeña esfera dentro del cilindro se mueve según los valores de H, S, y L que selecciones.
+                            Gracias a la transparencia, es visible en todo momento.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Fin Sección 3D -->
+        
+
+
+        <!-- Sección de Controles -->
+        <div class="mb-10 p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">Selector de Color Base (HSL)</h2>
+
+            <!-- Tono (H - Hue) -->
+            <div class="mb-4">
+                <label for="hue" class="block text-sm font-medium text-gray-700 mb-1">
+                    Tono (H): <span id="hueValue" class="font-semibold text-indigo-600">0°</span>
+                </label>
+                <input type="range" id="hue" min="0" max="360" value="0" class="w-full hue-slider">
+            </div>
+
+            <!-- Saturación (S - Saturation) -->
+            <div class="mb-4">
+                <label for="saturation" class="block text-sm font-medium text-gray-700 mb-1">
+                    Saturación (S): <span id="saturationValue" class="font-semibold text-indigo-600">70%</span>
+                </label>
+                <input type="range" id="saturation" min="0" max="100" value="70" class="w-full sat-slider">
+            </div>
+
+            <!-- Luminosidad (L - Lightness) -->
+            <div class="mb-4">
+                <label for="lightness" class="block text-sm font-medium text-gray-700 mb-1">
+                    Luminosidad (L): <span id="lightnessValue" class="font-semibold text-indigo-600">50%</span>
+                </label>
+                <input type="range" id="lightness" min="0" max="100" value="50" class="w-full light-slider">
+            </div>
+
+            <!-- Previsualización del color base -->
+            <div class="mt-6 p-4 rounded-lg flex flex-col md:flex-row items-start md:items-center justify-between transition-all duration-500 shadow-inner" id="baseColorDisplay">
+                <span class="text-lg font-bold">Color Base Seleccionado</span>
+                <div class="text-right text-sm mt-3 md:mt-0">
+                    <p class="font-mono" id="baseColorHSL">HSL: (0, 70%, 50%)</p>
+                    <p class="font-mono" id="baseColorRGB">RGB: (217, 51, 38)</p>
+                    <p class="font-mono" id="baseColorHEX">HEX: #D93326</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sección de Armonías de Color (Misma estructura que antes) -->
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Armonías de Color Aplicadas</h2>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+            <!-- 1. Armonía Complementaria (Contraste Máximo) -->
+            <div class="bg-white p-5 rounded-lg border border-red-200 shadow-md">
+                <h3 class="text-lg font-semibold mb-3 text-red-700">1. Armonía Complementaria (180°)</h3>
+                <p class="text-sm text-gray-600 mb-4">Colores opuestos. Máximo impacto visual, ideal para acentos y llamadas a la acción.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div id="comp1" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">BASE</span>
+                    </div>
+                    <div id="comp2" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">COMPLEMENTARIO</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. Armonía Análoga (Similares ± 30°) -->
+            <div class="bg-white p-5 rounded-lg border border-yellow-200 shadow-md">
+                <h3 class="text-lg font-semibold mb-3 text-yellow-700">2. Armonía Análoga (± 30°)</h3>
+                <p class="text-sm text-gray-600 mb-4">Colores adyacentes. Armonía suave y cómoda, creando transiciones naturales.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div id="anlg1" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">-30°</span>
+                    </div>
+                    <div id="anlg2" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">BASE</span>
+                    </div>
+                    <div id="anlg3" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+30°</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. Armonía Triádica (Equilibrada 120°) -->
+            <div class="bg-white p-5 rounded-lg border border-blue-200 shadow-md">
+                <h3 class="text-lg font-semibold mb-3 text-blue-700">3. Armonía Triádica (120°)</h3>
+                <p class="text-sm text-gray-600 mb-4">Tres colores espaciados uniformemente. Vivos, pero equilibrados, ofrecen riqueza de tonos.</p>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div id="triad1" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">BASE</span>
+                    </div>
+                    <div id="triad2" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+120°</span>
+                    </div>
+                    <div id="triad3" class="color-swatch flex-1 h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+240°</span>
+                    </div>
+                </div>
+            </div>
+
+             <!-- 4. Armonía Tetrádica (Cuadrada 90°) -->
+            <div class="bg-white p-5 rounded-lg border border-green-200 shadow-md">
+                <h3 class="text-lg font-semibold mb-3 text-green-700">4. Armonía Tetrádica (90°)</h3>
+                <p class="text-sm text-gray-600 mb-4">Cuatro colores equidistantes. Muy dinámica, pero requiere un color dominante claro.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div id="tetrad1" class="color-swatch h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">BASE</span>
+                    </div>
+                    <div id="tetrad2" class="color-swatch h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+90°</span>
+                    </div>
+                    <div id="tetrad3" class="color-swatch h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+180°</span>
+                    </div>
+                    <div id="tetrad4" class="color-swatch h-20 rounded-lg flex items-end justify-center p-2 transition-all duration-500">
+                        <span class="text-xs font-semibold text-white bg-black bg-opacity-30 rounded px-1">+270°</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- NUEVA SECCIÓN: PALETAS DE DATOS CIENTÍFICOS (VIRIDIS E INFERNO) -->
+        <div class="mt-12 p-6 bg-purple-50 rounded-xl border border-purple-300 shadow-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                Paletas Perceptualmente Uniformes (Visualización de Datos)
+            </h2>
+            <p class="text-gray-600 mb-6 text-sm">
+                A diferencia de las armonías de diseño, estas paletas están diseñadas para la ciencia y la visualización de datos. Son <strong>perceptualmente uniformes</strong>, lo que significa que el cambio de color se corresponde linealmente con el cambio de valor del dato, evitando distorsiones visuales. También son aptas para daltónicos.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Viridis -->
+                <div class="p-4 bg-white rounded-lg shadow-md border border-purple-200">
+                    <h3 class="text-lg font-semibold mb-2 text-purple-700">Viridis</h3>
+                    <p class="text-xs text-gray-500 mb-3">Adoptada como la paleta por defecto en librerías científicas (p. ej., Matplotlib).</p>
+                    <div class="color-palette-bar viridis-bar"></div>
+                    <ul class="list-disc pl-5 mt-3 text-sm text-gray-600 space-y-1">
+                        <li><strong>Recorrido:</strong> Azul-Oscuro → Verde → Amarillo-Brillante.</li>
+                        <li><strong>Propósito:</strong> Ofrece una excelente progresión de luminancia, ideal para mapas de calor y distribuciones.</li>
+                    </ul>
+                </div>
+
+                <!-- Inferno -->
+                <div class="p-4 bg-white rounded-lg shadow-md border border-purple-200">
+                    <h3 class="text-lg font-semibold mb-2 text-purple-700">Inferno</h3>
+                    <p class="text-xs text-gray-500 mb-3">Similar a Viridis, pero con un enfoque en los tonos cálidos y una transición más dramática.</p>
+                    <div class="color-palette-bar inferno-bar"></div>
+                    <ul class="list-disc pl-5 mt-3 text-sm text-gray-600 space-y-1">
+                        <li><strong>Recorrido:</strong> Negro → Púrpura/Rojo → Naranja → Amarillo-Vivo.</li>
+                        <li><strong>Propósito:</strong> Excelente para datos donde el valor máximo (extremo cálido) debe ser altamente visible.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <!-- FIN NUEVA SECCIÓN -->
+
+    </div>
+
+    <script>
+        // --- Variables y Funciones de Utilidad de Color ---
+        
+        // Elementos de control
+        const hueInput = document.getElementById('hue');
+        const saturationInput = document.getElementById('saturation');
+        const lightnessInput = document.getElementById('lightness');
+
+        // Elementos de visualización de valores
+        const hueValueSpan = document.getElementById('hueValue');
+        const saturationValueSpan = document.getElementById('saturationValue');
+        const lightnessValueSpan = document.getElementById('lightnessValue');
+
+        // Elementos de visualización de color base
+        const baseColorDisplay = document.getElementById('baseColorDisplay');
+        const baseColorHSL = document.getElementById('baseColorHSL');
+        const baseColorRGB = document.getElementById('baseColorRGB');
+        const baseColorHEX = document.getElementById('baseColorHEX');
+
+        // Constante de Opacidad para el cilindro 3D
+        const CYLINDER_OPACITY = 0.6; // 60% de opacidad
+
+        /**
+         * Normaliza un valor de tono (Hue) para que esté en el rango [0, 360].
+         */
+        function normalizeHue(h) {
+            return (h % 360 + 360) % 360;
+        }
+
+        /**
+         * Convierte HSL a RGB.
+         */
+        function hslToRgb(h, s, l) {
+            h /= 360;
+            s /= 100;
+            l /= 100;
+            let r, g, b;
+
+            if (s === 0) {
+                r = g = b = l; 
+            } else {
+                const hue2rgb = (p, q, t) => {
+                    if (t < 0) t += 1;
+                    if (t > 1) t -= 1;
+                    if (t < 1 / 6) return p + (q - p) * 6 * t;
+                    if (t < 1 / 2) return q;
+                    if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                    return p;
+                };
+
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1 / 3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1 / 3);
+            }
+
+            return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+        }
+
+        /**
+         * Convierte HSL a código de color Hex.
+         */
+        function hslToHex(h, s, l) {
+            const [r, g, b] = hslToRgb(h, s, l);
+            const componentToHex = c => {
+                const hex = c.toString(16);
+                return hex.length === 1 ? "0" + hex : hex;
+            };
+            return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+        }
+
+        /**
+         * Determina si el color de fondo es claro u oscuro para elegir el color de texto.
+         */
+        function getTextColor(l) {
+            return l > 50 ? 'black' : 'white';
+        }
+
+        /**
+         * Aplica un color a un elemento y actualiza su texto de contraste.
+         */
+        function applyColor(element, colorString, lightness) {
+            element.style.backgroundColor = colorString;
+            const textElement = element.querySelector('span');
+            if (textElement) {
+                const textColor = getTextColor(lightness);
+                textElement.style.color = textColor;
+                textElement.style.backgroundColor = textColor === 'white' ? 'rgba(0,0,0,0.4)' : 'rgba(255,255,255,0.4)';
+            }
+        }
+
+        // --- Funciones y Variables de Three.js ---
+
+        let scene, camera, renderer, controls;
+        let colorCylinder, colorSphere;
+        const CYL_HEIGHT = 10;
+        const CYL_RADIUS = 5;
+
+        /**
+         * Inicializa la escena 3D.
+         */
+        function initThreeJS() {
+            const container = document.getElementById('container3D');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 1. SCENE
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf0f4f8); 
+
+            // 2. CAMERA
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            // Posición de la cámara ajustada para una vista superior (5 unidades en X, 12 en Y -altura-, 12 en Z)
+            camera.position.set(5, 12, 12); 
+
+            // 3. RENDERER
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            container.appendChild(renderer.domElement);
+
+            // 4. CONTROLS (Permite rotar la escena con el ratón)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true; 
+            controls.dampingFactor = 0.05;
+            controls.minDistance = 10;
+            controls.maxDistance = 30;
+            controls.target.set(0, 0, 0); // La cámara sigue apuntando al centro del cilindro
+
+            // 5. LIGHTS
+            scene.add(new THREE.AmbientLight(0x404040, 5));
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 2);
+            directionalLight.position.set(10, 10, 10);
+            scene.add(directionalLight);
+            
+            // 6. CREAR EL CILINDRO DE COLOR HSL
+            createCylinder();
+
+            // 7. CREAR LA ESFERA DEL COLOR BASE
+            const geometry = new THREE.SphereGeometry(0.3, 16, 16);
+            const material = new THREE.MeshLambertMaterial({ color: 0xff0000 });
+            colorSphere = new THREE.Mesh(geometry, material);
+            scene.add(colorSphere);
+            
+            // 8. EJE CENTRAL (Luminosidad S=0)
+            const axisGeo = new THREE.CylinderGeometry(0.05, 0.05, CYL_HEIGHT * 1.05, 8);
+            const axisMat = new THREE.MeshBasicMaterial({ color: 0x808080 });
+            const axis = new THREE.Mesh(axisGeo, axisMat);
+            axis.position.y = 0;
+            scene.add(axis);
+
+            // Manejar redimensionamiento
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        /**
+         * Crea el cilindro con el color HSL y aplica transparencia.
+         */
+        function createCylinder() {
+            const geometry = new THREE.CylinderGeometry(CYL_RADIUS, CYL_RADIUS, CYL_HEIGHT, 64, 1, false);
+
+            // Crear un material que represente el gradiente H y L
+            const material = new THREE.ShaderMaterial({
+                uniforms: {
+                    u_height: { value: CYL_HEIGHT },
+                    u_radius: { value: CYL_RADIUS }
+                },
+                vertexShader: `
+                    varying vec3 vPosition;
+                    void main() {
+                        vPosition = position;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    varying vec3 vPosition;
+                    uniform float u_height;
+                    
+                    // Función para convertir HSL a RGB en el shader
+                    vec3 hsl2rgb(vec3 c) {
+                        vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+                        vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+                        return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+                    }
+
+                    void main() {
+                        // Calcular el Tono (H) basado en el ángulo alrededor del eje Y
+                        float hue = atan(vPosition.z, vPosition.x);
+                        hue = mod(hue / (2.0 * 3.14159) + 1.0, 1.0); // Normalizar a [0, 1]
+
+                        // Calcular la Luminosidad (L) basada en la altura (eje Y)
+                        // vPosition.y va de -CYL_HEIGHT/2 a CYL_HEIGHT/2.
+                        float lightness = (vPosition.y / u_height) + 0.5; // Normalizar a [0, 1]
+                        
+                        // Saturación (S) fija en 1.0 para el cilindro exterior
+                        float saturation = 1.0; 
+
+                        // El componente HSL a RGB requiere HSL en [0, 1]
+                        vec3 hsl = vec3(hue, saturation, lightness);
+                        vec3 rgb = hsl2rgb(hsl);
+                        
+                        // Aplicar opacidad: 0.6 (60%)
+                        gl_FragColor = vec4(rgb, 0.6); 
+                    }
+                `,
+                side: THREE.DoubleSide,
+                transparent: true, // Habilitar la transparencia
+                opacity: CYLINDER_OPACITY // Establecer la opacidad del material (Three.js lo usa para sortear)
+            });
+
+            colorCylinder = new THREE.Mesh(geometry, material);
+            scene.add(colorCylinder);
+        }
+
+        /**
+         * Mueve la esfera de color al punto correcto en el espacio 3D HSL.
+         */
+        function updateColorSphere(h, s, l) {
+            // 1. Calcular Coordenadas Polares/Cilíndricas
+            
+            // H (Hue): Ángulo en radianes (0° a 360° -> 0 a 2*PI)
+            const angle = h * Math.PI / 180; 
+
+            // L (Lightness): Posición Y (0% a 100% -> -CYL_HEIGHT/2 a CYL_HEIGHT/2)
+            const y = (l / 100) * CYL_HEIGHT - (CYL_HEIGHT / 2);
+
+            // S (Saturation): Radio (0% a 100% -> 0 a CYL_RADIUS)
+            const radius = (s / 100) * CYL_RADIUS;
+
+            // 2. Convertir a Coordenadas Cartesianas (X, Z)
+            const x = radius * Math.cos(angle);
+            const z = radius * Math.sin(angle);
+
+            // 3. Mover la esfera
+            colorSphere.position.set(x, y, z);
+            
+            // 4. Actualizar el color de la esfera (lo usa Three.js)
+            const color = new THREE.Color().setHSL(h / 360, s / 100, l / 100);
+            colorSphere.material.color.copy(color);
+        }
+
+        /**
+         * Manejador de redimensionamiento de ventana.
+         */
+        function onWindowResize() {
+            const container = document.getElementById('container3D');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        /**
+         * Bucle principal de animación y renderizado.
+         */
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update(); // Necesario si controls.enableDamping está en true
+            renderer.render(scene, camera);
+        }
+
+        // --- Función principal de actualización ---
+
+        /**
+         * Función principal que se ejecuta al cambiar cualquier slider.
+         * Calcula y actualiza todos los colores en la página (DOM y 3D).
+         */
+        function updateColor() {
+            const h = parseInt(hueInput.value, 10);
+            const s = parseInt(saturationInput.value, 10);
+            const l = parseInt(lightnessInput.value, 10);
+
+            // 1. Actualizar el estado CSS global y los valores DOM
+            document.documentElement.style.setProperty('--primary-hue', h);
+            document.documentElement.style.setProperty('--primary-saturation', `${s}%`);
+            document.documentElement.style.setProperty('--primary-lightness', `${l}%`);
+
+            hueValueSpan.textContent = `${h}°`;
+            saturationValueSpan.textContent = `${s}%`;
+            lightnessValueSpan.textContent = `${l}%`;
+
+            const baseHSL = `hsl(${h}, ${s}%, ${l}%)`;
+            const baseRGB = hslToRgb(h, s, l);
+            const baseHEX = hslToHex(h, s, l);
+
+            // Actualizar la previsualización del color base
+            baseColorDisplay.style.backgroundColor = baseHSL;
+            baseColorDisplay.style.color = getTextColor(l);
+            baseColorHSL.textContent = `HSL: (${h}, ${s}%, ${l}%)`;
+            baseColorRGB.textContent = `RGB: (${baseRGB[0]}, ${baseRGB[1]}, ${baseRGB[2]})`;
+            baseColorHEX.textContent = `HEX: ${baseHEX}`;
+
+            // 2. Actualizar el fondo de los sliders (mejora de feedback)
+            document.querySelector('.sat-slider').style.background = `linear-gradient(to right, hsl(${h}, 0%, ${l}%), hsl(${h}, 100%, ${l}%) )`;
+            document.querySelector('.light-slider').style.background = `linear-gradient(to right, hsl(${h}, ${s}%, 0%), hsl(${h}, ${s}%, 50%), hsl(${h}, ${s}%, 100%) )`;
+
+            // 3. Mover y colorear la esfera 3D
+            if (colorSphere) {
+                updateColorSphere(h, s, l);
+            }
+
+            // 4. Calcular y aplicar las armonías de color
+
+            // --- Armonía Complementaria ---
+            const hComp = normalizeHue(h + 180);
+            const compHSL = `hsl(${hComp}, ${s}%, ${l}%)`;
+            applyColor(document.getElementById('comp1'), baseHSL, l);
+            applyColor(document.getElementById('comp2'), compHSL, l);
+
+            // --- Armonía Análoga (± 30°) ---
+            const hAnlg1 = normalizeHue(h - 30);
+            const hAnlg3 = normalizeHue(h + 30);
+            const anlgHSL1 = `hsl(${hAnlg1}, ${s}%, ${l}%)`;
+            const anlgHSL3 = `hsl(${hAnlg3}, ${s}%, ${l}%)`;
+
+            applyColor(document.getElementById('anlg1'), anlgHSL1, l);
+            applyColor(document.getElementById('anlg2'), baseHSL, l);
+            applyColor(document.getElementById('anlg3'), anlgHSL3, l);
+
+            // --- Armonía Triádica (120° y 240°) ---
+            const hTriad2 = normalizeHue(h + 120);
+            const hTriad3 = normalizeHue(h + 240);
+            const triadHSL2 = `hsl(${hTriad2}, ${s}%, ${l}%)`;
+            const triadHSL3 = `hsl(${hTriad3}, ${s}%, ${l}%)`;
+
+            applyColor(document.getElementById('triad1'), baseHSL, l);
+            applyColor(document.getElementById('triad2'), triadHSL2, l);
+            applyColor(document.getElementById('triad3'), triadHSL3, l);
+
+            // --- Armonía Tetrádica (Cuadrada) (0, 90, 180, 270) ---
+            const hTetrad2 = normalizeHue(h + 90);
+            const hTetrad3 = normalizeHue(h + 180);
+            const hTetrad4 = normalizeHue(h + 270);
+            const tetradHSL2 = `hsl(${hTetrad2}, ${s}%, ${l}%)`;
+            const tetradHSL3 = `hsl(${hTetrad3}, ${s}%, ${l}%)`;
+            const tetradHSL4 = `hsl(${hTetrad4}, ${s}%, ${l}%)`;
+
+            applyColor(document.getElementById('tetrad1'), baseHSL, l);
+            applyColor(document.getElementById('tetrad2'), tetradHSL2, l);
+            applyColor(document.getElementById('tetrad3'), tetradHSL3, l);
+            applyColor(document.getElementById('tetrad4'), tetradHSL4, l);
+        }
+
+        // --- Inicialización y Event Listeners ---
+
+        window.onload = function () {
+            // Inicializar Three.js y el bucle de animación
+            initThreeJS();
+            animate();
+            
+            // Inicializar los colores al cargar
+            updateColor();
+
+            // Event Listeners para actualizar en tiempo real
+            hueInput.addEventListener('input', updateColor);
+            saturationInput.addEventListener('input', updateColor);
+            lightnessInput.addEventListener('input', updateColor);
+        };
+    </script>
+</body>
+</html>

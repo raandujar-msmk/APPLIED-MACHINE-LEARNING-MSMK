@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cuarteto de Anscombe: El Peligro de las Estadísticas</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- D3.js CDN for data visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Estilos personalizados para mejorar la visualización y adaptabilidad */
+        .chart-container {
+            width: 100%;
+            padding-top: 100%; /* Mantiene una relación de aspecto 1:1 para los gráficos */
+            position: relative;
+        }
+        .chart-container svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .domain, .tick line {
+            stroke: #e0e0e0;
+        }
+        .axis-label {
+            font-size: 0.75rem;
+            fill: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+    <div class="container mx-auto p-4 sm:p-8">
+        <!-- Título y Descripción -->
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">
+                El Cuarteto de Anscombe
+            </h1>
+            <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+                Una demostración visual que ilustra por qué los resúmenes estadísticos (como la media y la correlación) pueden ser engañosos sin un gráfico de dispersión.
+            </p>
+        </header>
+
+        <!-- Resumen Estadístico Común -->
+        <div class="bg-white shadow-xl rounded-2xl p-6 mb-10 border-t-4 border-indigo-500">
+            <h2 class="text-2xl font-bold text-indigo-600 mb-4 text-center">
+                Estadísticas Clave (Idénticas para los 4 Conjuntos)
+            </h2>
+            <div id="stats-summary" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 text-center">
+                <!-- Los datos se inyectarán con JavaScript -->
+            </div>
+            <div class="mt-6 text-sm text-gray-500 text-center">
+                <p>La línea de regresión lineal para todos los conjuntos es aproximadamente: Y = 0.5 * X + 3.0.</p>
+            </div>
+        </div>
+
+        <!-- Botón de Interacción -->
+        <div class="flex justify-center mb-8">
+            <button id="toggle-regression" class="px-6 py-3 bg-green-500 text-white font-semibold rounded-xl shadow-lg hover:bg-green-600 transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-green-300">
+                Ocultar Líneas de Regresión
+            </button>
+        </div>
+
+        <!-- Contenedores de Gráficos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="bg-white shadow-lg rounded-xl p-4 transition duration-300 hover:shadow-2xl">
+                <h3 class="text-xl font-semibold text-center mb-2 text-blue-700">Conjunto I (Distribución Lineal)</h3>
+                <div id="chart-I" class="chart-container"></div>
+            </div>
+            <div class="bg-white shadow-lg rounded-xl p-4 transition duration-300 hover:shadow-2xl">
+                <h3 class="text-xl font-semibold text-center mb-2 text-red-700">Conjunto II (Relación No Lineal)</h3>
+                <div id="chart-II" class="chart-container"></div>
+            </div>
+            <div class="bg-white shadow-lg rounded-xl p-4 transition duration-300 hover:shadow-2xl">
+                <h3 class="text-xl font-semibold text-center mb-2 text-purple-700">Conjunto III (Outlier Influyente)</h3>
+                <div id="chart-III" class="chart-container"></div>
+            </div>
+            <div class="bg-white shadow-lg rounded-xl p-4 transition duration-300 hover:shadow-2xl">
+                <h3 class="text-xl font-semibold text-center mb-2 text-orange-700">Conjunto IV (Dependencia de un Outlier)</h3>
+                <div id="chart-IV" class="chart-container"></div>
+            </div>
+        </div>
+
+        <!-- Conclusión -->
+        <div class="mt-12 p-6 bg-white shadow-2xl rounded-2xl border-l-4 border-yellow-500">
+            <h2 class="text-2xl font-bold text-gray-700 mb-3">
+                Conclusión: ¡Siempre Grafica tus Datos!
+            </h2>
+            <p class="text-gray-600">
+                Los cuatro conjuntos de datos tienen la misma línea de regresión (la línea recta), pero solo el Conjunto I es realmente lineal.
+                <ul>
+                    <li class="mt-2"><span class="font-semibold text-blue-700">Conjunto I:</span> Una relación lineal simple.</li>
+                    <li><span class="font-semibold text-red-700">Conjunto II:</span> Una clara relación curvilínea (parabólica) donde la regresión lineal es inadecuada.</li>
+                    <li><span class="font-semibold text-purple-700">Conjunto III:</span> Una relación lineal fuerte, distorsionada por un solo valor atípico (outlier) en Y.</li>
+                    <li><span class="font-semibold text-orange-700">Conjunto IV:</span> Una relación horizontal sesgada por un único punto con un valor de X muy alto. Sin ese punto, la correlación sería cero.</li>
+                </ul>
+            </p>
+        </div>
+
+    </div>
+
+    <script>
+        // Datos del Cuarteto de Anscombe (x, y)
+        const anscombeData = {
+            I: [
+                { x: 10.0, y: 8.04 }, { x: 8.0, y: 6.95 }, { x: 13.0, y: 7.58 }, { x: 9.0, y: 8.81 },
+                { x: 11.0, y: 8.33 }, { x: 14.0, y: 9.96 }, { x: 6.0, y: 7.24 }, { x: 4.0, y: 4.26 },
+                { x: 12.0, y: 10.84 }, { x: 7.0, y: 4.82 }, { x: 5.0, y: 5.68 }
+            ],
+            II: [
+                { x: 10.0, y: 9.14 }, { x: 8.0, y: 8.14 }, { x: 13.0, y: 8.74 }, { x: 9.0, y: 8.77 },
+                { x: 11.0, y: 9.26 }, { x: 14.0, y: 8.10 }, { x: 6.0, y: 6.13 }, { x: 4.0, y: 3.10 },
+                { x: 12.0, y: 9.13 }, { x: 7.0, y: 7.26 }, { x: 5.0, y: 4.74 }
+            ],
+            III: [
+                { x: 10.0, y: 7.46 }, { x: 8.0, y: 6.77 }, { x: 13.0, y: 12.74 }, { x: 9.0, y: 7.11 },
+                { x: 11.0, y: 7.81 }, { x: 14.0, y: 8.84 }, { x: 6.0, y: 6.08 }, { x: 4.0, y: 5.39 },
+                { x: 12.0, y: 8.15 }, { x: 7.0, y: 6.42 }, { x: 5.0, y: 5.73 }
+            ],
+            IV: [
+                { x: 8.0, y: 6.58 }, { x: 8.0, y: 5.76 }, { x: 8.0, y: 7.71 }, { x: 8.0, y: 8.84 },
+                { x: 8.0, y: 8.47 }, { x: 8.0, y: 7.04 }, { x: 8.0, y: 5.25 }, { x: 19.0, y: 12.50 },
+                { x: 8.0, y: 5.56 }, { x: 8.0, y: 7.91 }, { x: 8.0, y: 6.89 }
+            ]
+        };
+
+        // Propiedades estadísticas comunes (aproximadas para simplificar la visualización)
+        const commonStats = [
+            { label: 'Media de X', value: 9.0, precision: 1 },
+            { label: 'Varianza de X', value: 11.0, precision: 1 },
+            { label: 'Media de Y', value: 7.50, precision: 2 },
+            { label: 'Varianza de Y', value: 4.12, precision: 2 },
+            { label: 'Correlación (r)', value: 0.816, precision: 3 },
+            { label: 'Línea de Regresión', value: 'Y = 0.50X + 3.00', precision: 0 }
+        ];
+
+        // Configuración de los gráficos
+        const margin = { top: 20, right: 20, bottom: 40, left: 40 };
+        const colorMap = {
+            I: '#1e40af', // blue-800
+            II: '#991b1b', // red-800
+            III: '#5b21b6', // purple-800
+            IV: '#b45309' // orange-800
+        };
+
+        let showRegression = true;
+
+        /**
+         * Función para calcular la línea de regresión lineal (m * x + b)
+         * Se usa para obtener los puntos de inicio y fin de la línea.
+         */
+        function linearRegression(data) {
+            const n = data.length;
+            const sumX = d3.sum(data, d => d.x);
+            const sumY = d3.sum(data, d => d.y);
+            const sumXY = d3.sum(data, d => d.x * d.y);
+            const sumXX = d3.sum(data, d => d.x * d.x);
+
+            const meanX = sumX / n;
+            const meanY = sumY / n;
+
+            // Slope (m)
+            const m = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+
+            // Intercept (b)
+            const b = meanY - m * meanX;
+
+            return { m, b };
+        }
+
+        /**
+         * Dibuja el gráfico de dispersión para un conjunto de datos
+         */
+        function drawScatterPlot(datasetId, data) {
+            // Limpiar SVG anterior
+            d3.select(`#chart-${datasetId}`).html('');
+
+            const container = d3.select(`#chart-${datasetId}`);
+            // Usamos getBoundingClientRect para obtener el tamaño dinámico del contenedor
+            const containerNode = container.node();
+            const width = containerNode.clientWidth;
+            const height = containerNode.clientHeight;
+
+            const chartWidth = width - margin.left - margin.right;
+            const chartHeight = height - margin.top - margin.bottom;
+
+            const svg = container.append("svg")
+                .attr("viewBox", `0 0 ${width} ${height}`) // Mantiene la responsividad
+                .append("g")
+                .attr("transform", `translate(${margin.left},${margin.top})`);
+
+            // Escalas (comunes para todos los conjuntos, por Anscombe)
+            const xScale = d3.scaleLinear()
+                .domain([3, 20]) // Rango de X común
+                .range([0, chartWidth]);
+
+            const yScale = d3.scaleLinear()
+                .domain([3, 13]) // Rango de Y común
+                .range([chartHeight, 0]);
+
+            // Ejes
+            const xAxis = d3.axisBottom(xScale).ticks(5);
+            const yAxis = d3.axisLeft(yScale).ticks(5);
+
+            svg.append("g")
+                .attr("transform", `translate(0,${chartHeight})`)
+                .call(xAxis);
+
+            svg.append("g")
+                .call(yAxis);
+
+            // Títulos de los ejes
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "end")
+                .attr("x", chartWidth)
+                .attr("y", chartHeight + margin.bottom - 5)
+                .text("Variable X");
+
+            svg.append("text")
+                .attr("class", "axis-label")
+                .attr("text-anchor", "end")
+                .attr("y", -margin.left + 15)
+                .attr("x", 0)
+                .attr("transform", "rotate(-90)")
+                .text("Variable Y");
+
+            // Puntos de Dispersión
+            svg.selectAll(".dot")
+                .data(data)
+                .enter().append("circle")
+                .attr("class", "dot")
+                .attr("cx", d => xScale(d.x))
+                .attr("cy", d => yScale(d.y))
+                .attr("r", 5)
+                .attr("fill", colorMap[datasetId])
+                .attr("opacity", 0.8)
+                .on("mouseover", (event, d) => {
+                    // Tooltip simple
+                    d3.select(event.currentTarget).attr("r", 7).attr("fill", "black");
+                })
+                .on("mouseout", (event, d) => {
+                    d3.select(event.currentTarget).attr("r", 5).attr("fill", colorMap[datasetId]);
+                });
+
+            // Línea de Regresión
+            const regression = linearRegression(data);
+            const minX = d3.min(data, d => d.x);
+            const maxX = d3.max(data, d => d.x);
+
+            const lineData = [
+                { x: minX, y: regression.m * minX + regression.b },
+                { x: maxX, y: regression.m * maxX + regression.b }
+            ];
+
+            svg.append("line")
+                .datum(lineData)
+                .attr("class", `regression-line regression-${datasetId}`)
+                .attr("x1", d => xScale(d[0].x))
+                .attr("y1", d => yScale(d[0].y))
+                .attr("x2", d => xScale(d[1].x))
+                .attr("y2", d => yScale(d[1].y))
+                .attr("stroke", "black")
+                .attr("stroke-width", 2)
+                .attr("stroke-dasharray", "5,5")
+                .attr("opacity", showRegression ? 1 : 0);
+        }
+
+        /**
+         * Dibuja todos los gráficos.
+         */
+        function renderAllCharts() {
+            drawScatterPlot('I', anscombeData.I);
+            drawScatterPlot('II', anscombeData.II);
+            drawScatterPlot('III', anscombeData.III);
+            drawScatterPlot('IV', anscombeData.IV);
+        }
+
+        /**
+         * Inicializa el resumen estadístico.
+         */
+        function initializeStatsSummary() {
+            const summaryContainer = d3.select('#stats-summary');
+
+            summaryContainer.selectAll('.stat-item')
+                .data(commonStats)
+                .enter()
+                .append('div')
+                .attr('class', 'stat-item bg-gray-100 p-3 rounded-lg shadow-sm')
+                .html(d => `
+                    <p class="text-sm font-medium text-gray-500">${d.label}</p>
+                    <p class="text-xl font-bold text-indigo-800">${typeof d.value === 'string' ? d.value : d.value.toFixed(d.precision)}</p>
+                `);
+        }
+
+        /**
+         * Maneja el evento de alternar la línea de regresión.
+         */
+        function handleToggleRegression() {
+            showRegression = !showRegression;
+
+            d3.selectAll('.regression-line')
+                .transition()
+                .duration(300)
+                .attr("opacity", showRegression ? 1 : 0);
+
+            const button = document.getElementById('toggle-regression');
+            button.textContent = showRegression ? 'Ocultar Líneas de Regresión' : 'Mostrar Líneas de Regresión';
+            button.classList.toggle('bg-green-500', showRegression);
+            button.classList.toggle('hover:bg-green-600', showRegression);
+            button.classList.toggle('focus:ring-green-300', showRegression);
+            button.classList.toggle('bg-red-500', !showRegression);
+            button.classList.toggle('hover:bg-red-600', !showRegression);
+            button.classList.toggle('focus:ring-red-300', !showRegression);
+        }
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeStatsSummary();
+            renderAllCharts();
+            window.addEventListener('resize', renderAllCharts); // Hace que los gráficos se adapten al cambiar el tamaño de la ventana
+
+            document.getElementById('toggle-regression').addEventListener('click', handleToggleRegression);
+        });
+    </script>
+</body>
+</html>

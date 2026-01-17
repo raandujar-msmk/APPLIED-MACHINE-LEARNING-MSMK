@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis Crítico de Visualización de Datos</title>
+    <!-- Carga de Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: default;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        .success-bg {
+            background-color: #ecfdf5; /* green-50 */
+            border-left: 5px solid #10b981; /* green-500 */
+        }
+        .opportunity-bg {
+            background-color: #fffbeb; /* amber-50 */
+            border-left: 5px solid #f59e0b; /* amber-500 */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-10">
+        <!-- Título Principal -->
+        <header class="text-center pt-4 pb-6">
+            <h1 class="text-4xl font-extrabold text-gray-900 leading-tight">
+                Análisis Crítico de la Visualización de Contratos Menores (Civio)
+            </h1>
+            <p class="mt-3 text-lg text-gray-600">
+                Evaluación de aciertos y oportunidades de mejora desde la perspectiva del periodismo de datos y la percepción visual.
+            </p>
+            <!-- Enlace al Artículo de Civio -->
+            <a href="https://civio.es/contratacion/2020/01/29/la-invasion-de-los-contratos-menores-de-14-dot-999-99eu/" target="_blank" class="mt-2 inline-block text-blue-600 hover:text-blue-800 font-medium transition duration-150 ease-in-out">
+                Artículo original de Civio: La invasión de los contratos menores de 14.999,99€
+            </a>
+        </header>
+
+        <!-- Contenedor Flex para las dos secciones -->
+        <div class="grid lg:grid-cols-2 gap-8">
+
+            <!-- Columna de ACIERTOS (Éxito) -->
+            <section class="space-y-6">
+                <h2 class="text-3xl font-bold text-green-700 border-b-2 border-green-300 pb-2 flex items-center">
+                    <span class="mr-3 text-4xl">✅</span> Aciertos Clave de Visualización
+                </h2>
+                
+                <!-- Card 1: Elección Gráfica -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">1. La Elección Gráfica Perfecta: El Histograma</h3>
+                    <p class="text-gray-700">El gráfico de distribución es la herramienta más eficiente para demostrar una <strong>anomalía</strong>. Convierte la "masa de datos" en una forma visual que revela el patrón anómalo de manera ineludible.</p>
+                    <div class="mt-4 p-3 bg-green-200 rounded-lg text-sm font-medium text-green-900 flex items-center">
+                        <span class="mr-2 text-xl">📊</span> Principio Aplicado: <strong>Relevación Inmediata</strong> (el pico es la prueba).
+                    </div>
+                </div>
+
+                <!-- Card 2: Énfasis Pre-atentivo -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">2. Énfasis en el Indicador Pre-atentivo</h3>
+                    <p class="text-gray-700">Uso inteligente de elementos visuales para guiar la atención del lector al punto de quiebre (los €15.000).</p>
+                    <ul class="mt-3 space-y-2 text-gray-700">
+                        <li class="flex items-center">
+                            <span class="text-red-600 mr-2 text-lg">❗</span>
+                            <strong>Anotación del Límite:</strong> Línea vertical que vincula la Ley (€15.000) con el comportamiento de los datos.
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-red-600 mr-2 text-lg">🟥</span>
+                            <strong>Colorimetría (Alto Contraste):</strong> Resaltar la barra justo antes del límite (el "pico") con un color diferente (rojo), actuando como el principal foco de atención.
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Card 3: Integridad de Datos -->
+                <div class="card success-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-green-800 mb-2">3. Integridad y Confianza en los Datos</h3>
+                    <p class="text-gray-700">Al basarse en fuentes de contratación pública oficiales, la visualización no solo ilustra la historia, sino que se convierte en la <strong>prueba irrefutable</strong> que sustenta la hipótesis periodística, fortaleciendo la credibilidad.</p>
+                </div>
+            </section>
+
+            <!-- Columna de OPORTUNIDADES DE MEJORA -->
+            <section class="space-y-6">
+                <h2 class="text-3xl font-bold text-amber-700 border-b-2 border-amber-300 pb-2 flex items-center">
+                    <span class="mr-3 text-4xl">💡</span> Oportunidades de Mejora
+                </h2>
+
+                <!-- Card 1: Contextualización Temporal y Geográfica -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">1. Falta de Contextualización (Temporal y Geográfica)</h3>
+                    <p class="text-gray-700">El análisis se centra en un agregado total. Se podría haber profundizado en el <em>quién</em> y <em>cuándo</em>.</p>
+                    <ul class="mt-3 space-y-2 text-gray-700">
+                        <li class="flex items-center">
+                            <span class="text-amber-600 mr-2 text-lg">🗓️</span>
+                            <strong>Serie Temporal:</strong> Visualizar el pico a lo largo de los años para ver su evolución o impacto de cambios legislativos.
+                        </li>
+                        <li class="flex items-center">
+                            <span class="text-amber-600 mr-2 text-lg">🗺️</span>
+                            <strong>Desglose Geográfico/Sectorial:</strong> Mapa coroplético o treemap interactivo para filtrar por administraciones (CC. AA., Ayuntamientos, Ministerios).
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Card 2: Frecuencia vs. Volumen -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">2. Desglose de Frecuencia vs. Volumen (Impacto Económico)</h3>
+                    <p class="text-gray-700">El histograma solo mide la <strong>frecuencia</strong> (número de contratos), no el <strong>impacto financiero</strong> (importe total gastado).</p>
+                    <div class="mt-4 p-3 bg-amber-200 rounded-lg text-sm font-medium text-amber-900">
+                        <p class="font-bold">Sugerencia:</p>
+                        <p>Añadir una <strong>Visualización Dual</strong> que muestre el valor total acumulado por rango, fortaleciendo el argumento económico del reportaje.</p>
+                    </div>
+                </div>
+
+                <!-- Card 3: Granularidad y Cuantificación de Impacto -->
+                <div class="card opportunity-bg p-6 rounded-xl shadow-lg">
+                    <h3 class="text-xl font-semibold text-amber-800 mb-2">3. Mayor Granularidad y Detalle de Impacto</h3>
+                    <p class="text-gray-700">Aunque el pico es visible e inevitable, una mejora en la interpretación es cuantificar el impacto del fenómeno en el gráfico mismo sin forzar al lector a buscar la cifra en el texto.</p>
+                    <div class="mt-4 p-3 bg-amber-200 rounded-lg text-sm font-medium text-amber-900 flex items-center">
+                        <span class="mr-2 text-xl">🔢</span> Aplicación: Mostrar el <strong>porcentaje exacto</strong> de contratos del pico (€14.000–€15.000) de forma prominente en el gráfico o en su titular.
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Conclusión -->
+        <footer class="mt-10 pt-6 border-t border-gray-300 text-center">
+            <h3 class="text-2xl font-bold text-gray-800">Conclusión General</h3>
+            <p class="mt-2 text-gray-600 max-w-3xl mx-auto">
+                La visualización de Civio es un <strong>modelo de éxito</strong> por su claridad e inmediatez al presentar la evidencia. Sus oportunidades de mejora residen en la adición de capas de interactividad que permitan una <strong>contextualización más rica</strong> del fenómeno (geografía y tiempo).
+            </p>
+        </footer>
+    </div>
+
+</body>
+</html>
