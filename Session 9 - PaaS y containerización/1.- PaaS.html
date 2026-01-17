@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud PaaS Explorer</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f3f4f6; }
+        /* Animaciones */
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // --- ICONOS INTEGRADOS (SVG DIRECTOS) ---
+        // Esto elimina el error de carga de librerías externas
+        const Icons = {
+            Cloud: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M17.5 19c0-1.7-1.3-3-3-3h-11a3 3 0 0 1 0-6h.1a5 5 0 0 1 9.9-1.1 3 3 0 0 1 3.5 3.3"/></svg>,
+            Server: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect width="20" height="8" x="2" y="2" rx="2" ry="2"/><rect width="20" height="8" x="2" y="14" rx="2" ry="2"/><line x1="6" x2="6.01" y1="6" y2="6"/><line x1="6" x2="6.01" y1="18" y2="18"/></svg>,
+            Zap: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>,
+            Code: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>,
+            Database: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
+            Layers: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>,
+            TrendingUp: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>,
+            Shield: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+            CheckCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+            XCircle: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><circle cx="12" cy="12" r="10"/><line x1="15" x2="9" y1="9" y2="15"/><line x1="9" x2="15" y1="9" y2="15"/></svg>,
+            Box: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" x2="12" y1="22.08" y2="12"/></svg>,
+            Cpu: (props) => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" x2="9" y1="1" y2="4"/><line x1="15" x2="15" y1="1" y2="4"/><line x1="9" x2="9" y1="20" y2="23"/><line x1="15" x2="15" y1="20" y2="23"/><line x1="20" x2="23" y1="9" y2="9"/><line x1="20" x2="23" y1="14" y2="14"/><line x1="1" x2="4" y1="9" y2="9"/><line x1="1" x2="4" y1="14" y2="14"/></svg>
+        };
+
+        // --- DATA ---
+        const providers = [
+            {
+                id: 'aws',
+                name: 'AWS',
+                category: 'Big 3 Cloud',
+                products: 'Lambda, Elastic Beanstalk, App Runner',
+                pros: ['Estándar de la industria', 'Infinitamente escalable', 'Ecosistema masivo'],
+                cons: ['Curva de aprendizaje muy alta', 'Costos impredecibles', 'Interfaz compleja'],
+                color: 'bg-orange-500',
+                idealFor: 'Empresas grandes, arquitecturas complejas, control total.',
+                icon: <Icons.Cloud className="text-white" />
+            },
+            {
+                id: 'azure',
+                name: 'Microsoft Azure',
+                category: 'Big 3 Cloud',
+                products: 'App Service, Azure Functions',
+                pros: ['Integración perfecta con .NET/Windows', 'Fuerte en Enterprise', 'Híbrido'],
+                cons: ['Panel de control denso', 'Lento en innovación UX', 'Costoso para startups'],
+                color: 'bg-blue-600',
+                idealFor: 'Entornos corporativos, stack Microsoft, Enterprise.',
+                icon: <Icons.Database className="text-white" />
+            },
+            {
+                id: 'gcp',
+                name: 'Google Cloud (GCP)',
+                category: 'Big 3 Cloud',
+                products: 'Cloud Run, App Engine, Functions',
+                pros: ['Líder en Kubernetes (GKE)', 'Excelente analítica de datos', 'Cloud Run es top-tier'],
+                cons: ['Soporte al cliente limitado', 'Historial de matar productos', 'UX inconsistente'],
+                color: 'bg-red-500',
+                idealFor: 'Big Data, Contenedores (K8s), IA/ML.',
+                icon: <Icons.Server className="text-white" />
+            },
+            {
+                id: 'vercel',
+                name: 'Vercel',
+                category: 'Modern PaaS',
+                products: 'Vercel Functions, Edge Middleware',
+                pros: ['DX (Experiencia de desarrollo) increíble', 'Optimizado para Next.js', 'Edge Network global'],
+                cons: ['Caro al escalar mucho', 'Vendor lock-in con su framework', 'Menos control backend'],
+                color: 'bg-black',
+                idealFor: 'Frontend, Sitios estáticos, E-commerce headless, Next.js.',
+                icon: <Icons.Zap className="text-white" />
+            },
+            {
+                id: 'render',
+                name: 'Render',
+                category: 'Modern PaaS',
+                products: 'Web Services, Cron Jobs',
+                pros: ['Extremadamente fácil de usar', 'Precios predecibles', 'Soporta Docker nativo'],
+                cons: ['Menos regiones que AWS', 'Ecosistema más pequeño', 'Tiempos de build variables'],
+                color: 'bg-indigo-600',
+                idealFor: 'Startups, APIs, Alternativa moderna a Heroku.',
+                icon: <Icons.Layers className="text-white" />
+            },
+            {
+                id: 'do',
+                name: 'Digital Ocean',
+                category: 'Developer Cloud',
+                products: 'App Platform, Functions',
+                pros: ['Documentación excelente', 'Precios muy claros', 'Equilibrio simpleza/control'],
+                cons: ['Menos servicios gestionados que AWS', 'App Platform es "nuevo"', 'Menos features Enterprise'],
+                color: 'bg-blue-400',
+                idealFor: 'Desarrolladores independientes, PyMEs, Apps monolíticas.',
+                icon: <Icons.Code className="text-white" />
+            }
+        ];
+
+        // --- COMPONENTS ---
+
+        const NavButton = ({ active, onClick, children, icon }) => (
+            <button 
+                onClick={onClick}
+                className={`flex items-center gap-2 px-3 py-2 md:px-4 md:py-3 rounded-lg font-medium transition-all text-sm md:text-base ${
+                    active 
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-200 transform scale-105' 
+                    : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+            >
+                {icon}
+                {children}
+            </button>
+        );
+
+        const ConceptCard = ({ title, description, icon, isServerless }) => (
+            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                    <div className={`p-3 rounded-lg ${isServerless ? 'bg-purple-100 text-purple-600' : 'bg-blue-100 text-blue-600'}`}>
+                        {icon}
+                    </div>
+                    <h3 className="font-bold text-lg text-gray-800">{title}</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed text-sm md:text-base">{description}</p>
+                <div className="text-xs md:text-sm font-medium text-gray-500 bg-gray-50 p-3 rounded-lg">
+                    {isServerless ? 'Ejemplo: AWS Lambda, Vercel Functions' : 'Ejemplo: DO App Platform, Render'}
+                </div>
+            </div>
+        );
+
+        const ProviderCard = ({ provider, isSelected, onClick }) => (
+            <div 
+                onClick={onClick}
+                className={`cursor-pointer p-4 rounded-xl border transition-all flex items-center gap-4 ${
+                    isSelected 
+                    ? 'border-blue-500 bg-blue-50 shadow-md ring-1 ring-blue-500' 
+                    : 'border-gray-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                }`}
+            >
+                <div className={`w-10 h-10 md:w-12 md:h-12 rounded-lg flex items-center justify-center shrink-0 ${provider.color}`}>
+                    {provider.icon}
+                </div>
+                <div>
+                    <h3 className="font-bold text-gray-800 text-sm md:text-base">{provider.name}</h3>
+                    <span className="text-[10px] md:text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {provider.category}
+                    </span>
+                </div>
+            </div>
+        );
+
+        const ComparisonView = () => {
+            const [selectedId, setSelectedId] = useState('aws');
+            const selected = providers.find(p => p.id === selectedId);
+
+            return (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 fade-in">
+                    {/* Sidebar List */}
+                    <div className="lg:col-span-4 flex flex-col gap-3">
+                        <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">Selecciona una plataforma</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                        {providers.map(p => (
+                            <ProviderCard 
+                                key={p.id} 
+                                provider={p} 
+                                isSelected={selectedId === p.id}
+                                onClick={() => setSelectedId(p.id)}
+                            />
+                        ))}
+                        </div>
+                    </div>
+
+                    {/* Detail View */}
+                    <div className="lg:col-span-8">
+                        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden h-full">
+                            <div className={`p-6 ${selected.color} text-white flex justify-between items-start`}>
+                                <div>
+                                    <h2 className="text-2xl md:text-3xl font-bold mb-2">{selected.name}</h2>
+                                    <p className="opacity-90 font-medium text-base md:text-lg">{selected.idealFor}</p>
+                                </div>
+                                <div className="hidden md:block bg-white/20 p-3 rounded-xl backdrop-blur-sm">
+                                    {selected.icon}
+                                </div>
+                            </div>
+
+                            <div className="p-6 space-y-8">
+                                <div>
+                                    <h4 className="flex items-center gap-2 font-bold text-gray-800 mb-3">
+                                         <Icons.Box size={20} className="text-blue-500"/> Productos Clave PaaS
+                                    </h4>
+                                    <p className="text-gray-600 bg-gray-50 p-4 rounded-lg border border-gray-100">
+                                        {selected.products}
+                                    </p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div>
+                                        <h4 className="flex items-center gap-2 font-bold text-green-600 mb-3">
+                                            <Icons.CheckCircle size={20} /> Ventajas
+                                        </h4>
+                                        <ul className="space-y-2">
+                                            {selected.pros.map((pro, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-green-500 shrink-0"/>
+                                                    {pro}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+
+                                    <div>
+                                        <h4 className="flex items-center gap-2 font-bold text-red-600 mb-3">
+                                            <Icons.XCircle size={20} /> Desafíos
+                                        </h4>
+                                        <ul className="space-y-2">
+                                            {selected.cons.map((con, idx) => (
+                                                <li key={idx} className="flex items-start gap-2 text-gray-600 text-sm">
+                                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0"/>
+                                                    {con}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const ConceptsView = () => (
+            <div className="space-y-8 fade-in">
+                <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl p-6 md:p-8 text-white shadow-lg">
+                    <h2 className="text-2xl font-bold mb-4">¿Qué es PaaS?</h2>
+                    <p className="text-blue-100 text-base md:text-lg leading-relaxed max-w-2xl">
+                        Platform as a Service elimina la necesidad de gestionar servidores (OS, actualizaciones, seguridad de red).
+                        Tú traes el código, ellos gestionan la infraestructura.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                    <ConceptCard 
+                        title="PaaS Tradicional / Contenedores" 
+                        icon={<Icons.Box size={24} />}
+                        isServerless={false}
+                        description="Tu aplicación corre siempre en contenedores o máquinas virtuales gestionadas. Pagas por la capacidad reservada (RAM/CPU) aunque nadie visite tu web. Ideal para apps con tráfico constante o procesos de larga duración."
+                    />
+                    <ConceptCard 
+                        title="Serverless / FaaS" 
+                        icon={<Icons.Zap size={24} />}
+                        isServerless={true}
+                        description="Tu código 'duerme' hasta que alguien lo llama. Escala a cero (costo cero) si no hay uso y escala a miles de instancias en milisegundos. Pagas por ejecución y tiempo de cómputo exacto."
+                    />
+                </div>
+
+                <div className="bg-white p-4 md:p-8 rounded-2xl border border-gray-200">
+                    <h3 className="text-xl font-bold text-center mb-8 flex items-center justify-center gap-2">
+                        <Icons.TrendingUp className="text-blue-600"/>
+                        Espectro de Abstracción
+                    </h3>
+                    <div className="flex flex-col md:flex-row gap-4 items-center justify-center">
+                        <div className="flex-1 w-full p-4 bg-gray-50 rounded-lg border border-gray-200 text-center opacity-60">
+                            <div className="font-bold text-gray-500 mb-1">IaaS (EC2, Droplets)</div>
+                            <div className="text-xs text-gray-400">Tú gestionas el OS</div>
+                        </div>
+                        <div className="hidden md:block text-gray-300">→</div>
+                        <div className="flex-1 w-full p-4 bg-blue-50 rounded-lg border border-blue-200 text-center transform scale-105 shadow-md">
+                            <div className="font-bold text-blue-700 mb-1">PaaS (Render, App Platform)</div>
+                            <div className="text-xs text-blue-500">Tú gestionas el contenedor</div>
+                        </div>
+                        <div className="hidden md:block text-gray-300">→</div>
+                        <div className="flex-1 w-full p-4 bg-purple-50 rounded-lg border border-purple-200 text-center">
+                            <div className="font-bold text-purple-700 mb-1">Serverless (Lambda, Vercel)</div>
+                            <div className="text-xs text-purple-500">Tú gestionas la función</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const WizardView = () => {
+            const [scenario, setScenario] = useState(null);
+
+            const scenarios = [
+                {
+                    id: 1,
+                    title: "Frontend Next.js / React",
+                    subtitle: "E-commerce, Blog, Marketing",
+                    icon: <Icons.Layers size={32} className="text-black" />,
+                    best: ['vercel', 'render'],
+                    reason: "Vercel está optimizado nativamente para Next.js. Render es excelente para React estático gratuito."
+                },
+                {
+                    id: 2,
+                    title: "API Python/Node en Docker",
+                    subtitle: "Backend REST, Microservicio",
+                    icon: <Icons.Box size={32} className="text-blue-600" />,
+                    best: ['render', 'do', 'gcp'],
+                    reason: "Google Cloud Run (GCP) es el rey de los contenedores serverless. Render y Digital Ocean hacen el despliegue de Docker trivialmente fácil."
+                },
+                {
+                    id: 3,
+                    title: "App Corporativa .NET",
+                    subtitle: "Intranet, Servicios Financieros",
+                    icon: <Icons.Shield size={32} className="text-blue-800" />,
+                    best: ['azure', 'aws'],
+                    reason: "Azure App Service tiene la mejor integración con el ecosistema Microsoft. AWS es la alternativa segura para Enterprise."
+                }
+            ];
+
+            return (
+                <div className="fade-in max-w-4xl mx-auto">
+                    <h2 className="text-2xl font-bold text-center mb-8">¿Qué vas a construir hoy?</h2>
+
+                    <div className="grid md:grid-cols-3 gap-6 mb-12">
+                        {scenarios.map(s => (
+                            <button 
+                                key={s.id}
+                                onClick={() => setScenario(s)}
+                                className={`p-6 rounded-xl border-2 transition-all text-left flex flex-col gap-4 hover:shadow-lg ${
+                                    scenario?.id === s.id 
+                                    ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500 ring-offset-2' 
+                                    : 'border-gray-200 bg-white hover:border-blue-300'
+                                }`}
+                            >
+                                <div className="bg-white p-3 rounded-lg w-fit shadow-sm border border-gray-100">
+                                    {s.icon}
+                                </div>
+                                <div>
+                                    <div className="font-bold text-gray-800">{s.title}</div>
+                                    <div className="text-xs md:text-sm text-gray-500 mt-1">{s.subtitle}</div>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+
+                    {scenario && (
+                        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden fade-in">
+                            <div className="bg-green-600 text-white p-4 font-bold flex items-center gap-2">
+                                <Icons.CheckCircle size={20} /> Recomendación
+                            </div>
+                            <div className="p-8">
+                                <p className="text-lg text-gray-700 mb-8 font-medium">
+                                    {scenario.reason}
+                                </p>
+                                
+                                <div className="grid md:grid-cols-2 gap-4">
+                                    {scenario.best.map(bId => {
+                                        const provider = providers.find(p => p.id === bId);
+                                        return (
+                                            <div key={bId} className="flex items-center gap-4 p-4 rounded-xl border border-gray-200 bg-gray-50">
+                                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-white ${provider.color}`}>
+                                                    {provider.icon}
+                                                </div>
+                                                <span className="font-bold text-gray-800">{provider.name}</span>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        function App() {
+            const [view, setView] = useState('concepts');
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
+                    <div className="max-w-6xl w-full space-y-8">
+                        
+                        {/* Header */}
+                        <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+                            <div className="flex items-center gap-3 self-start md:self-auto">
+                                <div className="bg-blue-600 p-3 rounded-xl text-white shadow-lg shadow-blue-200">
+                                    <Icons.Cloud size={28} strokeWidth={2.5} />
+                                </div>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-900 tracking-tight">Cloud PaaS Explorer</h1>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 p-1.5 bg-gray-200/50 rounded-xl backdrop-blur-sm w-full md:w-auto overflow-x-auto">
+                                <NavButton 
+                                    active={view === 'concepts'} 
+                                    onClick={() => setView('concepts')}
+                                    icon={<Icons.Box size={18}/>}
+                                >
+                                    Conceptos
+                                </NavButton>
+                                <NavButton 
+                                    active={view === 'compare'} 
+                                    onClick={() => setView('compare')}
+                                    icon={<Icons.TrendingUp size={18}/>}
+                                >
+                                    Comparativa
+                                </NavButton>
+                                <NavButton 
+                                    active={view === 'wizard'} 
+                                    onClick={() => setView('wizard')}
+                                    icon={<Icons.Cpu size={18}/>}
+                                >
+                                    Simulador
+                                </NavButton>
+                            </div>
+                        </div>
+
+                        {/* Main Content */}
+                        <div className="min-h-[600px]">
+                            {view === 'concepts' && <ConceptsView />}
+                            {view === 'compare' && <ComparisonView />}
+                            {view === 'wizard' && <WizardView />}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="text-center text-gray-400 text-sm py-8 border-t border-gray-200">
+                            Ilustración de servicios Cloud Computing y Serverless
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>

@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conceptos de Containerización</title>
+    <style>
+        :root {
+            --primary: #0db7ed;
+            --dark: #24292e;
+            --light: #f6f8fa;
+            --vm-color: #ff9800;
+            --cont-color: #4caf50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f2f5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            line-height: 1.6;
+        }
+        header {
+            background-color: var(--dark);
+            color: white;
+            padding: 1rem 2rem;
+            text-align: center;
+        }
+        h1 { margin: 0; }
+        .container {
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            padding: 25px;
+            overflow: hidden;
+        }
+        h2 { border-bottom: 2px solid var(--primary); padding-bottom: 10px; color: var(--dark); }
+        
+        /* Navigation Tabs */
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn {
+            padding: 10px 20px;
+            border: none;
+            background: #e0e0e0;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .tab-btn.active { background: var(--primary); color: white; }
+        .tab-content { display: none; animation: fadeIn 0.5s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* VM vs Container Visualization */
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            text-align: center;
+        }
+        @media (max-width: 600px) { .comparison-grid { grid-template-columns: 1fr; } }
+        
+        .stack-box {
+            border: 2px solid #ddd;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 4px;
+            font-weight: bold;
+            color: white;
+            transition: transform 0.2s;
+        }
+        .stack-box:hover { transform: scale(1.02); }
+        .hardware { background: #333; }
+        .os { background: #555; }
+        .hypervisor { background: var(--vm-color); }
+        .engine { background: var(--primary); }
+        .app-vm { background: #ffcc80; color: #333; border: 2px dashed var(--vm-color); }
+        .app-cont { background: #a5d6a7; color: #333; border: 2px dashed var(--cont-color); }
+        .libs { font-size: 0.8em; opacity: 0.9; display: block; font-weight: normal; }
+
+        /* Lifecycle Animation */
+        .lifecycle-stage {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        .entity {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            font-weight: bold;
+            position: relative;
+        }
+        .image-entity { background: #e3f2fd; border: 2px solid var(--primary); color: var(--primary); }
+        .container-entity { background: #e8f5e9; border: 2px solid var(--cont-color); color: var(--cont-color); }
+        .arrow { font-size: 2rem; color: #aaa; }
+        
+        /* Terminal Simulator */
+        .terminal {
+            background: #1e1e1e;
+            color: #00ff00;
+            font-family: 'Courier New', Courier, monospace;
+            padding: 20px;
+            border-radius: 6px;
+            height: 300px;
+            overflow-y: auto;
+            position: relative;
+        }
+        .output { white-space: pre-wrap; margin-bottom: 10px; color: #ccc; }
+        .input-line { display: flex; }
+        .prompt { color: var(--primary); margin-right: 10px; }
+        input[type="text"] {
+            background: transparent;
+            border: none;
+            color: white;
+            font-family: inherit;
+            flex-grow: 1;
+            outline: none;
+        }
+        .cmd-hint {
+            margin-top: 10px;
+            font-size: 0.9em;
+            background: #fff3cd;
+            padding: 10px;
+            border-left: 4px solid #ffc107;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>📦 Explorador de Containerización</h1>
+    <p>Aprende Docker y conceptos clave de forma interactiva</p>
+</header>
+
+<div class="container">
+    
+    <div class="tabs">
+        <button class="tab-btn active" onclick="openTab('concept')">1. Concepto Básico</button>
+        <button class="tab-btn" onclick="openTab('vm-vs-cont')">2. VMs vs Contenedores</button>
+        <button class="tab-btn" onclick="openTab('lifecycle')">3. Imagen vs Contenedor</button>
+        <button class="tab-btn" onclick="openTab('terminal')">4. Simulador Interactivo</button>
+    </div>
+
+    <div id="concept" class="tab-content active">
+        <div class="card">
+            <h2>¿Qué es la Containerización?</h2>
+            <p>Imagina que quieres enviar software de tu ordenador al de un amigo (o a un servidor). En tu ordenador funciona bien, pero en el suyo falla porque le faltan librerías o tiene una versión diferente de Windows/Linux.</p>
+            <p><strong>La solución:</strong> Meter el software y <em>todo lo que necesita para funcionar</em> (código, librerías, configuraciones) en una caja estandarizada.</p>
+            <blockquote>
+                <p>📦 <strong>El Contenedor:</strong> Es esa caja. Es ligero, portátil y se ejecuta igual en cualquier lugar.</p>
+            </blockquote>
+        </div>
+    </div>
+
+    <div id="vm-vs-cont" class="tab-content">
+        <div class="card">
+            <h2>Arquitectura: Virtualización vs Containerización</h2>
+            <p>La diferencia clave es que los contenedores comparten el núcleo (kernel) del Sistema Operativo, mientras que las VMs necesitan un SO completo cada una.</p>
+            
+            <div class="comparison-grid">
+                <div>
+                    <h3>Máquina Virtual (Pesada)</h3>
+                    <div class="stack-box app-vm">App A <span class="libs">+ Librerías</span></div>
+                    <div class="stack-box app-vm">Guest OS (GBs)</div>
+                    <div class="stack-box hypervisor">Hypervisor</div>
+                    <div class="stack-box os">Sistema Operativo Host</div>
+                    <div class="stack-box hardware">Infraestructura (Hardware)</div>
+                </div>
+
+                <div>
+                    <h3>Contenedor (Ligero)</h3>
+                    <div class="stack-box app-cont">App A <span class="libs">+ Librerías</span></div>
+                    <div class="stack-box app-cont">App B <span class="libs">+ Librerías</span></div>
+                    <div class="stack-box engine">Motor Docker (Container Engine)</div>
+                    <div class="stack-box os">Sistema Operativo Host</div>
+                    <div class="stack-box hardware">Infraestructura (Hardware)</div>
+                </div>
+            </div>
+            <p style="margin-top:15px; font-size: 0.9rem;"><em>Nota como los contenedores se saltan la capa del "Guest OS", ahorrando gigabytes de espacio y tiempo de arranque.</em></p>
+        </div>
+    </div>
+
+    <div id="lifecycle" class="tab-content">
+        <div class="card">
+            <h2>Imagen vs. Contenedor</h2>
+            <p>Esta es la distinción más importante en Docker.</p>
+            
+            <div class="lifecycle-stage">
+                <div class="entity image-entity">
+                    <div>📄 IMAGEN</div>
+                    <div style="font-size:0.8rem; font-weight:normal;">(Solo lectura)</div>
+                </div>
+                <div class="arrow">➜</div>
+                <div class="entity">
+                    <div>comando<br><code>run</code></div>
+                </div>
+                <div class="arrow">➜</div>
+                <div class="entity container-entity">
+                    <div>📦 CONTENEDOR</div>
+                    <div style="font-size:0.8rem; font-weight:normal;">(En ejecución)</div>
+                </div>
+            </div>
+
+            <ul>
+                <li><strong>La Imagen:</strong> Es el plano, la receta o la plantilla. Es estática. (Ej: La clase `Coche` en programación).</li>
+                <li><strong>El Contenedor:</strong> Es la instancia viva de esa imagen. Puedes tener muchos contenedores de la misma imagen. (Ej: El objeto `miFerrari` creado desde la clase `Coche`).</li>
+            </ul>
+        </div>
+    </div>
+
+    <div id="terminal" class="tab-content">
+        <div class="card">
+            <h2>💻 Pruébalo tú mismo</h2>
+            <p>Este es un simulador básico. Intenta ejecutar comandos para ver cómo funciona el flujo.</p>
+            
+            <div class="cmd-hint">
+                <strong>Comandos disponibles:</strong><br>
+                <code>docker images</code> (Ver planos disponibles)<br>
+                <code>docker run hello-world</code> (Crear un contenedor)<br>
+                <code>docker ps</code> (Ver contenedores activos)<br>
+                <code>clear</code> (Limpiar pantalla)
+            </div>
+
+            <div class="terminal" id="terminal-window" onclick="document.getElementById('cmd-input').focus()">
+                <div id="terminal-output" class="output">user@host:~$ Bienvenido al simulador de Docker v1.0...</div>
+                <div class="input-line">
+                    <span class="prompt">user@host:~$</span>
+                    <input type="text" id="cmd-input" autocomplete="off" autofocus>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Tab Logic
+    function openTab(tabName) {
+        const contents = document.getElementsByClassName('tab-content');
+        const buttons = document.getElementsByClassName('tab-btn');
+        
+        for (let content of contents) content.classList.remove('active');
+        for (let btn of buttons) btn.classList.remove('active');
+
+        document.getElementById(tabName).classList.add('active');
+        // Find the button that called this function logic implies finding by index or adding ID, 
+        // but straightforward loop works for click styling:
+        event.currentTarget.classList.add('active');
+    }
+
+    // Terminal Logic
+    const input = document.getElementById('cmd-input');
+    const outputDiv = document.getElementById('terminal-output');
+    const terminalWindow = document.getElementById('terminal-window');
+
+    let isRunningContainer = false;
+
+    input.addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            const cmd = input.value.trim().toLowerCase();
+            processCommand(cmd);
+            input.value = '';
+            // Auto scroll to bottom
+            setTimeout(() => {
+                terminalWindow.scrollTop = terminalWindow.scrollHeight;
+            }, 10);
+        }
+    });
+
+    function print(text, color = '#ccc') {
+        const line = document.createElement('div');
+        line.style.color = color;
+        line.innerText = text;
+        outputDiv.appendChild(line);
+    }
+
+    function processCommand(cmd) {
+        // Echo the command
+        print(`user@host:~$ ${cmd}`, '#fff');
+
+        if (cmd === 'help') {
+            print("Comandos: docker images, docker run [imagen], docker ps, clear");
+        } 
+        else if (cmd === 'clear') {
+            outputDiv.innerHTML = '';
+        }
+        else if (cmd === 'docker images') {
+            print("REPOSITORY    TAG       IMAGE ID       CREATED        SIZE", '#0db7ed');
+            print("ubuntu        latest    74f2314a03de   2 weeks ago    72.8MB");
+            print("node          14-alpine a2b3c4d5e6f7   3 days ago     112MB");
+            print("hello-world   latest    feb5d9fea6a5   5 months ago   13.3kB");
+        }
+        else if (cmd.startsWith('docker run')) {
+            const parts = cmd.split(' ');
+            if (parts.length < 3) {
+                print("Error: Debes especificar una imagen. Ejemplo: 'docker run hello-world'", '#ff5555');
+            } else {
+                const img = parts[2];
+                if (img === 'hello-world') {
+                    print("Unable to find image 'hello-world:latest' locally", '#aaa');
+                    print("latest: Pulling from library/hello-world", '#aaa');
+                    print("Digest: sha256:88ec0...", '#aaa');
+                    print("Status: Downloaded newer image for hello-world:latest", '#aaa');
+                    print("\nHello from Docker!", '#00ff00');
+                    print("This message shows that your installation appears to be working correctly.\n");
+                    isRunningContainer = false; // hello-world exits immediately
+                } else if (img === 'ubuntu' || img === 'node') {
+                    const id = Math.random().toString(16).substr(2, 12);
+                    print(id, '#aaa'); // Docker prints the ID
+                    isRunningContainer = true;
+                    // Save state for 'docker ps'
+                    window.lastContainer = { id: id, image: img };
+                } else {
+                    print(`Unable to find image '${img}:latest' locally... error pulling image configuration.`, '#ff5555');
+                }
+            }
+        }
+        else if (cmd === 'docker ps') {
+            print("CONTAINER ID   IMAGE         COMMAND    STATUS          PORTS", '#0db7ed');
+            if (window.lastContainer && isRunningContainer) {
+                print(`${window.lastContainer.id}   ${window.lastContainer.image}        "bash"     Up 5 seconds`, '#ccc');
+            } else {
+                // Empty list
+            }
+        }
+        else if (cmd === '') {
+            // Do nothing
+        }
+        else {
+            print(`Comando no encontrado: ${cmd}`, '#ff5555');
+        }
+    }
+</script>
+
+</body>
+</html>

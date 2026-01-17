@@ -1,0 +1,445 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Box, 
+  Layers, 
+  Server, 
+  Cloud, 
+  ArrowRight, 
+  Database, 
+  Zap, 
+  CheckCircle, 
+  Loader, 
+  Code, 
+  Globe, 
+  Cpu,
+  RefreshCw
+} from 'lucide-react';
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('concepts');
+  
+  return (
+    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans selection:bg-blue-100">
+      <nav className="bg-slate-900 text-white p-4 sticky top-0 z-50 shadow-lg">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center">
+          <div className="flex items-center space-x-2 mb-4 md:mb-0">
+            <Box className="text-blue-400" size={28} />
+            <h1 className="text-xl font-bold tracking-tight">Cloud Containers Edu</h1>
+          </div>
+          <div className="flex space-x-2 bg-slate-800 p-1 rounded-lg">
+            {['concepts', 'simulation', 'comparison'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  activeTab === tab 
+                    ? 'bg-blue-600 text-white shadow-md' 
+                    : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                }`}
+              >
+                {tab === 'concepts' && 'Conceptos'}
+                {tab === 'simulation' && 'Simulación Interactiva'}
+                {tab === 'comparison' && 'PaaS vs Serverless'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
+
+      <main className="max-w-5xl mx-auto p-6">
+        {activeTab === 'concepts' && <ConceptsView onChangeTab={setActiveTab} />}
+        {activeTab === 'simulation' && <SimulationView />}
+        {activeTab === 'comparison' && <ComparisonView />}
+      </main>
+
+      <footer className="bg-slate-200 text-center p-6 text-slate-500 text-sm mt-12">
+        <p>Documento educativo interactivo generado para explicar arquitecturas de contenedores.</p>
+      </footer>
+    </div>
+  );
+};
+
+// --- VISTA 1: CONCEPTOS ---
+const ConceptsView = ({ onChangeTab }) => {
+  return (
+    <div className="space-y-8 animate-fade-in">
+      <div className="text-center max-w-3xl mx-auto mb-12">
+        <h2 className="text-3xl font-bold text-slate-900 mb-4">Entendiendo la Base</h2>
+        <p className="text-lg text-slate-600">
+          Antes de desplegar, es crucial entender qué es un contenedor y por qué el repositorio de imágenes (Registry) es el corazón de la nube moderna.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card 
+          icon={<Box className="text-blue-500" size={40} />}
+          title="El Contenedor"
+          description="Una unidad estándar de software que empaqueta el código y todas sus dependencias para que la aplicación se ejecute de forma rápida y fiable de un entorno informático a otro."
+        >
+          <ul className="mt-4 space-y-2 text-sm text-slate-600">
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Aísla la aplicación del entorno.</li>
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Ligero y portátil.</li>
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Inmutable (se reemplaza, no se actualiza).</li>
+          </ul>
+        </Card>
+
+        <Card 
+          icon={<Database className="text-purple-500" size={40} />}
+          title="El Repositorio (Container Registry)"
+          description="Es una biblioteca donde se almacenan las imágenes de los contenedores. Actúa como el puente entre el desarrollo (tu ordenador) y la producción (la nube)."
+        >
+          <ul className="mt-4 space-y-2 text-sm text-slate-600">
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Almacenamiento versionado (tags).</li>
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Control de acceso y seguridad.</li>
+            <li className="flex items-center"><CheckCircle size={16} className="text-green-500 mr-2"/> Ejemplos: Docker Hub, ECR, GCR, ACR.</li>
+          </ul>
+        </Card>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 flex flex-col md:flex-row items-center justify-between">
+        <div className="mb-4 md:mb-0">
+          <h3 className="text-lg font-semibold text-blue-900">¿Cómo se conectan?</h3>
+          <p className="text-blue-700 text-sm mt-1">
+            Las aplicaciones PaaS y Serverless no "tienen" tu código fuente directamente; 
+            generalmente descargan (hacen pull) la imagen exacta desde el Repositorio.
+          </p>
+        </div>
+        <button 
+          onClick={() => onChangeTab('simulation')}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center shadow-lg"
+        >
+          Ver Simulación <ArrowRight className="ml-2" size={18} />
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// --- VISTA 2: SIMULACIÓN ---
+const SimulationView = () => {
+  const [step, setStep] = useState(0); // 0: Idle, 1: Build, 2: Push, 3: Deploy
+  const [targetEnv, setTargetEnv] = useState('paas'); // 'paas' or 'serverless'
+  const [logs, setLogs] = useState([]);
+
+  const addLog = (message) => {
+    setLogs(prev => [...prev, `> ${message}`]);
+  };
+
+  const startSimulation = () => {
+    setStep(1);
+    setLogs(['Iniciando proceso CI/CD...']);
+    
+    // Step 1: Build
+    setTimeout(() => {
+      addLog('Leyendo Dockerfile...');
+      addLog('Instalando dependencias...');
+      addLog('Construyendo imagen: mi-app:v1.0');
+      
+      // Step 2: Push
+      setTimeout(() => {
+        setStep(2);
+        addLog('Conectando al Container Registry...');
+        addLog('Subiendo capas [====================] 100%');
+        addLog('Imagen almacenada exitosamente.');
+        
+        // Step 3: Deploy
+        setTimeout(() => {
+          setStep(3);
+          addLog(`Detectando nuevo tag en Registry...`);
+          addLog(`Plataforma ${targetEnv.toUpperCase()} solicitando imagen...`);
+          addLog('Descargando imagen (Pull)...');
+          addLog('Iniciando contenedor...');
+          addLog(targetEnv === 'serverless' ? 'Esperando tráfico HTTP para escalar...' : 'Aplicación disponible y estable.');
+        }, 2500);
+      }, 2500);
+    }, 2000);
+  };
+
+  const reset = () => {
+    setStep(0);
+    setLogs([]);
+  };
+
+  return (
+    <div className="animate-fade-in">
+       <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-slate-900">Ciclo de Vida del Contenedor</h2>
+        <p className="text-slate-600 mt-2">Simula cómo viaja el código desde tu máquina hasta la nube.</p>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+        {/* Controls */}
+        <div className="bg-slate-100 p-4 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-semibold text-slate-700">Destino:</span>
+            <div className="flex bg-slate-200 rounded-lg p-1">
+              <button 
+                onClick={() => { if(step === 0) setTargetEnv('paas'); }}
+                className={`px-3 py-1 text-sm rounded-md transition-all ${targetEnv === 'paas' ? 'bg-white shadow text-blue-700 font-bold' : 'text-slate-500'}`}
+                disabled={step !== 0}
+              >
+                PaaS
+              </button>
+              <button 
+                onClick={() => { if(step === 0) setTargetEnv('serverless'); }}
+                className={`px-3 py-1 text-sm rounded-md transition-all ${targetEnv === 'serverless' ? 'bg-white shadow text-purple-700 font-bold' : 'text-slate-500'}`}
+                disabled={step !== 0}
+              >
+                Serverless
+              </button>
+            </div>
+          </div>
+          
+          {step === 0 ? (
+            <button 
+              onClick={startSimulation}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg font-bold flex items-center transition-transform active:scale-95"
+            >
+              <Zap size={18} className="mr-2" /> Iniciar Despliegue
+            </button>
+          ) : (
+             <button 
+              onClick={reset}
+              disabled={step < 3}
+              className={`px-6 py-2 rounded-lg font-bold flex items-center transition-colors ${step < 3 ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-800 text-white hover:bg-slate-700'}`}
+            >
+              <RefreshCw size={18} className="mr-2" /> Reiniciar
+            </button>
+          )}
+        </div>
+
+        {/* Visual Pipeline */}
+        <div className="p-8 bg-slate-50 min-h-[400px] relative">
+          
+          {/* Connection Lines (Background) */}
+          <div className="absolute top-1/2 left-0 w-full h-1 bg-slate-200 -translate-y-1/2 z-0 hidden md:block" />
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative z-10">
+            
+            {/* Stage 1: Local Dev */}
+            <Stage 
+              isActive={step === 1} 
+              isCompleted={step > 1}
+              icon={<Code size={32} />}
+              title="1. Desarrollo & Build"
+              subtitle="Docker Build"
+              color="blue"
+            >
+              <div className="text-xs text-center mt-2 text-slate-500">
+                Empaqueta código + librerías en una imagen.
+              </div>
+            </Stage>
+
+            {/* Stage 2: Registry */}
+            <Stage 
+              isActive={step === 2} 
+              isCompleted={step > 2}
+              icon={<Database size={32} />}
+              title="2. Registry"
+              subtitle="Docker Push"
+              color="purple"
+            >
+              <div className="text-xs text-center mt-2 text-slate-500">
+                La imagen se guarda segura y versionada.
+              </div>
+              {step === 2 && (
+                <div className="absolute top-0 right-0 -mt-2 -mr-2">
+                  <span className="relative flex h-3 w-3">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-3 w-3 bg-purple-500"></span>
+                  </span>
+                </div>
+              )}
+            </Stage>
+
+            {/* Stage 3: Cloud Environment */}
+            <Stage 
+              isActive={step === 3} 
+              isCompleted={false}
+              icon={targetEnv === 'paas' ? <Server size={32} /> : <Cloud size={32} />}
+              title={targetEnv === 'paas' ? "3. PaaS Runtime" : "3. Serverless Runtime"}
+              subtitle="Pull & Run"
+              color={targetEnv === 'paas' ? "green" : "orange"}
+            >
+               <div className="text-xs text-center mt-2 text-slate-500">
+                {targetEnv === 'paas' 
+                  ? "El servicio mantiene el contenedor siempre activo." 
+                  : "El contenedor arranca solo cuando llega una petición."}
+              </div>
+              {step === 3 && (
+                <div className="mt-4 bg-white p-2 rounded shadow border border-slate-200 w-full animate-bounce-subtle">
+                  <div className="flex items-center justify-center text-green-600 font-bold text-sm">
+                    <Globe size={14} className="mr-1" /> App Online
+                  </div>
+                </div>
+              )}
+            </Stage>
+          </div>
+
+          {/* Terminal Output */}
+          <div className="mt-12 bg-slate-900 rounded-lg p-4 font-mono text-xs md:text-sm text-green-400 h-48 overflow-y-auto shadow-inner border border-slate-700">
+            <div className="flex items-center text-slate-500 border-b border-slate-800 pb-2 mb-2">
+              <span className="w-3 h-3 rounded-full bg-red-500 mr-2"></span>
+              <span className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></span>
+              <span className="w-3 h-3 rounded-full bg-green-500 mr-2"></span>
+              <span>deploy-pipeline-logs</span>
+            </div>
+            {logs.map((log, idx) => (
+              <div key={idx} className="mb-1">{log}</div>
+            ))}
+            {step > 0 && step < 3 && (
+              <div className="animate-pulse">_</div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- VISTA 3: COMPARATIVA ---
+const ComparisonView = () => {
+  return (
+    <div className="animate-fade-in space-y-8">
+       <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-slate-900">PaaS vs. Serverless</h2>
+        <p className="text-slate-600 mt-2">¿Cómo utiliza cada modelo los contenedores?</p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-8">
+        {/* PaaS Column */}
+        <div className="bg-white rounded-xl shadow-lg border-t-4 border-blue-500 p-6">
+          <div className="flex items-center mb-4">
+            <div className="p-3 bg-blue-100 rounded-lg mr-4">
+              <Layers className="text-blue-600" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">PaaS (Platform as a Service)</h3>
+          </div>
+          <p className="text-sm text-slate-600 mb-6 italic">Ejemplos: Heroku, Azure App Service, Google App Engine.</p>
+          
+          <ul className="space-y-4">
+            <ComparisonPoint 
+              title="Ciclo de Vida" 
+              desc="El contenedor se despliega y se mantiene ejecutando 24/7 (o según configuración). Siempre listo."
+            />
+             <ComparisonPoint 
+              title="Escalado" 
+              desc="Más lento. Se añaden nuevas instancias de contenedores según el uso de CPU/RAM (Horizontal Autoscaling)."
+            />
+            <ComparisonPoint 
+              title="Coste" 
+              desc="Pagas por los recursos reservados (CPU/RAM) mientras el contenedor está 'levantado', aunque nadie lo use."
+            />
+            <ComparisonPoint 
+              title="Caso de Uso Ideal" 
+              desc="Aplicaciones con tráfico constante, WebSockets, procesos en segundo plano de larga duración."
+            />
+          </ul>
+        </div>
+
+        {/* Serverless Column */}
+        <div className="bg-white rounded-xl shadow-lg border-t-4 border-orange-500 p-6">
+          <div className="flex items-center mb-4">
+            <div className="p-3 bg-orange-100 rounded-lg mr-4">
+              <Zap className="text-orange-600" size={24} />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Serverless Containers</h3>
+          </div>
+          <p className="text-sm text-slate-600 mb-6 italic">Ejemplos: AWS Fargate, Google Cloud Run, Azure Container Apps.</p>
+          
+          <ul className="space-y-4">
+            <ComparisonPoint 
+              title="Ciclo de Vida" 
+              desc="El contenedor se inicia bajo demanda cuando llega una petición HTTP o evento. Se apaga si no hay actividad."
+            />
+             <ComparisonPoint 
+              title="Escalado" 
+              desc="Extremadamente rápido (segundos). Puede escalar a CERO (coste 0) si nadie lo usa."
+            />
+            <ComparisonPoint 
+              title="Coste" 
+              desc="Pagas por milisegundos de ejecución y uso de memoria solo mientras procesas peticiones."
+            />
+            <ComparisonPoint 
+              title="Caso de Uso Ideal" 
+              desc="APIs REST, microservicios orientados a eventos, tareas programadas (Cron jobs), picos de tráfico impredecibles."
+            />
+          </ul>
+        </div>
+      </div>
+
+      <div className="bg-slate-800 text-white rounded-xl p-8 mt-8">
+        <h3 className="text-xl font-bold mb-4 flex items-center">
+          <Cpu className="mr-2"/>
+          Resumen Técnico
+        </h3>
+        <p className="leading-relaxed text-slate-300">
+          En ambos modelos, el <strong>Container Registry</strong> es la fuente de la verdad. La diferencia radica en el <strong>Orquestador</strong>. 
+          En PaaS, el orquestador asegura que tengas "X réplicas" vivas. 
+          En Serverless, el orquestador escucha eventos y aprovisiona contenedores "just-in-time" para manejarlos, destruyéndolos después.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// --- COMPONENTES AUXILIARES ---
+
+const Card = ({ icon, title, description, children }) => (
+  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+    <div className="mb-4">{icon}</div>
+    <h3 className="text-xl font-bold text-slate-800 mb-2">{title}</h3>
+    <p className="text-slate-600 leading-relaxed">{description}</p>
+    {children}
+  </div>
+);
+
+const Stage = ({ isActive, isCompleted, icon, title, subtitle, color, children }) => {
+  const colorClasses = {
+    blue: isActive ? "border-blue-500 bg-blue-50" : isCompleted ? "border-blue-200 bg-white" : "border-slate-200 bg-slate-100 opacity-60",
+    purple: isActive ? "border-purple-500 bg-purple-50" : isCompleted ? "border-purple-200 bg-white" : "border-slate-200 bg-slate-100 opacity-60",
+    green: isActive ? "border-green-500 bg-green-50" : "border-slate-200 bg-slate-100 opacity-60",
+    orange: isActive ? "border-orange-500 bg-orange-50" : "border-slate-200 bg-slate-100 opacity-60",
+  };
+  
+  const iconColors = {
+    blue: "text-blue-600",
+    purple: "text-purple-600",
+    green: "text-green-600",
+    orange: "text-orange-600",
+  };
+
+  return (
+    <div className={`
+      relative rounded-xl border-2 p-6 flex flex-col items-center transition-all duration-500
+      ${isActive ? 'scale-105 shadow-xl z-20' : 'scale-100 z-10'}
+      ${colorClasses[color]}
+    `}>
+      <div className={`mb-3 transition-colors ${isActive ? iconColors[color] : 'text-slate-400'}`}>
+        {isActive && !isCompleted && color !== 'green' && color !== 'orange' ? (
+          <Loader className="animate-spin" size={32} />
+        ) : (
+          icon
+        )}
+      </div>
+      <h4 className="font-bold text-slate-800">{title}</h4>
+      <span className="text-xs uppercase tracking-wider font-semibold text-slate-500 mt-1">{subtitle}</span>
+      {children}
+      
+      {isCompleted && (
+        <div className="absolute top-2 right-2 text-green-500 animate-in fade-in zoom-in">
+          <CheckCircle size={20} />
+        </div>
+      )}
+    </div>
+  );
+};
+
+const ComparisonPoint = ({ title, desc }) => (
+  <li className="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
+    <span className="block font-semibold text-slate-700 mb-1">{title}</span>
+    <span className="block text-slate-500 text-sm leading-snug">{desc}</span>
+  </li>
+);
+
+export default App;

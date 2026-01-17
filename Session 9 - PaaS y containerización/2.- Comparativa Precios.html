@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Costos Cloud</title>
+    
+    <!-- 1. Cargar Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- 2. Cargar React y ReactDOM (Versiones fijas 18.2.0 para estabilidad) -->
+    <script crossorigin src="https://unpkg.com/react@18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18.2.0/umd/react-dom.production.min.js"></script>
+    
+    <!-- 3. Prop-Types (Dependencia necesaria para algunos builds UMD de Recharts) -->
+    <script src="https://unpkg.com/prop-types/prop-types.min.js"></script>
+    
+    <!-- 4. Cargar Recharts (Versión fija 2.12.0 compatible con React 18) -->
+    <script src="https://unpkg.com/recharts@2.12.0/umd/Recharts.js"></script>
+
+    <!-- 5. Cargar Babel para traducir JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        // --- Iconos SVG (Inline para evitar dependencias externas complejas) ---
+        const CloudIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M17.5 19c0-1.7-1.3-3-3-3h-1.1c-.9-2.3-3.2-4-5.9-4-3.5 0-6.4 2.6-6.9 6H.5v3h17v-3z"/></svg>
+        );
+        const ActivityIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        );
+        const CpuIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2" ry="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/></svg>
+        );
+        const DatabaseIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s 9-1.34 9-3V5"/></svg>
+        );
+        const GlobeIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        );
+        const HardDriveIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>
+        );
+        const DollarSignIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        );
+        const InfoIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+        );
+        const ExternalLinkIcon = ({ className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        );
+
+        // --- Asegurar que Recharts está cargado ---
+        const RechartsLib = window.Recharts;
+        if (!RechartsLib) {
+            console.error("La librería Recharts no se cargó correctamente.");
+        }
+
+        const { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } = RechartsLib || {};
+        const { useState, useMemo } = React;
+
+        // --- Constantes y Lógica de Precios ---
+        const PRECIO_ANCHO_BANDA = {
+            aws: 0.09, gcp: 0.12, azure: 0.087, vercel: 0.15, digitalocean: 0.01, render: 0.10
+        };
+
+        const PRECIO_ALMACENAMIENTO = {
+            aws: 0.023, gcp: 0.020, azure: 0.018, vercel: 0.00, digitalocean: 0.02, render: 0.25
+        };
+
+        const NIVELES_COMPUTO = {
+            small: { label: 'Pequeño (1 vCPU, 1GB RAM)', aws: 10, gcp: 8, azure: 9, vercel: 20, digitalocean: 6, render: 7 },
+            medium: { label: 'Mediano (2 vCPU, 4GB RAM)', aws: 45, gcp: 40, azure: 42, vercel: 40, digitalocean: 24, render: 25 },
+            large: { label: 'Grande (4 vCPU, 16GB RAM)', aws: 160, gcp: 150, azure: 155, vercel: 150, digitalocean: 96, render: 85 },
+        };
+
+        const NIVELES_DB = {
+            none: { label: 'Sin Base de Datos', cost: 0 },
+            // He eliminado 'vercel: 0' para que el sistema use el coste estimado de Render/Neon como fallback
+            managed_small: { label: 'Managed DB (Pequeña)', aws: 15, gcp: 12, azure: 15, digitalocean: 15, render: 7 },
+            managed_large: { label: 'Managed DB (Grande)', aws: 180, gcp: 170, azure: 175, digitalocean: 120, render: 100 },
+        };
+
+        const REFERENCIAS = [
+            { provider: 'AWS', url: 'https://calculator.aws/', note: 'Calculadora Oficial AWS' },
+            { provider: 'Google Cloud', url: 'https://cloud.google.com/pricing/list', note: 'Lista de precios GCP' },
+            { provider: 'Azure', url: 'https://azure.microsoft.com/en-us/pricing/calculator/', note: 'Calculadora Azure' },
+            { provider: 'Vercel', url: 'https://vercel.com/pricing', note: 'Precios Vercel (Pro/Enterprise)' },
+            { provider: 'Render', url: 'https://render.com/pricing', note: 'Precios Render y Bandwidth' },
+            { provider: 'DigitalOcean', url: 'https://www.digitalocean.com/pricing', note: 'Precios Droplets y Spaces' },
+        ];
+
+        const CATEGORY_COLORS = {
+            computo: '#6366f1',
+            anchoBanda: '#ec4899',
+            almacenamiento: '#10b981',
+            baseDatos: '#f59e0b'
+        };
+
+        // --- Componente Principal ---
+        function CloudCostCalculator() {
+            const [bandwidth, setBandwidth] = useState(100);
+            const [storage, setStorage] = useState(50);
+            const [computeTier, setComputeTier] = useState('medium');
+            const [dbTier, setDbTier] = useState('managed_small');
+            
+            const data = useMemo(() => {
+                const providers = ['aws', 'gcp', 'azure', 'vercel', 'digitalocean', 'render'];
+                
+                return providers.map(provider => {
+                    const bwPrice = PRECIO_ANCHO_BANDA[provider] || 0;
+                    let bandwidthCost = Math.max(0, bandwidth - (provider === 'digitalocean' ? 1000 : 0)) * bwPrice;
+                    
+                    if (provider === 'vercel') {
+                        bandwidthCost = Math.max(0, bandwidth - 1000) * (PRECIO_ANCHO_BANDA.vercel || 0.15);
+                    }
+                    if (provider === 'render') {
+                        bandwidthCost = Math.max(0, bandwidth - 100) * (PRECIO_ANCHO_BANDA.render || 0.10);
+                    }
+
+                    const storagePrice = PRECIO_ALMACENAMIENTO[provider] || 0;
+                    let storageCost = storage * storagePrice;
+                    if (provider === 'vercel') storageCost = 0; 
+
+                    let computeCost = NIVELES_COMPUTO[computeTier]?.[provider] || 0;
+                    
+                    let dbCost = 0;
+                    if (NIVELES_DB[dbTier]?.cost !== undefined) {
+                        dbCost = NIVELES_DB[dbTier].cost;
+                    }
+                    if (NIVELES_DB[dbTier]?.[provider] !== undefined) {
+                        dbCost = NIVELES_DB[dbTier][provider];
+                    } else if (provider === 'vercel') {
+                        // Fallback lógico: Si Vercel no tiene precio definido arriba, usa el de Render como proxy
+                        dbCost = NIVELES_DB[dbTier]?.render || 0; 
+                    }
+
+                    const total = computeCost + bandwidthCost + storageCost + dbCost;
+
+                    return {
+                        name: provider.charAt(0).toUpperCase() + provider.slice(1),
+                        providerKey: provider,
+                        computo: parseFloat(computeCost.toFixed(2)),
+                        anchoBanda: parseFloat(bandwidthCost.toFixed(2)),
+                        almacenamiento: parseFloat(storageCost.toFixed(2)),
+                        baseDatos: parseFloat(dbCost.toFixed(2)),
+                        total: parseFloat(total.toFixed(2))
+                    };
+                }).sort((a, b) => a.name.localeCompare(b.name)); // Cambiado a orden alfabético estable
+            }, [bandwidth, storage, computeTier, dbTier]);
+
+            // Calculamos cuál es el más barato para el resumen, ya que el array 'data' ahora está ordenado por nombre
+            const cheapestOption = useMemo(() => {
+                if (!data || data.length === 0) return null;
+                return [...data].sort((a, b) => a.total - b.total)[0];
+            }, [data]);
+
+            const mostExpensiveOption = useMemo(() => {
+                if (!data || data.length === 0) return null;
+                return [...data].sort((a, b) => b.total - a.total)[0];
+            }, [data]);
+
+
+            const breakdownData = cheapestOption ? [
+                { name: 'Cómputo', value: cheapestOption.computo, color: CATEGORY_COLORS.computo },
+                { name: 'Red (Bandwidth)', value: cheapestOption.anchoBanda, color: CATEGORY_COLORS.anchoBanda },
+                { name: 'Almacenamiento', value: cheapestOption.almacenamiento, color: CATEGORY_COLORS.almacenamiento },
+                { name: 'Base de Datos', value: cheapestOption.baseDatos, color: CATEGORY_COLORS.baseDatos },
+            ] : [];
+
+            // Protección en caso de error de carga
+            if (!RechartsLib) {
+                return <div className="p-10 text-red-600 font-bold">Error cargando librerías gráficas. Por favor verifica tu conexión a internet.</div>;
+            }
+
+            return (
+                <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
+                    <header className="max-w-7xl mx-auto mb-8 text-center md:text-left">
+                        <h1 className="text-3xl md:text-4xl font-bold text-indigo-900 flex items-center justify-center md:justify-start gap-3">
+                            <CloudIcon className="w-10 h-10" />
+                            Simulador de Costos Cloud
+                        </h1>
+                        <p className="text-slate-600 mt-2 max-w-2xl">
+                            Compara estimaciones de infraestructura entre los proveedores tradicionales (AWS, Azure, GCP) 
+                            y las plataformas PaaS modernas (Vercel, Render, Digital Ocean).
+                        </p>
+                    </header>
+
+                    <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
+                        {/* Sidebar */}
+                        <div className="lg:col-span-4 bg-white rounded-2xl shadow-lg p-6 border border-slate-200 h-fit">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-indigo-700">
+                                <ActivityIcon className="w-5 h-5" /> Configuración del Proyecto
+                            </h2>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                                    <CpuIcon className="w-4 h-4 text-indigo-500" /> Potencia de Cómputo
+                                </label>
+                                <div className="grid grid-cols-1 gap-2">
+                                    {Object.entries(NIVELES_COMPUTO).map(([key, val]) => (
+                                        <button
+                                            key={key}
+                                            onClick={() => setComputeTier(key)}
+                                            className={`px-4 py-3 rounded-lg text-left text-sm transition-all border ${
+                                                computeTier === key 
+                                                ? 'bg-indigo-50 border-indigo-500 text-indigo-700 font-medium ring-1 ring-indigo-500' 
+                                                : 'bg-white border-slate-200 hover:border-indigo-300 text-slate-600'
+                                            }`}
+                                        >
+                                            {val.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-2">
+                                    <DatabaseIcon className="w-4 h-4 text-orange-500" /> Base de Datos (Managed)
+                                </label>
+                                <select 
+                                    value={dbTier}
+                                    onChange={(e) => setDbTier(e.target.value)}
+                                    className="w-full p-2 border border-slate-300 rounded-lg bg-slate-50 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                                >
+                                    {Object.entries(NIVELES_DB).map(([key, val]) => (
+                                        <option key={key} value={key}>{val.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <div className="flex justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                            <GlobeIcon className="w-4 h-4 text-pink-500" /> Tráfico / Salida (GB/mes)
+                                        </label>
+                                        <span className="text-sm font-bold text-pink-600 bg-pink-50 px-2 rounded">{bandwidth} GB</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="5000"
+                                        step="10"
+                                        value={bandwidth}
+                                        onChange={(e) => setBandwidth(Number(e.target.value))}
+                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                                    />
+                                    <p className="text-xs text-slate-400 mt-1">Impacto alto en AWS/Vercel.</p>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                                            <HardDriveIcon className="w-4 h-4 text-emerald-500" /> Almacenamiento (GB)
+                                        </label>
+                                        <span className="text-sm font-bold text-emerald-600 bg-emerald-50 px-2 rounded">{storage} GB</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1000"
+                                        step="10"
+                                        value={storage}
+                                        onChange={(e) => setStorage(Number(e.target.value))}
+                                        className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Visualización */}
+                        <div className="lg:col-span-8 flex flex-col gap-6">
+                            
+                            {cheapestOption && mostExpensiveOption && (
+                                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-6 text-white shadow-lg flex flex-col md:flex-row items-center justify-between">
+                                    <div>
+                                        <h3 className="text-lg font-medium opacity-90 mb-1">Opción más económica:</h3>
+                                        <div className="text-4xl font-bold flex items-center gap-2">
+                                            {cheapestOption.name} <span className="text-2xl opacity-75 font-normal">(${cheapestOption.total}/mes)</span>
+                                        </div>
+                                    </div>
+                                    <div className="mt-4 md:mt-0 text-right">
+                                        <p className="text-sm opacity-80">Ahorro vs el más caro:</p>
+                                        <p className="text-2xl font-bold text-green-300">
+                                            ${(mostExpensiveOption.total - cheapestOption.total).toFixed(2)}/mes
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200 flex-1 min-h-[400px]">
+                                <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                                    <DollarSignIcon className="w-5 h-5 text-green-600" /> Comparativa de Costo Mensual
+                                </h3>
+                                <div className="h-[350px] w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart
+                                            data={data}
+                                            layout="vertical"
+                                            margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                                        >
+                                            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#e2e8f0" />
+                                            <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                                            <YAxis type="category" dataKey="name" width={100} tick={{fontWeight: 'bold', fill: '#475569'}} />
+                                            <Tooltip 
+                                                cursor={{fill: '#f1f5f9'}}
+                                                contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                                                formatter={(value, name) => [`$${value}`, name]}
+                                            />
+                                            <Legend />
+                                            <Bar dataKey="computo" stackId="a" name="Cómputo" fill={CATEGORY_COLORS.computo} barSize={30} />
+                                            <Bar dataKey="baseDatos" stackId="a" name="Base de Datos" fill={CATEGORY_COLORS.baseDatos} barSize={30} />
+                                            <Bar dataKey="anchoBanda" stackId="a" name="Ancho de Banda" fill={CATEGORY_COLORS.anchoBanda} barSize={30} />
+                                            <Bar dataKey="almacenamiento" stackId="a" name="Almacenamiento" fill={CATEGORY_COLORS.almacenamiento} barSize={30} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </div>
+
+                            {cheapestOption && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="bg-white rounded-2xl shadow-lg p-6 border border-slate-200">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wide mb-4">
+                                            Desglose ({cheapestOption.name})
+                                        </h3>
+                                        <div className="h-[200px] flex items-center justify-center">
+                                            <ResponsiveContainer width="100%" height="100%">
+                                                <PieChart>
+                                                    <Pie
+                                                        data={breakdownData}
+                                                        cx="50%"
+                                                        cy="50%"
+                                                        innerRadius={60}
+                                                        outerRadius={80}
+                                                        paddingAngle={5}
+                                                        dataKey="value"
+                                                    >
+                                                        {breakdownData.map((entry, index) => (
+                                                            <Cell key={`cell-${index}`} fill={entry.color} />
+                                                        ))}
+                                                    </Pie>
+                                                    <Tooltip formatter={(value) => `$${value}`} />
+                                                </PieChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-blue-50 rounded-2xl shadow-sm p-6 border border-blue-100">
+                                        <h3 className="text-lg font-bold text-blue-900 mb-3 flex items-center gap-2">
+                                            <InfoIcon className="w-5 h-5" /> Análisis Rápido
+                                        </h3>
+                                        <ul className="space-y-3 text-sm text-blue-800">
+                                            <li><span className="font-bold">• Digital Ocean / Render:</span> Ideales para startups con tráfico moderado.</li>
+                                            <li><span className="font-bold">• Vercel:</span> Cuidado con el ancho de banda "outbound" alto.</li>
+                                            <li><span className="font-bold">• AWS/Azure:</span> Costos "ocultos" (NAT, Egress) suelen inflar la factura.</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            )}
+
+                             {/* Referencias */}
+                            <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200">
+                                <h3 className="text-lg font-bold text-slate-700 mb-4 flex items-center gap-2">
+                                <ExternalLinkIcon className="w-5 h-5" /> Referencias de Precios
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {REFERENCIAS.map((ref, idx) => (
+                                    <a 
+                                    key={idx} 
+                                    href={ref.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="block p-3 bg-white rounded-lg border border-slate-200 hover:border-indigo-400 hover:shadow-sm transition-all text-sm group text-decoration-none"
+                                    >
+                                    <div className="font-bold text-indigo-600 group-hover:text-indigo-700 mb-1">{ref.provider}</div>
+                                    <div className="text-slate-500 text-xs">{ref.note}</div>
+                                    </a>
+                                ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<CloudCostCalculator />);
+    </script>
+</body>
+</html>
